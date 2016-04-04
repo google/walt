@@ -27,7 +27,7 @@ Important pin numbers from the code listed below, defined in [walt.ino](../ardui
  * MIC_PIN 23 // Same as A9 - uses PWM to generate a tone for measuring microphone latency.
 
 Optional pins for LEDs used for extra debugging signals
-If LEDs take more than 5mA those should be the hight current pins on TeensyLC (bold on the Teensy diagram, can provide 20mA vs the usual 5mA).
+LEDs that use more than 5mA should be connected to the hight current pins on TeensyLC (marked with bold on the [Teensy LC pinout sheet](https://www.pjrc.com/teensy/teensylc_front_pinout.png)) they can provide 20mA vs the usual 5mA.
 
  * LED_PIN_GREEN 16
  * LED_PIN_RED 17
