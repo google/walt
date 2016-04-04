@@ -2,6 +2,8 @@
 
 **DISCLAIMER:** This is not an official Google product.
 
+[Post about WALT on Android Developers Blog](http://android-developers.blogspot.ca/2016/04/a-new-method-to-measure-touch-and-audio.html)
+
 WALT is designed to measure the latency of physical sensors and outputs on phones and computers. It can currently perform the following measurements:
 
  * Tap latency - time from the moment a finger-like probe touches down (or up) on the screen
@@ -20,4 +22,3 @@ WALT is designed to measure the latency of physical sensors and outputs on phone
   clocks.
 * Python code used to communicate with WALT from ChromeOS can be found
   [here](https://chromium.googlesource.com/chromiumos/platform/touchbot/+/master/quickstep/)
-
