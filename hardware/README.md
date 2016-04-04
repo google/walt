@@ -1,4 +1,6 @@
-## Hardware build instructions ##
+## Hardware assembly ##
+Note, this is not a precise recipe. Depending on your specific needs, you may want to introduce some variations.
+In most cases it's possible to assemble a device with partial functionality (e.g. only for audio latency) on a solderless breadboard.
 
 ### List of parts ###
 
@@ -11,7 +13,7 @@
  * TRRS connector or wire for audio measurements
  * Clipboard, like [this one](https://upload.wikimedia.org/wikipedia/commons/c/c0/Wood-clipboard.jpg) -
    it’s important to use one where you push to open it.
- * Foam to hold the whole thing (TODO: find the name for it)
+ * Foam to hold the whole thing
 
 
 ### Microcontroller code ###
