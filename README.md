@@ -21,6 +21,3 @@ WALT is designed to measure the latency of physical sensors and outputs on phone
 * Python code used to communicate with WALT from ChromeOS can be found
   [here](https://chromium.googlesource.com/chromiumos/platform/touchbot/+/master/quickstep/)
 
-## TODO
- * Convert most of the C code to C++
- * Use smaller buffers for audio input (mic)
