@@ -16,7 +16,7 @@
 
 ### Microcontroller code ###
 
-Important pin numbers from the code listed below.
+Important pin numbers from the code listed below, defined in [walt.ino](../arduino/walt/walt.ino)
 
  * PD_LASER_PIN 14 - Photodiode that looks at the laser
  * G_PIN 15 // Same as A1 - Accelerometer for detecting when touch probe hits the screen
@@ -32,11 +32,10 @@ If LEDs take more than 5mA those should be the hight current pins on TeensyLC (b
 
 
 ### Schematic ###
+![WALT Schematic](WALT_schematic_20160404.png)
 
- - TODO: add png with schematic after moving to GitHub
- - TODO: add photos of assembled units once we have them
 
-Notes:
+### Notes ###
 
  * If using Teensy 3.1 instead of LC, it won’t be able to directly read
    the photodiode with 820k resistor. Something like a follower opamp will be
