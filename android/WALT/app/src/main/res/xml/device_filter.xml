@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Teensy in serial mode, hex 16C0:0483  -->
+    <usb-device vendor-id="5824" product-id="1155" />
+
+    <!-- Teensy in Serial + keyboard +... mode. Hex 16C0:0483 -->
+    <usb-device vendor-id="5824" product-id="1159" />
+</resources>

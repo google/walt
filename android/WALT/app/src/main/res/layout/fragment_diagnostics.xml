@@ -1,0 +1,213 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="org.chromium.latency.walt.DiagnosticsFragment">
+
+    <!-- The whole list of options -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="3">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:orientation="vertical">
+
+            <!-- Reconnect -->
+            <LinearLayout
+                style="@style/MenuItemStyle"
+                android:onClick="onClickReconnect">
+
+                <ImageView
+                    style="@style/MenuIconStyle"
+                    android:src="@drawable/ic_usb_black_24dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/MenuTextTop"
+                        android:text="Reconnect" />
+
+                    <TextView
+                        style="@style/MenuTextBottom"
+                        android:text="TBD: Conn status" />
+
+
+                </LinearLayout>
+            </LinearLayout>
+            <!-- End of Reconnect -->
+
+            <View style="@style/MenuDivider" />
+
+            <!-- Ping -->
+            <LinearLayout
+                style="@style/MenuItemStyle"
+                android:onClick="onClickPing">
+
+                <ImageView
+                    style="@style/MenuIconStyle"
+                    android:src="@drawable/ic_swap_horiz_black_24dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/MenuTextTop"
+                        android:text="Ping" />
+
+                    <TextView
+                        style="@style/MenuTextBottom"
+                        android:text="Ping over USB with 1 byte" />
+
+
+                </LinearLayout>
+            </LinearLayout>
+            <!-- End of Ping -->
+
+            <View style="@style/MenuDivider" />
+
+            <!-- ReSync -->
+            <LinearLayout
+                style="@style/MenuItemStyle"
+                android:onClick="onClickSync">
+
+                <ImageView
+                    style="@style/MenuIconStyle"
+                    android:src="@drawable/ic_schedule_black_24dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/MenuTextTop"
+                        android:text="Re-sync clocks" />
+
+                    <TextView
+                        style="@style/MenuTextBottom"
+                        android:text="..." />
+
+
+                </LinearLayout>
+            </LinearLayout>
+            <!-- End of ReSync -->
+
+            <View style="@style/MenuDivider" />
+
+            <!-- CheckDrift -->
+            <LinearLayout
+                style="@style/MenuItemStyle"
+                android:onClick="onClickCheckDrift">
+
+                <ImageView
+                    style="@style/MenuIconStyle"
+                    android:src="@drawable/ic_timelapse_black_24dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/MenuTextTop"
+                        android:text="Check clock drift" />
+
+                    <TextView
+                        style="@style/MenuTextBottom"
+                        android:text="Check how much clocks diverged" />
+
+
+                </LinearLayout>
+            </LinearLayout>
+            <!-- End of CheckDrift -->
+
+            <View style="@style/MenuDivider" />
+
+            <!-- Start/stop listener -->
+            <LinearLayout
+                style="@style/MenuItemStyle"
+                android:onClick="onClickStartListener">
+
+                <ImageView
+                    style="@style/MenuIconStyle"
+                    android:src="@drawable/ic_swap_horiz_black_24dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/MenuTextTop"
+                        android:text="Start/stop listener" />
+
+                    <TextView
+                        style="@style/MenuTextBottom"
+                        android:text="..." />
+
+
+                </LinearLayout>
+            </LinearLayout>
+            <!-- End of Start/stop listener -->
+
+            <View style="@style/MenuDivider" />
+
+            <!-- Send T TODO: replace with send any char, it says nothing on the log, broadcast? -->
+            <!--
+            <LinearLayout
+                style="@style/MenuItemStyle"
+                android:onClick="onClickSendT">
+
+                <ImageView
+                    style="@style/MenuIconStyle"
+                    android:src="@drawable/ic_swap_horiz_black_24dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/MenuTextTop"
+                        android:text="Send 'T'" />
+
+                    <TextView
+                        style="@style/MenuTextBottom"
+                        android:text="..." />
+
+
+                </LinearLayout>
+            </LinearLayout>
+            -->
+            <!-- End of Send T -->
+
+
+            <View style="@style/MenuDivider" />
+        </LinearLayout>
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/txt_log_diag"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:background="#BBBBBB"
+        android:gravity="bottom"
+        android:scrollbars="vertical" />
+
+</LinearLayout>

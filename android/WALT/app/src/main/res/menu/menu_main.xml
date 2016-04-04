@@ -1,0 +1,31 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity">
+
+
+
+    <item
+        android:id="@+id/action_upload"
+        android:orderInCategory="180"
+        android:title="Upload"
+        android:icon="@drawable/ic_file_upload_black_24dp"
+        app:showAsAction="ifRoom"
+        ></item>
+
+    <item
+        android:id="@+id/action_share"
+        android:orderInCategory="190"
+        android:title="Share"
+        android:icon="@drawable/ic_share_black_24dp"
+        app:showAsAction="ifRoom"
+        ></item>
+
+    <item
+        android:id="@+id/action_help"
+        android:orderInCategory="200"
+        android:title="Help"
+        android:icon="@drawable/ic_help_outline_black_24dp"
+        app:showAsAction="ifRoom"
+        ></item>
+
+</menu>

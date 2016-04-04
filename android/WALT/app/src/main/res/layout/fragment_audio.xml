@@ -1,0 +1,42 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="org.chromium.latency.walt.TapLatencyFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/button_start_audio_rec"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:src="@drawable/ic_mic_black_24dp" />
+
+            <ImageButton
+                android:id="@+id/button_start_audio_play"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:src="@drawable/ic_play_arrow_black_24dp" />
+        </RelativeLayout>
+
+        <!-- For now the results are just listed in this textView -->
+        <TextView
+            android:id="@+id/txt_box_audio"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#aaaaaa"
+            android:gravity="bottom"
+             />
+
+    </LinearLayout>
+</FrameLayout>
