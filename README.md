@@ -11,12 +11,9 @@ WALT is designed to measure the latency of physical sensors and outputs on phone
  * Screen draw latency - using a photodiode that detects whether the screen is black or white.
  * Audio input / output latencies. Input latency will be usually referred as microphone latency.
 
-Hardware build instructions can be found in this repository under hardware/
-
-TODO: Longer description + principle of operation (link to time sync doc).
-
 ## Notes
-
+* Hardware build instructions can be found in this repository under hardware/
+* Clock syncrhonization details are described [here](android/WALT/app/src/main/jni/README.md)
 * The Android device and Teensy clocks have a tendency to diverge due to
   differing clock frequencies. This means they will go out of sync after
   approximately 5 minutes. The workaround is to use the app to re-sync the
