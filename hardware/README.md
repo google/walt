@@ -40,12 +40,11 @@ LEDs that use more than 5mA should be connected to the hight current pins on Tee
 ### Notes ###
 
  * If using Teensy 3.1 instead of LC, it won’t be able to directly read
-   the photodiode with 820k resistor. Something like a follower opamp will be
-   necessary. The screen photodiodes are bundled as a couple to produce more
-   current, a single photodiode with 1.5M resistor should provide the same
-   result, but might be at the limit of what the teensy can measure, and again an
-   opamp will be needed.
- * Photodiode cathode has a small protrusion on the leg (cathode marker).
+   the screen photodiodes - a buffer opamp will be needed. The screen photodiodes 
+   are bundled as a couple to produce more current, a single photodiode with 1.5M 
+   resistor should provide the same result, but might be at the limit of what the
+   teensy can measure (input impedance), and again, an opamp will be needed.
+ * BPW34 photodiode has a small protrusion on the cathode pin (cathode marker).
    Anode has a white dot near it.
  * Note the different setup of the laser and screen photodiode. The laser one
    uses internal pullup resistor (about 20k), enabled by pinMode(PD_LASER_PIN,
