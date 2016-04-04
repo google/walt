@@ -8,8 +8,8 @@ WALT is designed to measure the latency of physical sensors and outputs on phone
 
  * Tap latency - time from the moment a finger-like probe touches down (or up) on the screen
    until the kernel timestamps an ACTION_DOWN (or ACTION_UP) event. This physical contact with
-   the screen is timed using an accelerometer mounted on the probe
- * Drag latency (scroll)
+   the screen is timed using an accelerometer mounted on the probe - [details](docs/TapLatency.md)
+ * Drag latency (scroll) - [details](docs/DragLatency.md)
  * Screen draw latency - using a photodiode that detects whether the screen is black or white.
  * Audio input / output latencies. Input latency will be usually referred as microphone latency.
 
