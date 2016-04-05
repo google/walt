@@ -14,3 +14,4 @@ the MT events are then exposed in Java as
 and include the kernel timestamp. For tap, the relevant MotionEvent types are
 ACTION_DOWN and ACTION_UP.
 
+![WALT Stylus](WALT_stylus.jpg)
