@@ -12,6 +12,10 @@ WALT is designed to measure the latency of physical sensors and outputs on phone
  * Drag latency (scroll) - [details](docs/DragLatency.md)
  * Screen draw latency - using a photodiode that detects whether the screen is black or white.
  * Audio input / output latencies. Input latency will be usually referred as microphone latency.
+ 
+
+![WALT photo](docs/WALT_photo.jpg)
+ 
 
 ## Notes
 * Hardware build instructions can be found in this repository under hardware/
