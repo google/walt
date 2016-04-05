@@ -34,6 +34,9 @@ LEDs that use more than 5mA should be connected to the hight current pins on Tee
 
 
 ### Schematic ###
+A version of schematic you can fork can be found
+[here on Upverter](https://upverter.com/kamrik/8af1f3b04e47ab78/WALT_w_audio/)
+
 ![WALT Schematic](WALT_schematic_20160404.png)
 
 
