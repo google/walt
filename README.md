@@ -22,7 +22,7 @@ WALT is designed to measure the latency of physical sensors and outputs on phone
 * Clock syncrhonization details are described [here](android/WALT/app/src/main/jni/README.md)
 * The Android device and Teensy clocks have a tendency to diverge due to
   differing clock frequencies. This means they will go out of sync after
-  approximately 5 minutes. The workaround is to use the app to re-sync the
-  clocks.
-* Python code used to communicate with WALT from ChromeOS can be found
+  several minutes. The workaround is to use the app to re-sync the
+  clocks. Some, but not all tests in the app will sync the clocks when starting a measurement.
+* Python code used to communicate with WALT from Linux and ChromeOS can be found
   [here](https://chromium.googlesource.com/chromiumos/platform/touchbot/+/master/quickstep/)
