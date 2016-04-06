@@ -13,6 +13,9 @@ WALT is designed to measure the latency of physical sensors and outputs on phone
  * Screen draw latency - using a photodiode that detects whether the screen is black or white.
  * Audio output and microphone latencies - [details](docs/AudioLatency.md)
  
+WALT app for Android can be 
+[installed from Google Play](https://play.google.com/store/apps/details?id=org.kamrik.latency.walt) 
+or downloaded in the [releases section](https://github.com/google/walt/releases)
 
 ![WALT photo](docs/WALT_photo.jpg)
  
