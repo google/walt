@@ -22,7 +22,7 @@ or downloaded in the [releases section](https://github.com/google/walt/releases)
 
 ## Notes
 * Hardware build instructions can be found in this repository under hardware/
-* Clock syncrhonization details are described [here](android/WALT/app/src/main/jni/README.md)
+* Clock synchronization details are described [here](android/WALT/app/src/main/jni/README.md)
 * The Android device and Teensy clocks have a tendency to diverge due to
   differing clock frequencies. This means they will go out of sync after
   several minutes. The workaround is to use the app to re-sync the
