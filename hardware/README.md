@@ -2,18 +2,17 @@
 Note, this is not a precise recipe. Depending on your specific needs, you may want to introduce some variations.
 In most cases it's possible to assemble a device with partial functionality (e.g. only for audio latency) on a solderless breadboard.
 
-### List of parts ###
+### List of suggested parts ###
 
  * Microcontroller board - [Teensy LC](https://www.pjrc.com/teensy/teensyLC.html)
  * Photodiodes - [BPW34](http://www.digikey.com/catalog/en/partgroup/bpw34/12351) (3 units)
- * Laser - any laser pointer will do, ~1 mW is just fine (5 mW is ok, but avoid stronger)
- * Accelerometer board [Adafruit ADXL335](https://www.adafruit.com/product/163),
-   Alternatively use the ADXL335 chip directly without the board
- * Resistors: 10K, 820K, 3.3K, 100Ω (2 units)
+ * Laser - any laser pointer will do, ~1 mW is just fine (5 mW is ok, but avoid stronger ones)
+ * Accelerometer board [Adafruit ADXL335](https://www.adafruit.com/product/163) **with filter capacitors removed**. 
+   It's very important to remove the filter capacitors, otherwise they smooth out the abrupt shock we are looking for.
+   Alternatively use the ADXL335 chip directly without the breakout board, but it's rather difficult to solder manually.
+ * Some resistors and capacitors - see schematics
  * TRRS connector or wire for audio measurements
- * Clipboard, like [this one](https://upload.wikimedia.org/wikipedia/commons/c/c0/Wood-clipboard.jpg) -
-   it’s important to use one where you push to open it.
- * Foam to hold the whole thing
+ * Clipboard, like [this one](https://upload.wikimedia.org/wikipedia/commons/c/c0/Wood-clipboard.jpg)
 
 
 ### Microcontroller code ###
