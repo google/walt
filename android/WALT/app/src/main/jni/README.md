@@ -37,7 +37,7 @@ only after that get the remote timestamps for all of them. This helps deal with
 unwanted buffering and delay added by the kernel of hardware in the outgoing
 direction.
 
-## Sep 3 - find better upper bound `maxE`
+## Step 3 - find better upper bound `maxE`
 
 Same idea, but in the opposite direction. Remote device sends us messages and
 then the timestamps according to his clock of when they were sent. We record the
@@ -65,7 +65,7 @@ with good latency symmetry.
 
 Observed values for `deltaE`
  - Linux desktop machine (HP Z420), USB2 port: ~100us
- - Same Linux machine, USB3 port: ~800us.
+ - Same Linux machine, USB3 port: ~800us
  - Nexus 5 ~100us
  - Nexus 7 (both the old and the newer model) ~300us
  - Samsung Galaxy S3 ~150us
