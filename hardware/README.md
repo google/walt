@@ -4,6 +4,10 @@ In most cases it's possible to assemble a device with partial functionality (e.g
 
 ### List of suggested parts ###
 
+ * USB OTG cable like 
+   [this](http://www.amazon.com/Generic-Micro-Cable-Cellphone-Tablet/dp/B00AYPEL56)
+   (or a USB Type-C to A adapter)
+   for connecting WALT to your phone or tablet
  * Microcontroller board - [Teensy LC](https://www.pjrc.com/teensy/teensyLC.html)
  * Photodiodes - [BPW34](http://www.digikey.com/catalog/en/partgroup/bpw34/12351) (3 units)
  * Laser - any laser pointer will do, ~1 mW is just fine (5 mW is ok, but avoid stronger ones)
