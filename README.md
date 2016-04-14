@@ -17,7 +17,7 @@ WALT app for Android can be
 [installed from Google Play](https://play.google.com/store/apps/details?id=org.kamrik.latency.walt)
 or downloaded in the [releases section](https://github.com/google/walt/releases)
 
-![WALT photo_audio](docs/WALT_photo.jpg)
+![WALT photo](docs/WALT_photo_audio.jpg)
 
 
 ## Notes
