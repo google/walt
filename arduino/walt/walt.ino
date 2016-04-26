@@ -56,6 +56,10 @@
 #define AUDIO_PIN 22 // Same as A8
 #define MIC_PIN 23 // Same as A9
 
+// Threshold and hysteresis for screen on/off reading
+#define SCREEN_THRESH_HIGH  110
+#define SCREEN_THRESH_LOW  90
+
 elapsedMicros time_us;
 
 
@@ -85,21 +89,13 @@ struct clock_sync {
 
 struct clock_sync clock;
 
-// Interupt handlers for laser and screen photodiodes
+// Interrupt handler for laser photodiode
 void irq_laser(void) {
   laser.t = time_us;
   // May need to remove the 'not' if not using internal pullup resistor
   laser.value = !digitalRead(PD_LASER_PIN);
   laser.count++;
   // digitalWrite(LED_PIN_INT, laser.value );
-  led_state = !led_state;
-}
-
-void irq_screen(void) {
-  screen.t = time_us;
-  screen.value = digitalRead(PD_SCREEN_PIN);
-  screen.count++;
-  // digitalWrite(LED_PIN_YELLOW, screen.value);
   led_state = !led_state;
 }
 
@@ -110,7 +106,7 @@ void send_trigger(struct trigger t) {
   Serial.send_now();
 }
 
-// flips case for a give char. Unchanged if not in A-Za-z.
+// flips case for a give char. Unchanged if not in [A-Za-z].
 char flip_case(char c) {
   if (c >= 'A' && c <= 'Z') {
     return c + 32;
@@ -162,7 +158,6 @@ void setup() {
   pinMode(G_PIN, INPUT);
 
   attachInterrupt(PD_LASER_PIN, irq_laser, CHANGE);
-  attachInterrupt(PD_SCREEN_PIN, irq_screen, CHANGE);
 
   // Turn on the red LED, will be turned off once time is synced
   led_state = HIGH;
@@ -240,10 +235,13 @@ void process_command(char cmd) {
       Serial.println(beep_time);
       Serial.send_now();
     } else if (cmd == CMD_AUTO_SCREEN_ON) {
+      screen.value = analogRead(PD_SCREEN_PIN) > SCREEN_THRESH_HIGH;
       screen.autosend = true;
+      screen.probe = true;
       send_ack(CMD_AUTO_SCREEN_ON);
     } else if (cmd == CMD_AUTO_SCREEN_OFF) {
       screen.autosend = false;
+      screen.probe = false;
       send_ack(CMD_AUTO_SCREEN_OFF);
     } else if (cmd == CMD_SEND_LAST_SCREEN) {
       send_trigger(screen);
@@ -287,6 +285,17 @@ void loop() {
       sound.count++;
       sound.probe = false;
       led_state = !led_state;
+    }
+  }
+
+  // Probe screen
+  if (screen.probe) {
+    int v = analogRead(PD_SCREEN_PIN);
+    if ((screen.value == LOW && v > SCREEN_THRESH_HIGH) || (screen.value != LOW && v < SCREEN_THRESH_LOW)) {
+      screen.t = time_us;
+      screen.count++;
+      led_state = !led_state;
+      screen.value = !screen.value;
     }
   }
 
