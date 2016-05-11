@@ -308,6 +308,9 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
         activity.broadcastManager.unregisterReceiver(onIncomingTimestamp);
         activity.clockManager.logDrift();
 
+        Utils.sort(deltasJ2N);
+        Utils.sort(deltas);
+
         activity.logger.log("deltas: " + deltas.toString());
         activity.logger.log(String.format(
                 "Median Java to native latency %.3f ms\nMedian audio latency %.1f ms",

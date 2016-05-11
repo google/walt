@@ -226,6 +226,9 @@ public class TapLatencyFragment extends Fragment
             k2c.add((event.createTime - event.kernelTime) / 1000.);
         }
 
+        Utils.sort(p2k);
+        Utils.sort(k2c);
+
         activity.logger.log(p2k.toString());
         activity.logger.log(k2c.toString());
 
