@@ -17,13 +17,16 @@
 package org.chromium.latency.walt;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.InputMismatchException;
 
 /**
  * Kitchen sink for small utility functions
  */
 public class Utils {
-    public static double median(ArrayList<Double> lst) {
+    public static double median(ArrayList<Double> arrList) {
+        ArrayList<Double> lst = new ArrayList<Double>(arrList);
+        Collections.sort(lst);
         int len = lst.size();
         if (len == 0) {
             return Double.NaN;
