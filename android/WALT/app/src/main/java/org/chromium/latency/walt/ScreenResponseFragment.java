@@ -188,6 +188,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         activity.broadcastManager.unregisterReceiver(onIncomingTimestamp);
 
         // Show deltas and the median
+        Utils.sort(deltas);
         activity.logger.log("deltas: " + deltas.toString());
         activity.logger.log(String.format(
                 "Median latency %.1f ms",
