@@ -9,7 +9,7 @@ In most cases it's possible to assemble a device with partial functionality (e.g
    (or a USB Type-C to A adapter)
    for connecting WALT to your phone or tablet
  * Microcontroller board - [Teensy LC](https://www.pjrc.com/teensy/teensyLC.html)
- * Photodiodes - [BPW34](http://www.digikey.com/catalog/en/partgroup/bpw34/12351) (3 units)
+ * Photodiodes - [BPW34](http://www.digikey.com/product-detail/en/osram-opto-semiconductors-inc/BPW34/475-1070-ND/607274) (3 units)
  * Laser - any laser pointer will do, ~1 mW is just fine (5 mW is ok, but avoid stronger ones)
  * Accelerometer board [Adafruit ADXL335](https://www.adafruit.com/product/163) **with filter capacitors removed**. 
    It's very important to remove the filter capacitors, otherwise they smooth out the abrupt shock we are looking for.
