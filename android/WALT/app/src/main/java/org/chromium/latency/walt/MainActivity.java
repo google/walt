@@ -94,10 +94,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 clockManager.connect();
-                // TODO: Do we need to sync here? Sync is done before each measurement.
-                // Ideally we need to sync here and check whether the process works ok
-                // on Nexus 9 it sometimes hangs for ~5 seconds.
-                clockManager.syncClock();
             }
         });
 
