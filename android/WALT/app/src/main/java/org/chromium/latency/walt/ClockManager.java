@@ -16,8 +16,11 @@
 
 package org.chromium.latency.walt;
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
@@ -36,6 +39,7 @@ public class ClockManager {
     static final int TEENSY_VID = 0x16c0;
     static final int USB_READ_TIMEOUT_MS = 200;
     public static final String TAG = "WaltClockManager";
+    private static final String USB_PERMISSION_RESPONSE_INTENT = "usb-permission-response";
 
     // Teensy side commands. Each command is a single char
     // Based on #defines section in walt.ino
@@ -102,35 +106,48 @@ public class ClockManager {
         }
 
         // Request permission
-        // This displays a dialog aking user for permission to use the device.
+        // This displays a dialog asking user for permission to use the device.
         // No dialog is displayed if the permission was already given before or the app started as a
         // result of intent filter when the device was plugged in.
-        // TODO: Figure out how to check for permission here and respond to result of the dialog
 
-        //PendingIntent permissionIntent = PendingIntent.getBroadcast(mContext, 0, new Intent("com.google.android.HID.action.USB_PERMISSION"), 0);
-        //mLogger.log("Requesting permission for USB device. Click OK then CONNECT.");
-        //mUsbManager.requestPermission(mUsbDevice, permissionIntent);
-
-        mUsbConnection = mUsbManager.openDevice(mUsbDevice);
-
-        // Serial mode only
-        // TODO: find the interface and endpoint indexes no matter what mode it is
-        int ifIdx = 1;
-        int epInIdx = 1;
-        int epOutIdx = 0;
-
-        UsbInterface iface = mUsbDevice.getInterface(ifIdx);
-
-        if (mUsbConnection.claimInterface(iface, true)) {
-            mLogger.log("Interface claimed successfully\n");
-        } else {
-            mLogger.log("ERROR - can't claim interface\n");
-            return;
-        }
-
-        mEndpointIn = iface.getEndpoint(epInIdx);
-        mEndpointOut = iface.getEndpoint(epOutIdx);
+        PendingIntent permissionIntent = PendingIntent.getBroadcast(mContext, 0,
+                new Intent(USB_PERMISSION_RESPONSE_INTENT), 0);
+        mContext.registerReceiver(respondToUsbPermission,
+                new IntentFilter(USB_PERMISSION_RESPONSE_INTENT));
+        mLogger.log("Requesting permission for USB device.");
+        mUsbManager.requestPermission(mUsbDevice, permissionIntent);
     }
+
+    BroadcastReceiver respondToUsbPermission = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)){
+                mUsbConnection = mUsbManager.openDevice(mUsbDevice);
+
+                // Serial mode only
+                // TODO: find the interface and endpoint indexes no matter what mode it is
+                int ifIdx = 1;
+                int epInIdx = 1;
+                int epOutIdx = 0;
+
+                UsbInterface iface = mUsbDevice.getInterface(ifIdx);
+
+                if (mUsbConnection.claimInterface(iface, true)) {
+                    mLogger.log("Interface claimed successfully\n");
+                } else {
+                    mLogger.log("ERROR - can't claim interface\n");
+                    return;
+                }
+
+                mEndpointIn = iface.getEndpoint(epInIdx);
+                mEndpointOut = iface.getEndpoint(epOutIdx);
+
+                syncClock();
+            } else {
+                mLogger.log("Could not get permission to open the USB device");
+            }
+        }
+    };
 
     public void findUsbDevice() {
 
