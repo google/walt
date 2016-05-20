@@ -36,6 +36,7 @@
 #define CMD_AUDIO               'A'
 #define CMD_BEEP                'B'
 
+#define CMD_NOTE                'N'
 
 
 // On Teensy LC probably need to use the high current pins
@@ -234,6 +235,14 @@ void process_command(char cmd) {
       Serial.print(" ");
       Serial.println(beep_time);
       Serial.send_now();
+    } else if (cmd == CMD_NOTE) {
+      long note_time = time_us;
+      usbMIDI.sendNoteOn(60, 99, 1);
+      usbMIDI.send_now();
+      Serial.print(flip_case(cmd));
+      Serial.print(" ");
+      Serial.println(note_time);
+      Serial.send_now();
     } else if (cmd == CMD_AUTO_SCREEN_ON) {
       screen.value = analogRead(PD_SCREEN_PIN) > SCREEN_THRESH_HIGH;
       screen.autosend = true;
@@ -255,7 +264,7 @@ void process_command(char cmd) {
     } else if (cmd == CMD_SEND_LAST_LASER) {
       send_trigger(laser);
       laser.count = 0;
-    }else {
+    } else {
       Serial.print("Unknown command:");
       Serial.println(cmd);
     }
