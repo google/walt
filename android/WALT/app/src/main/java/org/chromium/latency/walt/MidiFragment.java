@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.midi.MidiDevice;
 import android.media.midi.MidiDeviceInfo;
+import android.media.midi.MidiInputPort;
 import android.media.midi.MidiManager;
 import android.media.midi.MidiOutputPort;
 import android.media.midi.MidiReceiver;
@@ -40,20 +41,23 @@ import java.util.Locale;
 public class MidiFragment extends Fragment implements View.OnClickListener {
 
     private static final String TEENSY_MIDI_NAME = "Teensyduino Teensy MIDI";
+    private static final byte[] noteMsg = {(byte) 0x90, (byte) 99, (byte) 0};
 
     private MainActivity activity;
     private SimpleLogger logger;
     private TextView mTextView;
 
     private MidiDevice mMidiDevice;
-    // Output here is with respect to the MIDI device, not the Android device.
+    // Output and Input here are with respect to the MIDI device, not the Android device.
     private MidiOutputPort mOutputPort;
+    private MidiInputPort mInputPort;
 
     private long last_tWalt = 0;
     private long last_tSys = 0;
     private long last_tJava = 0;
 
-    private final int noteDelay = 300;
+    private static final int noteDelay = 300;
+    private static final int timeout = 1000;
 
     public MidiFragment() {
         // Required empty public constructor
@@ -102,6 +106,7 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
 
         // Register this fragment class as the listener for some button clicks
         activity.findViewById(R.id.button_start_midi_in).setOnClickListener(this);
+        activity.findViewById(R.id.button_start_midi_out).setOnClickListener(this);
 
         // mLogTextView.setMovementMethod(new ScrollingMovementMethod());
         mTextView.setText(activity.logger.getLogText());
@@ -127,6 +132,11 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
                 setupMidiIn();
                 activity.handler.postDelayed(requestNoteRunnable, noteDelay);
                 break;
+            case R.id.button_start_midi_out:
+                setupMidiOut();
+                scheduleNote();
+                activity.handler.postDelayed(cancelMidiOutRunnable, noteDelay + timeout);
+                break;
             default:
                 break;
         }
@@ -139,6 +149,77 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
             mTextView.append(msg + "\n");
         }
     };
+
+    private void setupMidiOut() {
+        mInputPort = mMidiDevice.openInputPort(0);
+
+        activity.clockManager.syncClock();
+        activity.clockManager.startUsbListener();
+        activity.broadcastManager.registerReceiver(onIncomingTimestamp,
+                new IntentFilter(activity.clockManager.INCOMING_DATA_INTENT)
+        );
+    }
+
+    private BroadcastReceiver onIncomingTimestamp = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String msg = intent.getStringExtra("message");
+            if(msg.charAt(0) == 'm') {
+                return;
+            }
+
+            ClockManager.TriggerMessage tmsg = activity.clockManager.parseTriggerMessage(msg);
+            last_tWalt = tmsg.t + activity.clockManager.baseTime;
+            double dt = (last_tWalt - last_tSys) / 1000.;
+
+            logger.log(String.format(Locale.US, "Note detected: latency of %.3f ms", dt));
+
+            finishMidiOut();
+        }
+    };
+
+    private void scheduleNote() {
+        if(mInputPort == null) {
+            logger.log("mInputPort is not open");
+            return;
+        }
+        long t = System.nanoTime() + noteDelay * 1000 * 1000;
+        try {
+            mInputPort.send(noteMsg, 0, noteMsg.length, t);
+        } catch(IOException e) {
+            logger.log("Unable to schedule note: " + e.getMessage());
+            return;
+        }
+        last_tSys = t / 1000;
+        activity.clockManager.sendByte(ClockManager.CMD_MIDI);
+    }
+
+    private void finishMidiOut() {
+        logger.log("All notes detected");
+        activity.handler.removeCallbacks(cancelMidiOutRunnable);
+
+        teardownMidiOut();
+    }
+
+    private Runnable cancelMidiOutRunnable = new Runnable() {
+        @Override
+        public void run() {
+            logger.log("Timed out waiting for notes to be detected by WALT");
+            teardownMidiOut();
+        }
+    };
+
+    private void teardownMidiOut() {
+        try {
+            mInputPort.close();
+        } catch(IOException e) {
+            logger.log("Error, failed to close input port: " + e.getMessage());
+        }
+
+        activity.clockManager.stopUsbListener();
+        activity.broadcastManager.unregisterReceiver(onIncomingTimestamp);
+        activity.clockManager.logDrift();
+    }
 
     private Runnable requestNoteRunnable = new Runnable() {
         @Override
