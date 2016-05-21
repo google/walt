@@ -36,6 +36,7 @@
 #define CMD_AUDIO               'A'
 #define CMD_BEEP                'B'
 
+#define CMD_MIDI                'M'
 #define CMD_NOTE                'N'
 
 
@@ -77,9 +78,9 @@ struct trigger {
   char tag;
 };
 
-#define TRIGGER_COUNT 4
-struct trigger laser, screen, sound, gshock, zero_trigger, copy_trigger;
-struct trigger * triggers[TRIGGER_COUNT] = {&laser, &screen, &sound, &gshock};
+#define TRIGGER_COUNT 5
+struct trigger laser, screen, sound, midi, gshock, zero_trigger, copy_trigger;
+struct trigger * triggers[TRIGGER_COUNT] = {&laser, &screen, &sound, &midi, &gshock};
 
 #define CLOCK_SYNC_N 9
 struct clock_sync {
@@ -140,6 +141,7 @@ void init_vars() {
   screen.tag = 'S';
   gshock.tag = 'G';
   sound.tag = 'A';  // for Audio
+  midi.tag = 'M';
 
   led_state = false;
   interrupts();
@@ -235,6 +237,12 @@ void process_command(char cmd) {
       Serial.print(" ");
       Serial.println(beep_time);
       Serial.send_now();
+    } else if (cmd == CMD_MIDI) {
+      midi.t = 0;
+      midi.count = 0;
+      midi.probe = true;
+      midi.autosend = true;
+      send_ack(CMD_MIDI);
     } else if (cmd == CMD_NOTE) {
       long note_time = time_us;
       usbMIDI.sendNoteOn(60, 99, 1);
@@ -293,6 +301,16 @@ void loop() {
       sound.t = time_us;
       sound.count++;
       sound.probe = false;
+      led_state = !led_state;
+    }
+  }
+
+  // Probe MIDI
+  if(midi.probe) {
+    if(usbMIDI.read()) {
+      midi.t = time_us;
+      midi.count++;
+      midi.probe = false;
       led_state = !led_state;
     }
   }
