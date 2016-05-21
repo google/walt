@@ -163,6 +163,38 @@
 
             <View style="@style/MenuDivider" />
 
+            <!-- MIDI -->
+            <LinearLayout
+                android:id="@+id/action_midi"
+                android:visibility="invisible"
+                style="@style/MenuItemStyle"
+                android:onClick="onClickMIDI">
+
+                <ImageView
+                    style="@style/MenuIconStyle"
+                    android:src="@drawable/ic_music_note_black_24dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/MenuTextTop"
+                        android:text="MIDI latency" />
+
+                    <TextView
+                        style="@style/MenuTextBottom"
+                        android:text="Click to measure" />
+
+
+                </LinearLayout>
+            </LinearLayout>
+            <!-- End of MIDI  -->
+
+            <View style="@style/MenuDivider" />
+
             <!-- Log -->
             <LinearLayout
                 style="@style/MenuItemStyle"

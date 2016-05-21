@@ -17,6 +17,7 @@
 package org.chromium.latency.walt;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -190,7 +191,12 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClickAudio(View view) {
         AudioFragment newFragment = new AudioFragment();
-        switchScreen(newFragment, "Audio Output");
+        switchScreen(newFragment, "Audio Latency");
+    }
+
+    public void onClickMIDI(View view) {
+        MidiFragment newFragment = new MidiFragment();
+        switchScreen(newFragment, "MIDI Latency");
     }
 
     public void onClickDragLatency(View view) {
