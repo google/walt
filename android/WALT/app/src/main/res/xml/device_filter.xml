@@ -5,4 +5,7 @@
 
     <!-- Teensy in Serial + keyboard +... mode. Hex 16C0:0483 -->
     <usb-device vendor-id="5824" product-id="1159" />
+
+    <!-- Teensy in Serial + MIDI mode. Hex 16C0:0485 -->
+    <usb-device vendor-id="5824" product-id="1157" />
 </resources>
