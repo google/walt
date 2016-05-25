@@ -16,6 +16,7 @@
 
 package org.chromium.latency.walt;
 
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -38,7 +39,13 @@ public class FrontPageFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_front_page, container, false);
+        View view = inflater.inflate(R.layout.fragment_front_page, container, false);
+
+        if (container.getContext().getPackageManager().
+                hasSystemFeature(PackageManager.FEATURE_MIDI)) {
+            view.findViewById(R.id.action_midi).setVisibility(View.VISIBLE);
+        }
+        return view;
     }
 
 
