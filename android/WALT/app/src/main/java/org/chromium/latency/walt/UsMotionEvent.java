@@ -77,7 +77,7 @@ public class UsMotionEvent {
     }
 
     public String toStringLong() {
-        return String.format("Event: %d %.1f %.1f slot=%d, num=%d %s",
+        return String.format("Event: t=%d x=%.1f y=%.1f slot=%d num=%d %s",
                 kernelTime, x, y, slot, num, actionToString(action));
 
     }

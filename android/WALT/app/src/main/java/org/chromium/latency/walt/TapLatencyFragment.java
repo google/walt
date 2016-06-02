@@ -60,16 +60,17 @@ public class TapLatencyFragment extends Fragment
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             UsMotionEvent tapEvent = new UsMotionEvent(event, activity.clockManager.baseTime);
-            activity.logger.log("\nTouch event received: " + tapEvent.toStringLong());
-            tapEvent.physicalTime = activity.clockManager.readLastShockTime();
             String action = tapEvent.getActionString();
 
             if(tapEvent.action != MotionEvent.ACTION_UP && tapEvent.action != MotionEvent.ACTION_DOWN) {
                 moveCount++;
-                activity.logger.log(action + " " + moveCount);
+                activity.logger.log("Ignoring " + action + " " + moveCount);
                 updateCountsDisplay();
                 return true;
             }
+
+            activity.logger.log("\n"+ action + " event received: " + tapEvent.toStringLong());
+            tapEvent.physicalTime = activity.clockManager.readLastShockTime();
 
             tapEvent.isOk = checkTapSanity(tapEvent);
             // Save it in any case so we can do stats on bad events later
