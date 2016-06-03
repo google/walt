@@ -14,6 +14,7 @@
         <activity
             android:name="org.chromium.latency.walt.MainActivity"
             android:label="@string/app_name"
+            android:launchMode="singleTask"
             android:screenOrientation="portrait">
             <meta-data
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"

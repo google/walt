@@ -91,6 +91,9 @@ public class ClockManager {
     public ClockManager(Context context, SimpleLogger logger) {
         mContext = context;
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
+
+        mContext.registerReceiver(respondToUsbPermission,
+                new IntentFilter(USB_PERMISSION_RESPONSE_INTENT));
         this.mLogger = logger;
     }
 
@@ -98,14 +101,18 @@ public class ClockManager {
         return ((mEndpointIn != null) && (mEndpointOut != null));
     }
 
-
     public void connect() {
-        findUsbDevice();
+        UsbDevice usbDevice = findUsbDevice();
+        connect(usbDevice);
+    }
 
-        if (mUsbDevice == null) {
+    public void connect(UsbDevice usbDevice) {
+        if (usbDevice == null) {
             mLogger.log("TeensyUSB not found.");
             return;
         }
+
+        mUsbDevice = usbDevice;
 
         // Request permission
         // This displays a dialog asking user for permission to use the device.
@@ -114,8 +121,6 @@ public class ClockManager {
 
         PendingIntent permissionIntent = PendingIntent.getBroadcast(mContext, 0,
                 new Intent(USB_PERMISSION_RESPONSE_INTENT), 0);
-        mContext.registerReceiver(respondToUsbPermission,
-                new IntentFilter(USB_PERMISSION_RESPONSE_INTENT));
         mLogger.log("Requesting permission for USB device.");
         mUsbManager.requestPermission(mUsbDevice, permissionIntent);
     }
@@ -123,6 +128,12 @@ public class ClockManager {
     BroadcastReceiver respondToUsbPermission = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+
+            if (mUsbDevice == null) {
+                mLogger.log("USB device was not properly opened");
+                return;
+            }
+
             if(intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)){
                 mUsbConnection = mUsbManager.openDevice(mUsbDevice);
 
@@ -151,17 +162,19 @@ public class ClockManager {
         }
     };
 
-    public void findUsbDevice() {
+    public UsbDevice findUsbDevice() {
 
         mLogger.log(String.format("Looking for TeensyUSB VID=0x%x", TEENSY_VID));
 
         HashMap<String, UsbDevice> deviceHash = mUsbManager.getDeviceList();
         if (deviceHash.size() == 0) {
             mLogger.log("No connected USB devices found");
-            return;
+            return null;
         }
 
         mLogger.log("Found " + deviceHash.size() + " connected USB devices:");
+
+        UsbDevice usbDevice = null;
 
         for (String key : deviceHash.keySet()) {
 
@@ -174,14 +187,14 @@ public class ClockManager {
 
 
             if (dev.getVendorId() == TEENSY_VID) {
-                mUsbDevice = dev;
+                usbDevice = dev;
                 msg += " <- using this one.";
             }
 
             mLogger.log(msg);
         }
+        return usbDevice;
     }
-
 
     byte[] char2byte(char c) {
         byte[] buff = new byte[1];
