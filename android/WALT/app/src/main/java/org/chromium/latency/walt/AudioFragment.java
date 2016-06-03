@@ -16,13 +16,16 @@
 
 package org.chromium.latency.walt;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,7 +34,6 @@ import android.widget.TextView;
 import android.media.AudioTrack;
 
 import java.util.ArrayList;
-
 
 /**
  * A simple {@link Fragment} subclass.
@@ -45,6 +47,8 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
     MainActivity activity;
     SimpleLogger logger;
     TextView mTextView;
+
+    private static final int PERMISSION_REQUEST_RECORD_AUDIO = 1;
 
     // Sound params
     private final double duration = 0.3; // seconds
@@ -109,8 +113,6 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
         //Create the audio engine
         createEngine();
         createBufferQueueAudioPlayer(frameRateInt, framesPerBufferInt);
-        framesToRecord = (int) (0.001 * msToRecord * frameRateInt);
-        createAudioRecorder(frameRateInt, framesToRecord);
         logger.log("Audio engine created");
 
         // Inflate the layout for this fragment
@@ -143,8 +145,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.button_start_audio_rec) {
-            startRecording();
-            activity.handler.postDelayed(requestBeepRunnable, msToRecord / 2);
+            attemptRecordingTest();
             return;
         }
 
@@ -165,6 +166,38 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
         }
     };
 
+    private void attemptRecordingTest() {
+        // first see if we already have permission to record audio
+        int currentPermission = ContextCompat.checkSelfPermission(this.getContext(),
+                Manifest.permission.RECORD_AUDIO);
+        if (currentPermission == PackageManager.PERMISSION_GRANTED) {
+            beginRecordingTest();
+        } else {
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},
+                    PERMISSION_REQUEST_RECORD_AUDIO);
+        }
+    }
+
+    private void beginRecordingTest() {
+        framesToRecord = (int) (0.001 * msToRecord * frameRateInt);
+        createAudioRecorder(frameRateInt, framesToRecord);
+        logger.log("Audio recorder created; starting test");
+        startRecording();
+        activity.handler.postDelayed(requestBeepRunnable, msToRecord / 2);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_RECORD_AUDIO:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    beginRecordingTest();
+                } else {
+                    logger.log("Could not get permission to record audio");
+                }
+                return;
+        }
+    }
 
     void startMeasurement() {
         activity.clockManager.syncClock();
