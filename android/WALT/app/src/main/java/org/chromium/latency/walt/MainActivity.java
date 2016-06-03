@@ -18,6 +18,8 @@ package org.chromium.latency.walt;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -39,7 +41,6 @@ import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Date;
-
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "WALT";
@@ -79,6 +80,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+
+        final UsbDevice usbDevice;
+        Intent intent = getIntent();
+        if (intent != null && intent.getAction().equals(UsbManager.ACTION_USB_DEVICE_ATTACHED)) {
+            usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+        } else {
+            usbDevice = null;
+        }
+
+        // Connect and sync clocks, but a bit later as it takes time
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (usbDevice == null) {
+                    clockManager.connect();
+                } else {
+                    clockManager.connect(usbDevice);
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Thread.setDefaultUncaughtExceptionHandler(new LoggingExceptionHandler());
@@ -89,14 +121,6 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         clockManager = new ClockManager(this, logger);
-
-        // Connect and sync clocks, but a bit later as it takes time
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                clockManager.connect();
-            }
-        });
 
         // Create front page fragment
         FrontPageFragment frontPageFragment = new FrontPageFragment();
