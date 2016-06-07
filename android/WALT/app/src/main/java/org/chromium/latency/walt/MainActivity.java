@@ -16,6 +16,7 @@
 
 package org.chromium.latency.walt;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.usb.UsbDevice;
@@ -25,8 +26,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -44,6 +48,7 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "WALT";
+    private static final int PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE = 2;
 
     private Toolbar toolbar;
     LocalBroadcastManager broadcastManager;
@@ -175,8 +180,7 @@ public class MainActivity extends AppCompatActivity {
             case R.id.action_help:
                 return true;
             case R.id.action_share:
-                String filepath = saveLogToFile();
-                shareLogFile(filepath);
+                attemptSaveAndShareLog();
                 return true;
             case R.id.action_upload:
                 return true;
@@ -273,6 +277,32 @@ public class MainActivity extends AppCompatActivity {
         int minE = clockManager.getMinE();
         int maxE = clockManager.getMaxE();
         logger.log(String.format("Remote clock delayed between %d and %d us", minE, maxE));
+    }
+
+    private void attemptSaveAndShareLog() {
+        int currentPermission = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (currentPermission == PackageManager.PERMISSION_GRANTED) {
+            String filePath = saveLogToFile();
+            shareLogFile(filePath);
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    attemptSaveAndShareLog();
+                } else {
+                    logger.log("Could not get permission to write log file");
+                }
+                return;
+        }
     }
 
     public String saveLogToFile() {
