@@ -91,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         final UsbDevice usbDevice;
         Intent intent = getIntent();
         if (intent != null && intent.getAction().equals(UsbManager.ACTION_USB_DEVICE_ATTACHED)) {
+            setIntent(null); // done with the intent
             usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
         } else {
             usbDevice = null;
