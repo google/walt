@@ -92,8 +92,6 @@ public class ClockManager {
         mContext = context;
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
 
-        mContext.registerReceiver(respondToUsbPermission,
-                new IntentFilter(USB_PERMISSION_RESPONSE_INTENT));
         this.mLogger = logger;
     }
 
@@ -121,9 +119,35 @@ public class ClockManager {
 
         PendingIntent permissionIntent = PendingIntent.getBroadcast(mContext, 0,
                 new Intent(USB_PERMISSION_RESPONSE_INTENT), 0);
+        mContext.registerReceiver(respondToUsbPermission,
+                new IntentFilter(USB_PERMISSION_RESPONSE_INTENT));
         mLogger.log("Requesting permission for USB device.");
         mUsbManager.requestPermission(mUsbDevice, permissionIntent);
     }
+
+    public void disconnect() {
+        if (!isListenerStopped()) {
+            stopUsbListener();
+        }
+        mEndpointIn = null;
+        mEndpointOut = null;
+        mUsbDevice = null;
+        mUsbConnection.close();
+        mUsbConnection = null;
+
+        mContext.unregisterReceiver(disconnectReceiver);
+    }
+
+    BroadcastReceiver disconnectReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+            if (isConnected() && mUsbDevice.equals(usbDevice)) {
+                mLogger.log("WALT was detached");
+                disconnect();
+            }
+        }
+    };
 
     BroadcastReceiver respondToUsbPermission = new BroadcastReceiver() {
         @Override
@@ -155,10 +179,14 @@ public class ClockManager {
                 mEndpointIn = iface.getEndpoint(epInIdx);
                 mEndpointOut = iface.getEndpoint(epOutIdx);
 
+                mContext.registerReceiver(disconnectReceiver,
+                        new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
+
                 syncClock();
             } else {
                 mLogger.log("Could not get permission to open the USB device");
             }
+            mContext.unregisterReceiver(respondToUsbPermission);
         }
     };
 
