@@ -33,7 +33,7 @@ public class ClockManager extends Connection {
     private static final int USB_READ_TIMEOUT_MS = 200;
     private static final int DEFAULT_DRIFT_LIMIT_US = 1500;
     private static final String TAG = "WaltClockManager";
-    public static final String PROTOCOL_VERSION = "2";
+    public static final String PROTOCOL_VERSION = "3";
 
     private UsbEndpoint mEndpointIn = null;
     private UsbEndpoint mEndpointOut = null;
@@ -58,6 +58,7 @@ public class ClockManager extends Connection {
     static final char CMD_SEND_LAST_LASER  = 'J';
     static final char CMD_AUDIO            = 'A'; // Start watching for signal on audio out line
     static final char CMD_BEEP             = 'B'; // Generate a tone into the mic and send timestamp
+    static final char CMD_BEEP_STOP        = 'S'; // Stop generating tone
     static final char CMD_MIDI             = 'M'; // Start listening for a MIDI message
     static final char CMD_NOTE             = 'N'; // Generate a MIDI NoteOn message
 

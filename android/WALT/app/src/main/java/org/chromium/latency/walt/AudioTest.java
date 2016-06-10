@@ -159,7 +159,15 @@ class AudioTest {
 
         mRequestedBeeps++;
         startRecording();
-        handler.postDelayed(requestBeepRunnable, msToRecord / 2);
+        switch (mMode) {
+            case CONTINUOUS:
+                handler.postDelayed(requestBeepRunnable, msToRecord / 2);
+                break;
+            case COLD: // TODO: find a more accurate method to measure cold input latency
+                requestBeepRunnable.run();
+                break;
+        }
+        handler.postDelayed(stopBeepRunnable, msToRecord);
     }
 
     void startMeasurement() {
@@ -279,7 +287,18 @@ class AudioTest {
             }
             last_tb = Integer.parseInt(s);
             logger.log("Beeped, reply: " + s);
-            handler.postDelayed(processRecordingRunnable, msToRecord); // TODO: config and or randomize the delay,
+            handler.postDelayed(processRecordingRunnable, msToRecord * 2); // TODO: config and or randomize the delay,
+        }
+    };
+
+    private Runnable stopBeepRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                clockManager.command(ClockManager.CMD_BEEP_STOP);
+            } catch (IOException e) {
+                logger.log("Error stopping tone from WALT: " + e.getMessage());
+            }
         }
     };
 

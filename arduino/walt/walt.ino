@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define VERSION                 "2"
+#define VERSION                 "3"
 
 // Commands
 // Digits 1 to 9 reserved for clock sync
@@ -39,6 +39,7 @@
 
 #define CMD_AUDIO               'A'
 #define CMD_BEEP                'B'
+#define CMD_BEEP_STOP           'S'
 
 #define CMD_MIDI                'M'
 #define CMD_NOTE                'N'
@@ -262,11 +263,14 @@ void process_command(char cmd) {
       send_ack(CMD_AUDIO);
     } else if (cmd == CMD_BEEP) {
       long beep_time = time_us;
-      tone(MIC_PIN, 5000 /* Hz */, 200 /* ms */);
+      tone(MIC_PIN, 5000 /* Hz */);
       Serial.print(flip_case(cmd));
       Serial.print(" ");
       Serial.println(beep_time);
       Serial.send_now();
+    } else if (cmd == CMD_BEEP_STOP) {
+      noTone(MIC_PIN);
+      send_ack(CMD_BEEP_STOP);
     } else if (cmd == CMD_MIDI) {
       midi.t = 0;
       midi.count = 0;

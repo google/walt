@@ -46,6 +46,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
 
     private static final int PERMISSION_REQUEST_RECORD_AUDIO = 1;
 
+    // TODO: make these configurable
     private static final int CONTINUOUS_TEST_PERIOD = 500;
     private static final int COLD_TEST_PERIOD = 5000;
 
