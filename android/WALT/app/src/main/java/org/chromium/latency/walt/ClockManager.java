@@ -397,7 +397,7 @@ public class ClockManager {
     private UsbListener mUsbListener = new UsbListener();
     private Thread mUsbListenerThread;
 
-    public final String INCOMING_DATA_INTENT = "incoming-usb-message";
+    public static final String INCOMING_DATA_INTENT = "incoming-usb-message";
 
     public enum ListenerState {
         RUNNING,
