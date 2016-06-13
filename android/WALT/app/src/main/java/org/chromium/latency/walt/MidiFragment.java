@@ -16,17 +16,10 @@
 
 package org.chromium.latency.walt;
 
-import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.media.midi.MidiDevice;
-import android.media.midi.MidiDeviceInfo;
-import android.media.midi.MidiInputPort;
-import android.media.midi.MidiManager;
-import android.media.midi.MidiOutputPort;
-import android.media.midi.MidiReceiver;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -34,30 +27,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.io.IOException;
-import java.util.Locale;
-
-@TargetApi(23)
 public class MidiFragment extends Fragment implements View.OnClickListener {
-
-    private static final String TEENSY_MIDI_NAME = "Teensyduino Teensy MIDI";
-    private static final byte[] noteMsg = {(byte) 0x90, (byte) 99, (byte) 0};
 
     private MainActivity activity;
     private SimpleLogger logger;
     private TextView mTextView;
-
-    private MidiDevice mMidiDevice;
-    // Output and Input here are with respect to the MIDI device, not the Android device.
-    private MidiOutputPort mOutputPort;
-    private MidiInputPort mInputPort;
-
-    private long last_tWalt = 0;
-    private long last_tSys = 0;
-    private long last_tJava = 0;
-
-    private static final int noteDelay = 300;
-    private static final int timeout = 1000;
+    private MidiTest mMidiTest;
 
     public MidiFragment() {
         // Required empty public constructor
@@ -70,33 +45,10 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
         activity = (MainActivity) getActivity();
         logger = activity.logger;
 
-        findMidiDevice((MidiManager) container.getContext().getSystemService(Context.MIDI_SERVICE));
+        mMidiTest = new MidiTest(activity, logger, activity.clockManager);
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_midi, container, false);
-    }
-
-    private void findMidiDevice(MidiManager m) {
-        MidiDeviceInfo[] infos = m.getDevices();
-        for(MidiDeviceInfo info : infos) {
-            String name = info.getProperties().getString(MidiDeviceInfo.PROPERTY_NAME);
-            logger.log("Found MIDI device named " + name);
-            if(TEENSY_MIDI_NAME.equals(name)) {
-                logger.log("^^^ using this device ^^^");
-                m.openDevice(info, new MidiManager.OnDeviceOpenedListener() {
-                            @Override
-                            public void onDeviceOpened(MidiDevice device) {
-                                if (device == null) {
-                                    logger.log("Error, unable to open MIDI device");
-                                } else {
-                                    logger.log("Opened MIDI device successfully!");
-                                    mMidiDevice = device;
-                                }
-                            }
-                        }, null);
-                break;
-            }
-        }
     }
 
     @Override
@@ -123,21 +75,12 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public void onClick(View v) {
-        if(mMidiDevice == null) {
-            logger.log("Wait until the MIDI device connects");
-            return;
-        }
         switch (v.getId()) {
             case R.id.button_start_midi_in:
-                setupMidiIn();
-                activity.handler.postDelayed(requestNoteRunnable, noteDelay);
+                mMidiTest.testMidiIn();
                 break;
             case R.id.button_start_midi_out:
-                setupMidiOut();
-                scheduleNote();
-                activity.handler.postDelayed(cancelMidiOutRunnable, noteDelay + timeout);
-                break;
-            default:
+                mMidiTest.testMidiOut();
                 break;
         }
     }
@@ -149,138 +92,4 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
             mTextView.append(msg + "\n");
         }
     };
-
-    private void setupMidiOut() {
-        mInputPort = mMidiDevice.openInputPort(0);
-
-        activity.clockManager.syncClock();
-        activity.clockManager.startUsbListener();
-        activity.broadcastManager.registerReceiver(onIncomingTimestamp,
-                new IntentFilter(activity.clockManager.INCOMING_DATA_INTENT)
-        );
-    }
-
-    private BroadcastReceiver onIncomingTimestamp = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String msg = intent.getStringExtra("message");
-            if(msg.charAt(0) == 'm') {
-                return;
-            }
-
-            ClockManager.TriggerMessage tmsg = activity.clockManager.parseTriggerMessage(msg);
-            last_tWalt = tmsg.t + activity.clockManager.baseTime;
-            double dt = (last_tWalt - last_tSys) / 1000.;
-
-            logger.log(String.format(Locale.US, "Note detected: latency of %.3f ms", dt));
-
-            finishMidiOut();
-        }
-    };
-
-    private void scheduleNote() {
-        if(mInputPort == null) {
-            logger.log("mInputPort is not open");
-            return;
-        }
-        long t = System.nanoTime() + noteDelay * 1000 * 1000;
-        try {
-            mInputPort.send(noteMsg, 0, noteMsg.length, t);
-        } catch(IOException e) {
-            logger.log("Unable to schedule note: " + e.getMessage());
-            return;
-        }
-        last_tSys = t / 1000;
-        activity.clockManager.sendByte(ClockManager.CMD_MIDI);
-    }
-
-    private void finishMidiOut() {
-        logger.log("All notes detected");
-        activity.handler.removeCallbacks(cancelMidiOutRunnable);
-
-        teardownMidiOut();
-    }
-
-    private Runnable cancelMidiOutRunnable = new Runnable() {
-        @Override
-        public void run() {
-            logger.log("Timed out waiting for notes to be detected by WALT");
-            teardownMidiOut();
-        }
-    };
-
-    private void teardownMidiOut() {
-        try {
-            mInputPort.close();
-        } catch(IOException e) {
-            logger.log("Error, failed to close input port: " + e.getMessage());
-        }
-
-        activity.clockManager.stopUsbListener();
-        activity.broadcastManager.unregisterReceiver(onIncomingTimestamp);
-        activity.clockManager.logDrift();
-    }
-
-    private Runnable requestNoteRunnable = new Runnable() {
-        @Override
-        public void run() {
-            activity.logger.log("Requesting note from WALT...");
-            String s = activity.clockManager.sendReceive(ClockManager.CMD_NOTE);
-            if(s.length() == 0) {
-                logger.log("Error, failed to send message to WALT");
-                return;
-            }
-            if (s.charAt(0) != 'n') {
-                logger.log("Error, got unexpected reply to CMD_NOTE: " + s);
-                return;
-            }
-            last_tWalt = Integer.parseInt(s.trim().substring(2));
-            activity.handler.postDelayed(finishMidiInRunnable, noteDelay);
-        }
-    };
-
-    private Runnable finishMidiInRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if(last_tSys != 0) {
-                teardownMidiIn();
-                double d1 = (last_tSys - last_tWalt) / 1000.;
-                double d2 = (last_tJava - last_tSys) / 1000.;
-                double dt = (last_tJava - last_tWalt) / 1000.;
-                logger.log(String.format(Locale.US,
-                        "Result: Time to MIDI subsystem = %.3f ms, Time to Java = %.3f ms, " +
-                                "Total = %.3f ms",
-                        d1, d2, dt));
-            } else {
-                activity.handler.postDelayed(finishMidiInRunnable, noteDelay);
-            }
-        }
-    };
-
-    private class WaltReceiver extends MidiReceiver {
-        public void onSend(byte[] data, int offset,
-            int count, long timestamp) throws IOException {
-            if(count > 0 && data[offset] == (byte) 0x90) { // NoteOn message on channel 1
-                last_tJava = activity.clockManager.micros();
-                last_tSys = timestamp / 1000 - activity.clockManager.baseTime;
-            } else {
-                logger.log(String.format(Locale.US, "Expected 0x90, got 0x%x and count was %d",
-                        data[offset], count));
-            }
-        }
-    }
-
-    private void setupMidiIn() {
-        mOutputPort = mMidiDevice.openOutputPort(0);
-        mOutputPort.connect(new WaltReceiver());
-        activity.clockManager.syncClock();
-    }
-
-    private void teardownMidiIn() {
-        try {
-            mOutputPort.close();
-        } catch (IOException e) {
-            logger.log("Error, failed to close output port: " + e.getMessage());
-        }
-    }
 }
