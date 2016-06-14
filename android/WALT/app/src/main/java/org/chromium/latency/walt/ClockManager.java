@@ -67,11 +67,10 @@ public class ClockManager {
     // On the other had we can declare this as a singleton
     public long baseTime = 0;
 
-    private StringBuilder mTheLog = new StringBuilder();
     public long lastSync = 0;
 
-    SimpleLogger mLogger;
-    Context mContext;
+    private SimpleLogger mLogger;
+    private Context mContext;
 
     UsbManager mUsbManager;
     UsbDevice mUsbDevice = null;
@@ -88,11 +87,10 @@ public class ClockManager {
 
     }
 
-    public ClockManager(Context context, SimpleLogger logger) {
+    public ClockManager(Context context) {
         mContext = context;
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
-
-        this.mLogger = logger;
+        mLogger = SimpleLogger.getInstance(context);
     }
 
     public boolean isConnected() {

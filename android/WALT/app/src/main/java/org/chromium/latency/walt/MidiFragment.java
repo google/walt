@@ -19,7 +19,6 @@ package org.chromium.latency.walt;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -43,9 +42,9 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
                              Bundle savedInstanceState) {
 
         activity = (MainActivity) getActivity();
-        logger = activity.logger;
+        logger = SimpleLogger.getInstance(getContext());
 
-        mMidiTest = new MidiTest(activity, logger, activity.clockManager);
+        mMidiTest = new MidiTest(activity, activity.clockManager);
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_midi, container, false);
@@ -61,15 +60,13 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
         activity.findViewById(R.id.button_start_midi_out).setOnClickListener(this);
 
         // mLogTextView.setMovementMethod(new ScrollingMovementMethod());
-        mTextView.setText(activity.logger.getLogText());
-        activity.logger.broadcastManager.registerReceiver(mLogReceiver,
-                new IntentFilter(activity.logger.LOG_INTENT));
-
+        mTextView.setText(logger.getLogText());
+        logger.registerReceiver(mLogReceiver);
     }
 
     @Override
     public void onPause() {
-        logger.broadcastManager.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(mLogReceiver);
         super.onPause();
     }
 

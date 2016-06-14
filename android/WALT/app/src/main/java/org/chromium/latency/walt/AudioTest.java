@@ -72,10 +72,10 @@ class AudioTest {
     public static native long getTcRec();
     public static native long getTePlay();
 
-    AudioTest(Context context, SimpleLogger l, ClockManager cm) {
-        logger = l;
+    AudioTest(Context context, ClockManager cm) {
         clockManager = cm;
 
+        logger = SimpleLogger.getInstance(context);
         broadcastManager = LocalBroadcastManager.getInstance(context);
 
         //Check for optimal output sample rate and buffer size

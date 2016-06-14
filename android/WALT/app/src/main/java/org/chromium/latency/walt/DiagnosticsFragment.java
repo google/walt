@@ -20,7 +20,6 @@ package org.chromium.latency.walt;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.method.ScrollingMovementMethod;
@@ -36,6 +35,7 @@ import android.widget.TextView;
 public class DiagnosticsFragment extends Fragment {
 
     MainActivity activity;
+    private SimpleLogger logger;
     TextView mTextView;
 
 
@@ -55,6 +55,7 @@ public class DiagnosticsFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_diagnostics, container, false);
     }
@@ -66,16 +67,14 @@ public class DiagnosticsFragment extends Fragment {
 
         mTextView = (TextView) activity.findViewById(R.id.txt_log_diag);
         mTextView.setMovementMethod(new ScrollingMovementMethod());
-        mTextView.setText(activity.logger.getLogText());
+        mTextView.setText(logger.getLogText());
 
-        activity.logger.broadcastManager.registerReceiver(mLogReceiver,
-                new IntentFilter(activity.logger.LOG_INTENT));
-
+        logger.registerReceiver(mLogReceiver);
     }
 
     @Override
     public void onPause() {
-        activity.logger.broadcastManager.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(mLogReceiver);
         super.onPause();
     }
 

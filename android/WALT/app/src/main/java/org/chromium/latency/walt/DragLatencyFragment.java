@@ -34,10 +34,9 @@ import java.util.ArrayList;
 public class DragLatencyFragment extends Fragment
     implements View.OnClickListener {
 
-    SimpleLogger logger;
-
-    TextView mLogTextView;
     MainActivity activity;
+    private SimpleLogger logger;
+    TextView mLogTextView;
     TextView mTouchCatcher;
     int moveCount = 0;
     int allDownConunt = 0;
@@ -86,12 +85,10 @@ public class DragLatencyFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         activity = (MainActivity) getActivity();
-        View view =  inflater.inflate(R.layout.fragment_drag_latency, container, false);
-        logger = activity.logger;
-
-        return view;
+        logger = SimpleLogger.getInstance(getContext());
+        // Inflate the layout for this fragment
+        return inflater.inflate(R.layout.fragment_drag_latency, container, false);
     }
 
     @Override
@@ -99,9 +96,8 @@ public class DragLatencyFragment extends Fragment
         super.onResume();
 
         mLogTextView = (TextView) activity.findViewById(R.id.txt_log_drag_latency);
-        mLogTextView.setText(activity.logger.getLogText());
-        activity.logger.broadcastManager.registerReceiver(mLogReceiver,
-                new IntentFilter(activity.logger.LOG_INTENT));
+        mLogTextView.setText(logger.getLogText());
+        logger.registerReceiver(mLogReceiver);
 
         // Register this fregment class as the listener for some button clicks
         ((ImageButton)activity.findViewById(R.id.button_restart_drag)).setOnClickListener(this);
@@ -113,7 +109,7 @@ public class DragLatencyFragment extends Fragment
 
     @Override
     public void onPause() {
-        activity.logger.broadcastManager.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(mLogReceiver);
         super.onPause();
     }
 
@@ -146,7 +142,7 @@ public class DragLatencyFragment extends Fragment
 
 
     void restartMeasurement() {
-        activity.logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
+        logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
         activity.clockManager.syncClock();
 
         touchEventList.clear();

@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Toolbar toolbar;
     LocalBroadcastManager broadcastManager;
-    public SimpleLogger logger = new SimpleLogger();
+    private SimpleLogger logger;
     public ClockManager clockManager;
     public Menu mMenu;
 
@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
         toolbar = (Toolbar) findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
 
-        clockManager = new ClockManager(this, logger);
+        clockManager = new ClockManager(this);
 
         // Create front page fragment
         FrontPageFragment frontPageFragment = new FrontPageFragment();
@@ -134,8 +134,8 @@ public class MainActivity extends AppCompatActivity {
         transaction.add(R.id.fragment_container, frontPageFragment);
         transaction.commit();
 
+        logger = SimpleLogger.getInstance(this);
         broadcastManager = LocalBroadcastManager.getInstance(this);
-        logger.setBroadcastManager(broadcastManager);
 
         // Add basic device info to the log
         logger.log("DEVICE INFO");

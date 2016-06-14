@@ -38,6 +38,7 @@ import java.util.ArrayList;
  */
 public class ScreenResponseFragment extends Fragment implements View.OnClickListener {
     MainActivity activity;
+    private SimpleLogger logger;
     TextView mBlackBox;
     int timesToBlink = 20; // TODO: load this from settings
     int mInitiatedBlinks = 0;
@@ -45,8 +46,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     boolean mIsBoxWhite = false;
     long mLastFlipTime;
     ArrayList<Double> deltas = new ArrayList<>();
-    SimpleLogger logger;
-
 
     public ScreenResponseFragment() {
         // Required empty public constructor
@@ -57,7 +56,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         activity = (MainActivity) getActivity();
-        logger = activity.logger;
+        logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_screen_response, container, false);
     }
@@ -117,11 +116,11 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     Runnable doBlinkRunnable = new Runnable() {
         @Override
         public void run() {
-            activity.logger.log("======\ndoBlink.run(), mInitiatedBlinks = " + mInitiatedBlinks + " mDetectedBlinks = " + mDetectedBlinks);
+            logger.log("======\ndoBlink.run(), mInitiatedBlinks = " + mInitiatedBlinks + " mDetectedBlinks = " + mDetectedBlinks);
             // Check if we saw some transitions without blinking, this would usually mean
             // the screen has PWM enabled, warn and ask the user to turn it off.
             if (mInitiatedBlinks == 0 && mDetectedBlinks > 1) {
-                activity.logger.log("Unexpected blinks detected, probably PWM, turn it off");
+                logger.log("Unexpected blinks detected, probably PWM, turn it off");
                 // TODO: show a dialog here instructing to turn off PWM and finish this properly
                 return;
             }
@@ -157,10 +156,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             // Save timestamp data
             String msg = intent.getStringExtra("message");
             mDetectedBlinks++;
-            activity.logger.log("blink counts " + mInitiatedBlinks + " " + mDetectedBlinks);
+            logger.log("blink counts " + mInitiatedBlinks + " " + mDetectedBlinks);
             if (mInitiatedBlinks == 0) {
                 if (mDetectedBlinks < 5) {
-                    activity.logger.log("got incoming but mInitiatedBlinks = 0");
+                    logger.log("got incoming but mInitiatedBlinks = 0");
                     return;
                 } else {
                     logger.log("Looks like PWM is used for this screen, turn auto brightness off and set it to max brightness");
@@ -188,8 +187,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         activity.broadcastManager.unregisterReceiver(onIncomingTimestamp);
 
         // Show deltas and the median
-        activity.logger.log("deltas: " + deltas.toString());
-        activity.logger.log(String.format(
+        logger.log("deltas: " + deltas.toString());
+        logger.log(String.format(
                 "Median latency %.1f ms",
                 Utils.median(deltas)
         ));
@@ -207,7 +206,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
 
         if (v.getId() == R.id.button_start_screen_response) {
-            activity.logger.log("Starting screen response measurement");
+            logger.log("Starting screen response measurement");
             startMeasurement();
             return;
         }
