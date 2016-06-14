@@ -62,6 +62,7 @@ class AudioTest {
     public static native long playTone();
     // public static native void stopPlaying();
     public static native void createEngine();
+    public static native void destroyEngine();
     public static native void createBufferQueueAudioPlayer(int frameRate, int framesPerBuffer);
 
     public static native void startRecording();
@@ -94,6 +95,10 @@ class AudioTest {
         logger.log("Audio engine created");
     }
 
+    void teardown() {
+        destroyEngine();
+        logger.log("Audio engine destroyed");
+    }
 
     void beginRecordingTest() {
         clockManager.syncClock();
