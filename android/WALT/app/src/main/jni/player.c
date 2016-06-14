@@ -128,7 +128,7 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
     assert(SL_RESULT_SUCCESS == result);
 }
 
-jlong Java_org_chromium_latency_walt_AudioFragment_playTone(JNIEnv* env, jclass clazz){
+jlong Java_org_chromium_latency_walt_AudioTest_playTone(JNIEnv* env, jclass clazz){
 
     int64_t t_start = micros(&clk);
     te_play = 0;
@@ -142,7 +142,7 @@ jlong Java_org_chromium_latency_walt_AudioFragment_playTone(JNIEnv* env, jclass 
 
 
 // create the engine and output mix objects
-void Java_org_chromium_latency_walt_AudioFragment_createEngine(JNIEnv* env, jclass clazz)
+void Java_org_chromium_latency_walt_AudioTest_createEngine(JNIEnv* env, jclass clazz)
 {
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Creating audio engine");
 
@@ -176,7 +176,7 @@ void Java_org_chromium_latency_walt_AudioFragment_createEngine(JNIEnv* env, jcla
 
 
 // create buffer queue audio player
-void Java_org_chromium_latency_walt_AudioFragment_createBufferQueueAudioPlayer(JNIEnv* env,
+void Java_org_chromium_latency_walt_AudioTest_createBufferQueueAudioPlayer(JNIEnv* env,
         jclass clazz, jint optimalFrameRate, jint optimalFramesPerBuffer)
 {
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Creating audio player with frame rate %d and frames per buffer %d",
@@ -296,7 +296,7 @@ void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 }
 
 // create audio recorder
-jboolean Java_org_chromium_latency_walt_AudioFragment_createAudioRecorder(JNIEnv* env,
+jboolean Java_org_chromium_latency_walt_AudioTest_createAudioRecorder(JNIEnv* env,
     jclass clazz, jint optimalFrameRate, jint framesToRecord)
 {
     SLresult result;
@@ -394,7 +394,7 @@ jboolean Java_org_chromium_latency_walt_AudioFragment_createAudioRecorder(JNIEnv
 
 
 // set the recording state for the audio recorder
-void Java_org_chromium_latency_walt_AudioFragment_startRecording(JNIEnv* env, jclass clazz)
+void Java_org_chromium_latency_walt_AudioTest_startRecording(JNIEnv* env, jclass clazz)
 {
     SLresult result;
 
@@ -430,7 +430,7 @@ void Java_org_chromium_latency_walt_AudioFragment_startRecording(JNIEnv* env, jc
     bqPlayerRecorderBusy = 1;
 }
 
-jshortArray Java_org_chromium_latency_walt_AudioFragment_getRecordedWave(JNIEnv *env, jclass cls)
+jshortArray Java_org_chromium_latency_walt_AudioTest_getRecordedWave(JNIEnv *env, jclass cls)
 {
     jshortArray result;
     result = (*env)->NewShortArray(env, recorder_frames);
@@ -441,14 +441,14 @@ jshortArray Java_org_chromium_latency_walt_AudioFragment_getRecordedWave(JNIEnv 
     return result;
 }
 
-jlong Java_org_chromium_latency_walt_AudioFragment_getTcRec(JNIEnv *env, jclass cls) {
+jlong Java_org_chromium_latency_walt_AudioTest_getTcRec(JNIEnv *env, jclass cls) {
     return (jlong) tc_rec;
 }
 
-jlong Java_org_chromium_latency_walt_AudioFragment_getTeRec(JNIEnv *env, jclass cls) {
+jlong Java_org_chromium_latency_walt_AudioTest_getTeRec(JNIEnv *env, jclass cls) {
     return (jlong) te_rec;
 }
 
-jlong Java_org_chromium_latency_walt_AudioFragment_getTePlay(JNIEnv *env, jclass cls) {
+jlong Java_org_chromium_latency_walt_AudioTest_getTePlay(JNIEnv *env, jclass cls) {
     return (jlong) te_play;
 }
