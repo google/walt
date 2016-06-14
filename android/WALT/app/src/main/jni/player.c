@@ -174,6 +174,23 @@ void Java_org_chromium_latency_walt_AudioTest_createEngine(JNIEnv* env, jclass c
     (void)result;
 }
 
+void Java_org_chromium_latency_walt_AudioTest_destroyEngine(JNIEnv *env, jclass clazz)
+{
+    if (bqPlayerObject != NULL) {
+        (*bqPlayerObject)->Destroy(bqPlayerObject);
+        bqPlayerObject = NULL;
+    }
+
+    if (outputMixObject != NULL) {
+        (*outputMixObject)->Destroy(outputMixObject);
+        outputMixObject = NULL;
+    }
+
+    if (engineObject != NULL) {
+        (*engineObject)->Destroy(engineObject);
+        engineObject = NULL;
+    }
+}
 
 // create buffer queue audio player
 void Java_org_chromium_latency_walt_AudioTest_createBufferQueueAudioPlayer(JNIEnv* env,
