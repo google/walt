@@ -53,7 +53,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
         activity = (MainActivity) getActivity();
         logger = SimpleLogger.getInstance(getContext());
 
-        mAudioTest = new AudioTest(activity, activity.clockManager);
+        mAudioTest = new AudioTest(activity);
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_audio, container, false);

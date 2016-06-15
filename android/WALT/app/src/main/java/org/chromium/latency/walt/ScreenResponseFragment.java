@@ -39,6 +39,7 @@ import java.util.ArrayList;
 public class ScreenResponseFragment extends Fragment implements View.OnClickListener {
     MainActivity activity;
     private SimpleLogger logger;
+    private ClockManager clockManager;
     TextView mBlackBox;
     int timesToBlink = 20; // TODO: load this from settings
     int mInitiatedBlinks = 0;
@@ -56,6 +57,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         activity = (MainActivity) getActivity();
+        clockManager = ClockManager.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_screen_response, container, false);
@@ -84,7 +86,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         mBlackBox.setText("");
         mBlackBox.setBackgroundColor(Color.WHITE);
         mIsBoxWhite = true;
-        activity.clockManager.syncClock();
+        clockManager.syncClock();
         activity.handler.postDelayed(startBlinking, 300);
     }
 
@@ -92,20 +94,20 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         @Override
         public void run() {
             // Check for PWM
-            ClockManager.TriggerMessage tmsg = activity.clockManager.readTriggerMessage(ClockManager.CMD_SEND_LAST_SCREEN);
+            ClockManager.TriggerMessage tmsg = clockManager.readTriggerMessage(ClockManager.CMD_SEND_LAST_SCREEN);
             logger.log("Blink count was: "+ tmsg.count);
 
-            activity.clockManager.sendReceive(ClockManager.CMD_AUTO_SCREEN_ON);
+            clockManager.sendReceive(ClockManager.CMD_AUTO_SCREEN_ON);
 
 
             // Start the listener
-            activity.clockManager.syncClock();
-            activity.clockManager.startUsbListener();
+            clockManager.syncClock();
+            clockManager.startUsbListener();
 
             // Register a callback for broadcasts
             activity.broadcastManager.registerReceiver(
                     onIncomingTimestamp,
-                    new IntentFilter(activity.clockManager.INCOMING_DATA_INTENT)
+                    new IntentFilter(clockManager.INCOMING_DATA_INTENT)
             );
 
             // post doBlink runnable
@@ -136,7 +138,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             int nextColor = mIsBoxWhite ? Color.WHITE : Color.BLACK;
             mInitiatedBlinks++;
             mBlackBox.setBackgroundColor(nextColor);
-            mLastFlipTime = activity.clockManager.micros(); // TODO: is this the right time to save?
+            mLastFlipTime = clockManager.micros(); // TODO: is this the right time to save?
 
 
             // Repost doBlink to some far away time to blink again even if nothing arrives from
@@ -169,7 +171,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 }
             }
 
-            ClockManager.TriggerMessage tmsg = activity.clockManager.parseTriggerMessage(msg);
+            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg);
             double dt = (tmsg.t - mLastFlipTime) / 1000.;
             deltas.add(dt);
 
@@ -181,7 +183,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     void finishAndShowStats() {
         // Stop the USB listener
-        activity.clockManager.stopUsbListener();
+        clockManager.stopUsbListener();
 
         // Unregister broadcast receiver
         activity.broadcastManager.unregisterReceiver(onIncomingTimestamp);

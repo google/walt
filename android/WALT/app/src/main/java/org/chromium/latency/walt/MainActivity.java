@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private Toolbar toolbar;
     LocalBroadcastManager broadcastManager;
     private SimpleLogger logger;
-    public ClockManager clockManager;
+    private ClockManager clockManager;
     public Menu mMenu;
 
     public Handler handler = new Handler();
@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
         toolbar = (Toolbar) findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
 
-        clockManager = new ClockManager(this);
+        clockManager = ClockManager.getInstance(this);
 
         // Create front page fragment
         FrontPageFragment frontPageFragment = new FrontPageFragment();

@@ -36,6 +36,7 @@ public class TapLatencyFragment extends Fragment
 
     MainActivity activity;
     private SimpleLogger logger;
+    private ClockManager clockManager;
     TextView mLogTextView;
     TextView mTapCatcher;
     int moveCount = 0;
@@ -60,7 +61,7 @@ public class TapLatencyFragment extends Fragment
     private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            UsMotionEvent tapEvent = new UsMotionEvent(event, activity.clockManager.baseTime);
+            UsMotionEvent tapEvent = new UsMotionEvent(event, clockManager.baseTime);
             String action = tapEvent.getActionString();
 
             if(tapEvent.action != MotionEvent.ACTION_UP && tapEvent.action != MotionEvent.ACTION_DOWN) {
@@ -71,7 +72,7 @@ public class TapLatencyFragment extends Fragment
             }
 
             logger.log("\n"+ action + " event received: " + tapEvent.toStringLong());
-            tapEvent.physicalTime = activity.clockManager.readLastShockTime();
+            tapEvent.physicalTime = clockManager.readLastShockTime();
 
             tapEvent.isOk = checkTapSanity(tapEvent);
             // Save it in any case so we can do stats on bad events later
@@ -103,6 +104,7 @@ public class TapLatencyFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         activity = (MainActivity) getActivity();
+        clockManager = ClockManager.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_tap_latency, container, false);
@@ -169,7 +171,7 @@ public class TapLatencyFragment extends Fragment
 
     void restartMeasurement() {
         logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
-        activity.clockManager.syncClock();
+        clockManager.syncClock();
 
         eventList.clear();
 
@@ -195,9 +197,9 @@ public class TapLatencyFragment extends Fragment
 
 
         // Check drift
-        activity.clockManager.updateBounds();
-        int minE = activity.clockManager.getMinE();
-        int maxE = activity.clockManager.getMaxE();
+        clockManager.updateBounds();
+        int minE = clockManager.getMinE();
+        int maxE = clockManager.getMaxE();
         logger.log(String.format("Remote clock delayed between %d and %d us", minE, maxE));
         // TODO: check the drift and display warning if too high. Optionally interpolate drift as linear.
 

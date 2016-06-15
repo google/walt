@@ -44,7 +44,7 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
         activity = (MainActivity) getActivity();
         logger = SimpleLogger.getInstance(getContext());
 
-        mMidiTest = new MidiTest(activity, activity.clockManager);
+        mMidiTest = new MidiTest(activity);
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_midi, container, false);
