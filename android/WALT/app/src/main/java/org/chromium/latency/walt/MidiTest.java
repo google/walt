@@ -57,10 +57,9 @@ class MidiTest {
     private static final int noteDelay = 300;
     private static final int timeout = 1000;
 
-    MidiTest(Context context, SimpleLogger l, ClockManager cm) {
-        logger = l;
-        clockManager = cm;
-
+    MidiTest(Context context) {
+        clockManager = ClockManager.getInstance(context);
+        logger = SimpleLogger.getInstance(context);
         broadcastManager = LocalBroadcastManager.getInstance(context);
         mMidiManager = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);
         findMidiDevice();

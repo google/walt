@@ -32,10 +32,8 @@ import android.util.Log;
 
 import java.util.HashMap;
 
-/**
- *
- */
 public class ClockManager {
+
     static final int TEENSY_VID = 0x16c0;
     static final int USB_READ_TIMEOUT_MS = 200;
     public static final String TAG = "WaltClockManager";
@@ -62,16 +60,12 @@ public class ClockManager {
     static final char CMD_MIDI             = 'M'; // Start listening for a MIDI message
     static final char CMD_NOTE             = 'N'; // Generate a MIDI NoteOn message
 
-
-    // TODO: any more elegant solution rather than static?
-    // On the other had we can declare this as a singleton
     public long baseTime = 0;
 
-    private StringBuilder mTheLog = new StringBuilder();
     public long lastSync = 0;
 
-    SimpleLogger mLogger;
-    Context mContext;
+    private SimpleLogger mLogger;
+    private Context mContext;
 
     UsbManager mUsbManager;
     UsbDevice mUsbDevice = null;
@@ -79,20 +73,30 @@ public class ClockManager {
     UsbEndpoint mEndpointIn = null;
     UsbEndpoint mEndpointOut = null;
 
+    private static final Object mLock = new Object();
+    private static ClockManager mInstance;
+
+    public static ClockManager getInstance(Context context) {
+        synchronized (mLock) {
+            if (mInstance == null) {
+                mInstance = new ClockManager(context.getApplicationContext());
+            }
+            return mInstance;
+        }
+    }
+
     public static long microTime() {
         return System.nanoTime() / 1000;
     }
 
     public long micros() {
         return microTime() - baseTime;
-
     }
 
-    public ClockManager(Context context, SimpleLogger logger) {
+    private ClockManager(Context context) {
         mContext = context;
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
-
-        this.mLogger = logger;
+        mLogger = SimpleLogger.getInstance(context);
     }
 
     public boolean isConnected() {

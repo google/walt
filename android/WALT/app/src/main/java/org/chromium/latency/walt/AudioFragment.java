@@ -17,10 +17,10 @@
 package org.chromium.latency.walt;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -28,7 +28,6 @@ import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.TextView;
 
 /**
@@ -36,7 +35,7 @@ import android.widget.TextView;
  */
 public class AudioFragment extends Fragment implements View.OnClickListener {
 
-    private MainActivity activity;
+    private Activity activity;
     private SimpleLogger logger;
     private TextView mTextView;
     private AudioTest mAudioTest;
@@ -52,10 +51,10 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        activity = (MainActivity) getActivity();
-        logger = activity.logger;
+        activity = getActivity();
+        logger = SimpleLogger.getInstance(getContext());
 
-        mAudioTest = new AudioTest(activity, logger, activity.clockManager);
+        mAudioTest = new AudioTest(activity);
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_audio, container, false);
@@ -72,15 +71,14 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
         activity.findViewById(R.id.button_start_audio_rec).setOnClickListener(this);
 
         // mLogTextView.setMovementMethod(new ScrollingMovementMethod());
-        mTextView.setText(activity.logger.getLogText());
-        activity.logger.broadcastManager.registerReceiver(mLogReceiver,
-                new IntentFilter(activity.logger.LOG_INTENT));
+        mTextView.setText(logger.getLogText());
+        logger.registerReceiver(mLogReceiver);
 
     }
 
     @Override
     public void onPause() {
-        logger.broadcastManager.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(mLogReceiver);
         super.onPause();
     }
 

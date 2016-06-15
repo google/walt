@@ -16,10 +16,10 @@
 
 package org.chromium.latency.walt;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -34,8 +34,11 @@ import java.util.HashMap;
 
 public class TapLatencyFragment extends Fragment
     implements View.OnClickListener {
+
+    private Activity activity;
+    private SimpleLogger logger;
+    private ClockManager clockManager;
     TextView mLogTextView;
-    MainActivity activity;
     TextView mTapCatcher;
     int moveCount = 0;
     int allDownConunt = 0;
@@ -59,18 +62,18 @@ public class TapLatencyFragment extends Fragment
     private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            UsMotionEvent tapEvent = new UsMotionEvent(event, activity.clockManager.baseTime);
+            UsMotionEvent tapEvent = new UsMotionEvent(event, clockManager.baseTime);
             String action = tapEvent.getActionString();
 
             if(tapEvent.action != MotionEvent.ACTION_UP && tapEvent.action != MotionEvent.ACTION_DOWN) {
                 moveCount++;
-                activity.logger.log("Ignoring " + action + " " + moveCount);
+                logger.log("Ignoring " + action + " " + moveCount);
                 updateCountsDisplay();
                 return true;
             }
 
-            activity.logger.log("\n"+ action + " event received: " + tapEvent.toStringLong());
-            tapEvent.physicalTime = activity.clockManager.readLastShockTime();
+            logger.log("\n"+ action + " event received: " + tapEvent.toStringLong());
+            tapEvent.physicalTime = clockManager.readLastShockTime();
 
             tapEvent.isOk = checkTapSanity(tapEvent);
             // Save it in any case so we can do stats on bad events later
@@ -101,11 +104,11 @@ public class TapLatencyFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        activity = getActivity();
+        clockManager = ClockManager.getInstance(getContext());
+        logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
-        activity = (MainActivity) getActivity();
-        View view =  inflater.inflate(R.layout.fragment_tap_latency, container, false);
-
-        return view;
+        return inflater.inflate(R.layout.fragment_tap_latency, container, false);
     }
 
     @Override
@@ -114,9 +117,8 @@ public class TapLatencyFragment extends Fragment
         restartMeasurement();
         mLogTextView = (TextView) activity.findViewById(R.id.txt_log_tap_latency);
 
-        mLogTextView.setText(activity.logger.getLogText());
-        activity.logger.broadcastManager.registerReceiver(mLogReceiver,
-                new IntentFilter(activity.logger.LOG_INTENT));
+        mLogTextView.setText(logger.getLogText());
+        logger.registerReceiver(mLogReceiver);
 
         // Register this fregment class as the listener for some button clicks
         ((ImageButton)activity.findViewById(R.id.button_restart_tap)).setOnClickListener(this);
@@ -128,7 +130,7 @@ public class TapLatencyFragment extends Fragment
 
     @Override
     public void onPause() {
-        activity.logger.broadcastManager.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(mLogReceiver);
         super.onPause();
     }
 
@@ -141,16 +143,16 @@ public class TapLatencyFragment extends Fragment
         double dt = (e.kernelTime - e.physicalTime) / 1000.0;
 
         if (e.physicalTime == 0) {
-            activity.logger.log(action + " no shock found");
+            logger.log(action + " no shock found");
             return false;
         }
 
         if (dt < 0 || dt > 200) {
-            activity.logger.log(action + " bogus kernelTime, ignored, dt=" + dt);
+            logger.log(action + " bogus kernelTime, ignored, dt=" + dt);
             return  false;
         }
 
-        activity.logger.log(String.format("%s: dt_p2k = %.1f ms", action, dt));
+        logger.log(String.format("%s: dt_p2k = %.1f ms", action, dt));
         return true;
     }
 
@@ -169,8 +171,8 @@ public class TapLatencyFragment extends Fragment
     }
 
     void restartMeasurement() {
-        activity.logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
-        activity.clockManager.syncClock();
+        logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
+        clockManager.syncClock();
 
         eventList.clear();
 
@@ -184,8 +186,8 @@ public class TapLatencyFragment extends Fragment
     }
 
     void finishAndShowStats() {
-        activity.logger.log("\n\n## Processing tap latency data");
-        activity.logger.log(String.format(
+        logger.log("\n\n## Processing tap latency data");
+        logger.log(String.format(
                 "Counts: ACTION_DOWN %d (bad %d), ACTION_UP %d (bad %d), ACTION_MOVE %d",
                 okDownCount,
                 allDownConunt - okDownCount,
@@ -196,18 +198,18 @@ public class TapLatencyFragment extends Fragment
 
 
         // Check drift
-        activity.clockManager.updateBounds();
-        int minE = activity.clockManager.getMinE();
-        int maxE = activity.clockManager.getMaxE();
-        activity.logger.log(String.format("Remote clock delayed between %d and %d us", minE, maxE));
+        clockManager.updateBounds();
+        int minE = clockManager.getMinE();
+        int maxE = clockManager.getMaxE();
+        logger.log(String.format("Remote clock delayed between %d and %d us", minE, maxE));
         // TODO: check the drift and display warning if too high. Optionally interpolate drift as linear.
 
         // TODO: Here we should fire up a new fragment with histogram(s)
         // For now do the stats here and save them to log
 
-        activity.logger.log("\nACTION_DOWN:");
+        logger.log("\nACTION_DOWN:");
         printStats(MotionEvent.ACTION_DOWN);
-        activity.logger.log("\nACTION_UP:");
+        logger.log("\nACTION_UP:");
         printStats(MotionEvent.ACTION_UP);
 
         restartMeasurement();
@@ -227,10 +229,10 @@ public class TapLatencyFragment extends Fragment
             k2c.add((event.createTime - event.kernelTime) / 1000.);
         }
 
-        activity.logger.log(p2k.toString());
-        activity.logger.log(k2c.toString());
+        logger.log(p2k.toString());
+        logger.log(k2c.toString());
 
-        activity.logger.log(String.format(
+        logger.log(String.format(
                 "Medians, p2k & k2c [ms]: %.1f    %.1f",
                 Utils.median(p2k),
                 Utils.median(k2c)

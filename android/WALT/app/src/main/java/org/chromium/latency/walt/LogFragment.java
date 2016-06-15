@@ -17,10 +17,10 @@
 package org.chromium.latency.walt;
 
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.method.ScrollingMovementMethod;
@@ -35,8 +35,9 @@ import android.widget.TextView;
  */
 public class LogFragment extends Fragment {
 
+    private Activity activity;
+    private SimpleLogger logger;
     TextView mTextView;
-    MainActivity activity;
 
 
     private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
@@ -55,11 +56,10 @@ public class LogFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        activity = getActivity();
+        logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
-        activity = (MainActivity) getActivity();
-        View view =  inflater.inflate(R.layout.fragment_log, container, false);
-
-        return view;
+        return inflater.inflate(R.layout.fragment_log, container, false);
     }
 
     @Override
@@ -67,15 +67,13 @@ public class LogFragment extends Fragment {
         super.onResume();
         mTextView = (TextView) activity.findViewById(R.id.txt_log);
         mTextView.setMovementMethod(new ScrollingMovementMethod());
-        mTextView.setText(activity.logger.getLogText());
-        activity.logger.broadcastManager.registerReceiver(mLogReceiver,
-                new IntentFilter(activity.logger.LOG_INTENT));
-
+        mTextView.setText(logger.getLogText());
+        logger.registerReceiver(mLogReceiver);
     }
 
     @Override
     public void onPause() {
-        activity.logger.broadcastManager.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(mLogReceiver);
         super.onPause();
     }
 

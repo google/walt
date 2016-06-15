@@ -16,6 +16,7 @@
 
 package org.chromium.latency.walt;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -23,21 +24,25 @@ import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.TextView;
+import android.os.Handler;
 
 import java.util.ArrayList;
-
 
 /**
  * Measurement of screen response time when switching between black and white.
  */
 public class ScreenResponseFragment extends Fragment implements View.OnClickListener {
-    MainActivity activity;
+    private Activity activity;
+    private SimpleLogger logger;
+    private ClockManager clockManager;
+    private Handler handler = new Handler();
+    private LocalBroadcastManager broadcastManager;
     TextView mBlackBox;
     int timesToBlink = 20; // TODO: load this from settings
     int mInitiatedBlinks = 0;
@@ -45,8 +50,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     boolean mIsBoxWhite = false;
     long mLastFlipTime;
     ArrayList<Double> deltas = new ArrayList<>();
-    SimpleLogger logger;
-
 
     public ScreenResponseFragment() {
         // Required empty public constructor
@@ -56,8 +59,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        activity = (MainActivity) getActivity();
-        logger = activity.logger;
+        activity = getActivity();
+        clockManager = ClockManager.getInstance(getContext());
+        logger = SimpleLogger.getInstance(getContext());
+        broadcastManager = LocalBroadcastManager.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_screen_response, container, false);
     }
@@ -70,8 +75,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
 
         // Register this fragment class as the listener for some button clicks
-        ((ImageButton) activity.findViewById(R.id.button_restart_screen_response)).setOnClickListener(this);
-        ((ImageButton) activity.findViewById(R.id.button_start_screen_response)).setOnClickListener(this);
+        activity.findViewById(R.id.button_restart_screen_response).setOnClickListener(this);
+        activity.findViewById(R.id.button_start_screen_response).setOnClickListener(this);
     }
 
 
@@ -85,43 +90,43 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         mBlackBox.setText("");
         mBlackBox.setBackgroundColor(Color.WHITE);
         mIsBoxWhite = true;
-        activity.clockManager.syncClock();
-        activity.handler.postDelayed(startBlinking, 300);
+        clockManager.syncClock();
+        handler.postDelayed(startBlinking, 300);
     }
 
     Runnable startBlinking = new Runnable() {
         @Override
         public void run() {
             // Check for PWM
-            ClockManager.TriggerMessage tmsg = activity.clockManager.readTriggerMessage(ClockManager.CMD_SEND_LAST_SCREEN);
+            ClockManager.TriggerMessage tmsg = clockManager.readTriggerMessage(ClockManager.CMD_SEND_LAST_SCREEN);
             logger.log("Blink count was: "+ tmsg.count);
 
-            activity.clockManager.sendReceive(ClockManager.CMD_AUTO_SCREEN_ON);
+            clockManager.sendReceive(ClockManager.CMD_AUTO_SCREEN_ON);
 
 
             // Start the listener
-            activity.clockManager.syncClock();
-            activity.clockManager.startUsbListener();
+            clockManager.syncClock();
+            clockManager.startUsbListener();
 
             // Register a callback for broadcasts
-            activity.broadcastManager.registerReceiver(
+            broadcastManager.registerReceiver(
                     onIncomingTimestamp,
-                    new IntentFilter(activity.clockManager.INCOMING_DATA_INTENT)
+                    new IntentFilter(clockManager.INCOMING_DATA_INTENT)
             );
 
             // post doBlink runnable
-            activity.handler.postDelayed(doBlinkRunnable, 100);
+            handler.postDelayed(doBlinkRunnable, 100);
         }
     };
 
     Runnable doBlinkRunnable = new Runnable() {
         @Override
         public void run() {
-            activity.logger.log("======\ndoBlink.run(), mInitiatedBlinks = " + mInitiatedBlinks + " mDetectedBlinks = " + mDetectedBlinks);
+            logger.log("======\ndoBlink.run(), mInitiatedBlinks = " + mInitiatedBlinks + " mDetectedBlinks = " + mDetectedBlinks);
             // Check if we saw some transitions without blinking, this would usually mean
             // the screen has PWM enabled, warn and ask the user to turn it off.
             if (mInitiatedBlinks == 0 && mDetectedBlinks > 1) {
-                activity.logger.log("Unexpected blinks detected, probably PWM, turn it off");
+                logger.log("Unexpected blinks detected, probably PWM, turn it off");
                 // TODO: show a dialog here instructing to turn off PWM and finish this properly
                 return;
             }
@@ -137,12 +142,12 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             int nextColor = mIsBoxWhite ? Color.WHITE : Color.BLACK;
             mInitiatedBlinks++;
             mBlackBox.setBackgroundColor(nextColor);
-            mLastFlipTime = activity.clockManager.micros(); // TODO: is this the right time to save?
+            mLastFlipTime = clockManager.micros(); // TODO: is this the right time to save?
 
 
             // Repost doBlink to some far away time to blink again even if nothing arrives from
             // Teensy. This callback will almost always get cancelled by onIncomingTimestamp()
-            activity.handler.postDelayed(doBlinkRunnable, 600); // TODO: config and or randomiz the delay,
+            handler.postDelayed(doBlinkRunnable, 600); // TODO: config and or randomiz the delay,
 
         }
     };
@@ -152,15 +157,15 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         @Override
         public void onReceive(Context context, Intent intent) {
             // Remove the far away doBlink callback
-            activity.handler.removeCallbacks(doBlinkRunnable);
+            handler.removeCallbacks(doBlinkRunnable);
 
             // Save timestamp data
             String msg = intent.getStringExtra("message");
             mDetectedBlinks++;
-            activity.logger.log("blink counts " + mInitiatedBlinks + " " + mDetectedBlinks);
+            logger.log("blink counts " + mInitiatedBlinks + " " + mDetectedBlinks);
             if (mInitiatedBlinks == 0) {
                 if (mDetectedBlinks < 5) {
-                    activity.logger.log("got incoming but mInitiatedBlinks = 0");
+                    logger.log("got incoming but mInitiatedBlinks = 0");
                     return;
                 } else {
                     logger.log("Looks like PWM is used for this screen, turn auto brightness off and set it to max brightness");
@@ -170,26 +175,26 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 }
             }
 
-            ClockManager.TriggerMessage tmsg = activity.clockManager.parseTriggerMessage(msg);
+            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg);
             double dt = (tmsg.t - mLastFlipTime) / 1000.;
             deltas.add(dt);
 
             // Schedule another blink soon-ish
-            activity.handler.postDelayed(doBlinkRunnable, 50); // TODO: randomize the delay
+            handler.postDelayed(doBlinkRunnable, 50); // TODO: randomize the delay
 
         }
     };
 
     void finishAndShowStats() {
         // Stop the USB listener
-        activity.clockManager.stopUsbListener();
+        clockManager.stopUsbListener();
 
         // Unregister broadcast receiver
-        activity.broadcastManager.unregisterReceiver(onIncomingTimestamp);
+        broadcastManager.unregisterReceiver(onIncomingTimestamp);
 
         // Show deltas and the median
-        activity.logger.log("deltas: " + deltas.toString());
-        activity.logger.log(String.format(
+        logger.log("deltas: " + deltas.toString());
+        logger.log(String.format(
                 "Median latency %.1f ms",
                 Utils.median(deltas)
         ));
@@ -207,7 +212,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
 
         if (v.getId() == R.id.button_start_screen_response) {
-            activity.logger.log("Starting screen response measurement");
+            logger.log("Starting screen response measurement");
             startMeasurement();
             return;
         }
