@@ -139,9 +139,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Add basic device info to the log
         logger.log("DEVICE INFO");
-        logger.log("  os.version=" + System.getProperty("os.version"));
+        logger.log("  " + Build.FINGERPRINT);
         logger.log("  Build.SDK_INT=" + Build.VERSION.SDK_INT);
-        logger.log("  Build.DEVICE=" + Build.DEVICE);
+        logger.log("  os.version=" + System.getProperty("os.version"));
     }
 
     @Override
