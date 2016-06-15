@@ -16,6 +16,7 @@
 
 package org.chromium.latency.walt;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -34,7 +35,7 @@ import java.util.HashMap;
 public class TapLatencyFragment extends Fragment
     implements View.OnClickListener {
 
-    MainActivity activity;
+    private Activity activity;
     private SimpleLogger logger;
     private ClockManager clockManager;
     TextView mLogTextView;
@@ -103,7 +104,7 @@ public class TapLatencyFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        activity = (MainActivity) getActivity();
+        activity = getActivity();
         clockManager = ClockManager.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment

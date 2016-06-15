@@ -17,6 +17,7 @@
 package org.chromium.latency.walt;
 
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -34,7 +35,7 @@ import android.widget.TextView;
  */
 public class DiagnosticsFragment extends Fragment {
 
-    MainActivity activity;
+    private Activity activity;
     private SimpleLogger logger;
     TextView mTextView;
 
@@ -63,7 +64,7 @@ public class DiagnosticsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        activity = (MainActivity) getActivity();
+        activity = getActivity();
 
         mTextView = (TextView) activity.findViewById(R.id.txt_log_diag);
         mTextView.setMovementMethod(new ScrollingMovementMethod());

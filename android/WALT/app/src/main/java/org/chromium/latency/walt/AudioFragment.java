@@ -17,6 +17,7 @@
 package org.chromium.latency.walt;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -34,7 +35,7 @@ import android.widget.TextView;
  */
 public class AudioFragment extends Fragment implements View.OnClickListener {
 
-    private MainActivity activity;
+    private Activity activity;
     private SimpleLogger logger;
     private TextView mTextView;
     private AudioTest mAudioTest;
@@ -50,7 +51,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        activity = (MainActivity) getActivity();
+        activity = getActivity();
         logger = SimpleLogger.getInstance(getContext());
 
         mAudioTest = new AudioTest(activity);

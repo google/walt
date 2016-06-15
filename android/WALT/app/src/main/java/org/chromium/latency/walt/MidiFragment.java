@@ -16,6 +16,7 @@
 
 package org.chromium.latency.walt;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -28,7 +29,7 @@ import android.widget.TextView;
 
 public class MidiFragment extends Fragment implements View.OnClickListener {
 
-    private MainActivity activity;
+    private Activity activity;
     private SimpleLogger logger;
     private TextView mTextView;
     private MidiTest mMidiTest;
@@ -41,7 +42,7 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        activity = (MainActivity) getActivity();
+        activity = getActivity();
         logger = SimpleLogger.getInstance(getContext());
 
         mMidiTest = new MidiTest(activity);

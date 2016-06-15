@@ -16,6 +16,7 @@
 
 package org.chromium.latency.walt;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -23,23 +24,25 @@ import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.TextView;
+import android.os.Handler;
 
 import java.util.ArrayList;
-
 
 /**
  * Measurement of screen response time when switching between black and white.
  */
 public class ScreenResponseFragment extends Fragment implements View.OnClickListener {
-    MainActivity activity;
+    private Activity activity;
     private SimpleLogger logger;
     private ClockManager clockManager;
+    private Handler handler = new Handler();
+    private LocalBroadcastManager broadcastManager;
     TextView mBlackBox;
     int timesToBlink = 20; // TODO: load this from settings
     int mInitiatedBlinks = 0;
@@ -56,9 +59,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        activity = (MainActivity) getActivity();
+        activity = getActivity();
         clockManager = ClockManager.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
+        broadcastManager = LocalBroadcastManager.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_screen_response, container, false);
     }
@@ -71,8 +75,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
 
         // Register this fragment class as the listener for some button clicks
-        ((ImageButton) activity.findViewById(R.id.button_restart_screen_response)).setOnClickListener(this);
-        ((ImageButton) activity.findViewById(R.id.button_start_screen_response)).setOnClickListener(this);
+        activity.findViewById(R.id.button_restart_screen_response).setOnClickListener(this);
+        activity.findViewById(R.id.button_start_screen_response).setOnClickListener(this);
     }
 
 
@@ -87,7 +91,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         mBlackBox.setBackgroundColor(Color.WHITE);
         mIsBoxWhite = true;
         clockManager.syncClock();
-        activity.handler.postDelayed(startBlinking, 300);
+        handler.postDelayed(startBlinking, 300);
     }
 
     Runnable startBlinking = new Runnable() {
@@ -105,13 +109,13 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             clockManager.startUsbListener();
 
             // Register a callback for broadcasts
-            activity.broadcastManager.registerReceiver(
+            broadcastManager.registerReceiver(
                     onIncomingTimestamp,
                     new IntentFilter(clockManager.INCOMING_DATA_INTENT)
             );
 
             // post doBlink runnable
-            activity.handler.postDelayed(doBlinkRunnable, 100);
+            handler.postDelayed(doBlinkRunnable, 100);
         }
     };
 
@@ -143,7 +147,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
             // Repost doBlink to some far away time to blink again even if nothing arrives from
             // Teensy. This callback will almost always get cancelled by onIncomingTimestamp()
-            activity.handler.postDelayed(doBlinkRunnable, 600); // TODO: config and or randomiz the delay,
+            handler.postDelayed(doBlinkRunnable, 600); // TODO: config and or randomiz the delay,
 
         }
     };
@@ -153,7 +157,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         @Override
         public void onReceive(Context context, Intent intent) {
             // Remove the far away doBlink callback
-            activity.handler.removeCallbacks(doBlinkRunnable);
+            handler.removeCallbacks(doBlinkRunnable);
 
             // Save timestamp data
             String msg = intent.getStringExtra("message");
@@ -176,7 +180,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             deltas.add(dt);
 
             // Schedule another blink soon-ish
-            activity.handler.postDelayed(doBlinkRunnable, 50); // TODO: randomize the delay
+            handler.postDelayed(doBlinkRunnable, 50); // TODO: randomize the delay
 
         }
     };
@@ -186,7 +190,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         clockManager.stopUsbListener();
 
         // Unregister broadcast receiver
-        activity.broadcastManager.unregisterReceiver(onIncomingTimestamp);
+        broadcastManager.unregisterReceiver(onIncomingTimestamp);
 
         // Show deltas and the median
         logger.log("deltas: " + deltas.toString());
