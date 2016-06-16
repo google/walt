@@ -82,7 +82,12 @@ class MidiTest {
             }
             return;
         }
-        setupMidiOut();
+        try {
+            setupMidiOut();
+        } catch (IOException e) {
+            logger.log("Error setting up test: " + e.getMessage());
+            return;
+        }
         scheduleNote();
         handler.postDelayed(cancelMidiOutRunnable, noteDelay + timeout);
     }
@@ -102,14 +107,20 @@ class MidiTest {
             }
             return;
         }
-        setupMidiIn();
+        try {
+            setupMidiIn();
+        } catch (IOException e) {
+            logger.log("Error setting up test: " + e.getMessage());
+            return;
+        }
         handler.postDelayed(requestNoteRunnable, noteDelay);
     }
 
-    private void setupMidiOut() {
+    private void setupMidiOut() throws IOException {
         mInputPort = mMidiDevice.openInputPort(0);
 
         clockManager.syncClock();
+        clockManager.command(ClockManager.CMD_MIDI);
         clockManager.startUsbListener();
         broadcastManager.registerReceiver(onIncomingTimestamp,
                 new IntentFilter(ClockManager.INCOMING_DATA_INTENT)
@@ -149,7 +160,7 @@ class MidiTest {
                 return;
             }
 
-            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg);
+            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg.substring(1));
             last_tWalt = tmsg.t + clockManager.baseTime;
             double dt = (last_tWalt - last_tSys) / 1000.;
 
@@ -172,7 +183,6 @@ class MidiTest {
             return;
         }
         last_tSys = t / 1000;
-        clockManager.sendByte(ClockManager.CMD_MIDI);
     }
 
     private void finishMidiOut() {
@@ -206,16 +216,14 @@ class MidiTest {
         @Override
         public void run() {
             logger.log("Requesting note from WALT...");
-            String s = clockManager.sendReceive(ClockManager.CMD_NOTE);
-            if(s.length() == 0) {
-                logger.log("Error, failed to send message to WALT");
+            String s;
+            try {
+                s = clockManager.command(ClockManager.CMD_NOTE);
+            } catch (IOException e) {
+                logger.log("Error sending NOTE command: " + e.getMessage());
                 return;
             }
-            if (s.charAt(0) != 'n') {
-                logger.log("Error, got unexpected reply to CMD_NOTE: " + s);
-                return;
-            }
-            last_tWalt = Integer.parseInt(s.trim().substring(2));
+            last_tWalt = Integer.parseInt(s);
             handler.postDelayed(finishMidiInRunnable, noteDelay);
         }
     };
@@ -251,7 +259,7 @@ class MidiTest {
         }
     }
 
-    private void setupMidiIn() {
+    private void setupMidiIn() throws IOException {
         mOutputPort = mMidiDevice.openOutputPort(0);
         mOutputPort.connect(new WaltReceiver());
         clockManager.syncClock();

@@ -32,6 +32,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.os.Handler;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -84,34 +85,43 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         // TODO: Add a stop button to interrupt the measurement
         deltas.clear();
 
+        try {
+            clockManager.syncClock();
+        } catch (IOException e) {
+            logger.log("Error syncing clocks: " + e.getMessage());
+            return;
+        }
+
         mInitiatedBlinks = 0;
         mDetectedBlinks = 0;
 
         mBlackBox.setText("");
         mBlackBox.setBackgroundColor(Color.WHITE);
         mIsBoxWhite = true;
-        clockManager.syncClock();
+
         handler.postDelayed(startBlinking, 300);
     }
 
     Runnable startBlinking = new Runnable() {
         @Override
         public void run() {
-            // Check for PWM
-            ClockManager.TriggerMessage tmsg = clockManager.readTriggerMessage(ClockManager.CMD_SEND_LAST_SCREEN);
-            logger.log("Blink count was: "+ tmsg.count);
+            try {
+                // Check for PWM
+                ClockManager.TriggerMessage tmsg = clockManager.readTriggerMessage(ClockManager.CMD_SEND_LAST_SCREEN);
+                logger.log("Blink count was: "+ tmsg.count);
+                clockManager.command(ClockManager.CMD_AUTO_SCREEN_ON);
 
-            clockManager.sendReceive(ClockManager.CMD_AUTO_SCREEN_ON);
-
-
-            // Start the listener
-            clockManager.syncClock();
-            clockManager.startUsbListener();
+                // Start the listener
+                clockManager.syncClock();
+                clockManager.startUsbListener();
+            } catch (IOException e) {
+                logger.log("Error: " + e.getMessage());
+            }
 
             // Register a callback for broadcasts
             broadcastManager.registerReceiver(
                     onIncomingTimestamp,
-                    new IntentFilter(clockManager.INCOMING_DATA_INTENT)
+                    new IntentFilter(ClockManager.INCOMING_DATA_INTENT)
             );
 
             // post doBlink runnable
@@ -175,7 +185,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 }
             }
 
-            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg);
+            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg.substring(1));
             double dt = (tmsg.t - mLastFlipTime) / 1000.;
             deltas.add(dt);
 

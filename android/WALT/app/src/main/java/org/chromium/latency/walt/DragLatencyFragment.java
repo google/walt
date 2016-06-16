@@ -28,9 +28,9 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class DragLatencyFragment extends Fragment
@@ -135,21 +135,33 @@ public class DragLatencyFragment extends Fragment
 
     void startMeasurement() {
         logger.log("Starting drag latency test");
-        clockManager.syncClock();
+        try {
+            clockManager.syncClock();
+        } catch (IOException e) {
+            logger.log("Error syncing clocks: " + e.getMessage());
+            return;
+        }
         mTouchCatcher.setOnTouchListener(mTouchListener);
-        clockManager.sendReceive(ClockManager.CMD_AUTO_LASER_ON);
         // Register a callback for broadcasts
         broadcastManager.registerReceiver(
                 onIncomingTimestamp,
                 new IntentFilter(ClockManager.INCOMING_DATA_INTENT)
         );
-        clockManager.startUsbListener();
+        try {
+            clockManager.command(ClockManager.CMD_AUTO_LASER_ON);
+            clockManager.startUsbListener();
+        } catch (IOException e) {
+            logger.log("Error: " + e.getMessage());
+        }
     }
-
 
     void restartMeasurement() {
         logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
-        clockManager.syncClock();
+        try {
+            clockManager.syncClock();
+        } catch (IOException e) {
+            logger.log("Error syncing clocks: " + e.getMessage());
+        }
 
         touchEventList.clear();
 
@@ -165,7 +177,11 @@ public class DragLatencyFragment extends Fragment
 
     void finishAndShowStats() {
         clockManager.stopUsbListener();
-        clockManager.sendReceive(ClockManager.CMD_AUTO_LASER_OFF);
+        try {
+            clockManager.command(ClockManager.CMD_AUTO_LASER_OFF);
+        } catch (IOException e) {
+            logger.log("Error: " + e.getMessage());
+        }
         mTouchCatcher.setOnTouchListener(null);
         broadcastManager.unregisterReceiver(onIncomingTimestamp);
 
@@ -293,7 +309,7 @@ public class DragLatencyFragment extends Fragment
             logger.log("Incoming timestamp received: " + msg.trim());
 
 
-            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg);
+            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg.substring(1));
 
             laserEventList.add(tmsg);
             updateCountsDisplay();

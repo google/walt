@@ -29,6 +29,7 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -172,7 +173,12 @@ public class TapLatencyFragment extends Fragment
 
     void restartMeasurement() {
         logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
-        clockManager.syncClock();
+        try {
+            clockManager.syncClock();
+        } catch (IOException e) {
+            logger.log("Error syncing clocks: " + e.getMessage());
+            return;
+        }
 
         eventList.clear();
 
