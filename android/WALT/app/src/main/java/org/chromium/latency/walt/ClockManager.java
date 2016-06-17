@@ -26,6 +26,7 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -101,6 +102,7 @@ public class ClockManager {
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         mLogger = SimpleLogger.getInstance(context);
         mBroadcastManager = LocalBroadcastManager.getInstance(context);
+        mTriggerListener = new TriggerListener();
     }
 
     public boolean isConnected() {
@@ -150,7 +152,7 @@ public class ClockManager {
 
     public void disconnect() {
         if (!isListenerStopped()) {
-            stopUsbListener();
+            stopListener();
         }
         mEndpointIn = null;
         mEndpointOut = null;
@@ -269,7 +271,7 @@ public class ClockManager {
 
     private String readOne() throws IOException {
         if (!isListenerStopped()) {
-            throw new IOException("USB listener is running");
+            throw new IOException("Listener is running");
         }
 
         byte[] buff = new byte[64];
@@ -318,7 +320,7 @@ public class ClockManager {
 
     public String readAll() throws IOException {
         if (!isListenerStopped()) {
-            throw new IOException("USB listener is running");
+            throw new IOException("Listener is running");
         }
 
         // Things that were sent deliberately as separate packets using
@@ -353,7 +355,7 @@ public class ClockManager {
         }
 
         if (!isListenerStopped()) {
-            throw new IOException("USB listener is running");
+            throw new IOException("Listener is running");
         }
 
         int maxE = 0;
@@ -431,15 +433,13 @@ public class ClockManager {
 
 
     /***********************************************************************************************
-     USB Listener
-     A thread that constantly polls the interface for incoming data and sends it as a LocalBroadcast
+     Trigger Listener
+     A thread that constantly polls the interface for incoming triggers and passes them to the handler
 
      */
 
-    private UsbListener mUsbListener = new UsbListener();
-    private Thread mUsbListenerThread;
-
-    public static final String INCOMING_DATA_INTENT = "incoming-usb-message";
+    private TriggerListener mTriggerListener;
+    private Thread mTriggerListenerThread;
 
     public enum ListenerState {
         RUNNING,
@@ -447,9 +447,36 @@ public class ClockManager {
         STOPPING
     }
 
+    abstract static class TriggerHandler {
+        private Handler handler;
 
+        TriggerHandler() {
+            handler = new Handler();
+        }
 
-    class UsbListener implements Runnable {
+        private void go(final TriggerMessage tmsg) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    onReceive(tmsg);
+                }
+            });
+        }
+
+        abstract void onReceive(TriggerMessage tmsg);
+    }
+
+    private TriggerHandler mTriggerHandler;
+
+    void setTriggerHandler(TriggerHandler triggerHandler) {
+        mTriggerHandler = triggerHandler;
+    }
+
+    void clearTriggerHandler() {
+        mTriggerHandler = null;
+    }
+
+    private class TriggerListener implements Runnable {
         static final int BUFF_SIZE = 1024 * 4;
         public ListenerState state = ListenerState.STOPPED;
         private byte[] buffer = new byte[BUFF_SIZE];
@@ -459,12 +486,12 @@ public class ClockManager {
             state = ListenerState.RUNNING;
             while(isRunning()) {
                 int ret = mUsbConnection.bulkTransfer(mEndpointIn, buffer, BUFF_SIZE, USB_READ_TIMEOUT_MS);
-                if (ret > 0) {
+                if (ret > 0 && mTriggerHandler != null) {
                     String s = new String(buffer, 0, ret);
                     Log.i(TAG, "Listener received data: " + s);
-                    Intent intent = new Intent(INCOMING_DATA_INTENT);
-                    intent.putExtra("message", s);
-                    mBroadcastManager.sendBroadcast(intent);
+                    if (s.length() > 0 && s.charAt(0) == 'G') {
+                        mTriggerHandler.go(parseTriggerMessage(s.substring(1).trim()));
+                    }
                 }
             }
             state = ListenerState.STOPPED;
@@ -484,27 +511,27 @@ public class ClockManager {
     };
 
     public boolean isListenerStopped() {
-        return mUsbListener.isStopped();
+        return mTriggerListener.isStopped();
     }
 
-    public void startUsbListener() throws IOException {
+    public void startListener() throws IOException {
         if (!isConnected()) {
             throw new IOException("Not connected to WALT");
         }
-        mUsbListenerThread = new Thread(mUsbListener);
-        mLogger.log("Starting USB Listener");
-        mUsbListenerThread.start();
+        mTriggerListenerThread = new Thread(mTriggerListener);
+        mLogger.log("Starting Listener");
+        mTriggerListenerThread.start();
     }
 
-    public void stopUsbListener() {
-        mLogger.log("Stopping USB Listener");
-        mUsbListener.stop();
+    public void stopListener() {
+        mLogger.log("Stopping Listener");
+        mTriggerListener.stop();
         try {
-            mUsbListenerThread.join();
+            mTriggerListenerThread.join();
         } catch (InterruptedException e) {
-            mLogger.log("Error while stopping USB Listener: " + e.getMessage());
+            mLogger.log("Error while stopping Listener: " + e.getMessage());
         }
-        mLogger.log("USB Listener stopped");
+        mLogger.log("Listener stopped");
     }
     //
 

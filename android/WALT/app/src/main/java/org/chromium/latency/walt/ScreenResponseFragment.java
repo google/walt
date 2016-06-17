@@ -17,20 +17,15 @@
 package org.chromium.latency.walt;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.os.Handler;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,7 +38,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private SimpleLogger logger;
     private ClockManager clockManager;
     private Handler handler = new Handler();
-    private LocalBroadcastManager broadcastManager;
     TextView mBlackBox;
     int timesToBlink = 20; // TODO: load this from settings
     int mInitiatedBlinks = 0;
@@ -63,7 +57,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         activity = getActivity();
         clockManager = ClockManager.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
-        broadcastManager = LocalBroadcastManager.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_screen_response, container, false);
     }
@@ -113,16 +106,13 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
                 // Start the listener
                 clockManager.syncClock();
-                clockManager.startUsbListener();
+                clockManager.startListener();
             } catch (IOException e) {
                 logger.log("Error: " + e.getMessage());
             }
 
-            // Register a callback for broadcasts
-            broadcastManager.registerReceiver(
-                    onIncomingTimestamp,
-                    new IntentFilter(ClockManager.INCOMING_DATA_INTENT)
-            );
+            // Register a callback for triggers
+            clockManager.setTriggerHandler(triggerHandler);
 
             // post doBlink runnable
             handler.postDelayed(doBlinkRunnable, 100);
@@ -162,15 +152,12 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
     };
 
-
-    private BroadcastReceiver onIncomingTimestamp = new BroadcastReceiver() {
+    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(ClockManager.TriggerMessage tmsg) {
             // Remove the far away doBlink callback
             handler.removeCallbacks(doBlinkRunnable);
 
-            // Save timestamp data
-            String msg = intent.getStringExtra("message");
             mDetectedBlinks++;
             logger.log("blink counts " + mInitiatedBlinks + " " + mDetectedBlinks);
             if (mInitiatedBlinks == 0) {
@@ -185,7 +172,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 }
             }
 
-            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg.substring(1));
             double dt = (tmsg.t - mLastFlipTime) / 1000.;
             deltas.add(dt);
 
@@ -197,10 +183,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     void finishAndShowStats() {
         // Stop the USB listener
-        clockManager.stopUsbListener();
+        clockManager.stopListener();
 
-        // Unregister broadcast receiver
-        broadcastManager.unregisterReceiver(onIncomingTimestamp);
+        // Unregister trigger handler
+        clockManager.clearTriggerHandler();
 
         // Show deltas and the median
         logger.log("deltas: " + deltas.toString());

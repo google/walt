@@ -17,10 +17,7 @@
 package org.chromium.latency.walt;
 
 import android.annotation.TargetApi;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.midi.MidiDevice;
 import android.media.midi.MidiDeviceInfo;
 import android.media.midi.MidiInputPort;
@@ -28,7 +25,6 @@ import android.media.midi.MidiManager;
 import android.media.midi.MidiOutputPort;
 import android.media.midi.MidiReceiver;
 import android.os.Handler;
-import android.support.v4.content.LocalBroadcastManager;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -39,7 +35,6 @@ class MidiTest {
     private SimpleLogger logger;
     private ClockManager clockManager;
     private Handler handler = new Handler();
-    private LocalBroadcastManager broadcastManager;
 
     private static final String TEENSY_MIDI_NAME = "Teensyduino Teensy MIDI";
     private static final byte[] noteMsg = {(byte) 0x90, (byte) 99, (byte) 0};
@@ -62,7 +57,6 @@ class MidiTest {
     MidiTest(Context context) {
         clockManager = ClockManager.getInstance(context);
         logger = SimpleLogger.getInstance(context);
-        broadcastManager = LocalBroadcastManager.getInstance(context);
         mMidiManager = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);
         findMidiDevice();
     }
@@ -121,10 +115,8 @@ class MidiTest {
 
         clockManager.syncClock();
         clockManager.command(ClockManager.CMD_MIDI);
-        clockManager.startUsbListener();
-        broadcastManager.registerReceiver(onIncomingTimestamp,
-                new IntentFilter(ClockManager.INCOMING_DATA_INTENT)
-        );
+        clockManager.startListener();
+        clockManager.setTriggerHandler(triggerHandler);
     }
 
     private void findMidiDevice() {
@@ -152,15 +144,9 @@ class MidiTest {
         }
     }
 
-    private BroadcastReceiver onIncomingTimestamp = new BroadcastReceiver() {
+    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            String msg = intent.getStringExtra("message");
-            if(msg.charAt(0) == 'm') {
-                return;
-            }
-
-            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg.substring(1));
+        public void onReceive(ClockManager.TriggerMessage tmsg) {
             last_tWalt = tmsg.t + clockManager.baseTime;
             double dt = (last_tWalt - last_tSys) / 1000.;
 
@@ -207,8 +193,8 @@ class MidiTest {
             logger.log("Error, failed to close input port: " + e.getMessage());
         }
 
-        clockManager.stopUsbListener();
-        broadcastManager.unregisterReceiver(onIncomingTimestamp);
+        clockManager.stopListener();
+        clockManager.clearTriggerHandler();
         clockManager.logDrift();
     }
 

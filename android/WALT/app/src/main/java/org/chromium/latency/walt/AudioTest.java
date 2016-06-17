@@ -16,13 +16,9 @@
 
 package org.chromium.latency.walt;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.os.Handler;
-import android.support.v4.content.LocalBroadcastManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,7 +33,6 @@ class AudioTest {
     private SimpleLogger logger;
     private ClockManager clockManager;
     private Handler handler = new Handler();
-    private LocalBroadcastManager broadcastManager;
 
     // Sound params
     private final double duration = 0.3; // seconds
@@ -76,7 +71,6 @@ class AudioTest {
     AudioTest(Context context) {
         clockManager = ClockManager.getInstance(context);
         logger = SimpleLogger.getInstance(context);
-        broadcastManager = LocalBroadcastManager.getInstance(context);
 
         //Check for optimal output sample rate and buffer size
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -117,7 +111,7 @@ class AudioTest {
     void startMeasurement() {
         try {
             clockManager.syncClock();
-            clockManager.startUsbListener();
+            clockManager.startListener();
         } catch (IOException e) {
             logger.log("Error starting test: " + e.getMessage());
             return;
@@ -129,34 +123,18 @@ class AudioTest {
         mInitiatedBeeps = 0;
         mDetectedBeeps = 0;
 
-        broadcastManager.registerReceiver(
-                onIncomingTimestamp,
-                new IntentFilter(ClockManager.INCOMING_DATA_INTENT)
-        );
+        clockManager.setTriggerHandler(triggerHandler);
 
         handler.postDelayed(doBeepRunnable, 300);
 
     }
 
-
-    private BroadcastReceiver onIncomingTimestamp = new BroadcastReceiver() {
+    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-
-            String msg = intent.getStringExtra("message");
-            // logger.log("Incoming timestamp received " + msg);
-
-            if (msg.charAt(0) == 'a') {
-                // logger.log("Incoming ack on CMD_AUDIO");
-                return;
-            }
-
-            // TODO: check that the msg starts like a serialized trigger "G" or "G A"
-            // or allow the parseTriggerMessage below to raise something meaningful if it's not
+        public void onReceive(ClockManager.TriggerMessage tmsg) {
             // remove the far away doBeep callback(s)
             handler.removeCallbacks(doBeepRunnable);
 
-            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg.substring(1));
             mDetectedBeeps++;
             long te = getTePlay();
             double dt = (tmsg.t - mLastBeepTime) / 1000.;
@@ -261,8 +239,8 @@ class AudioTest {
     };
 
     private void finishAndShowStats() {
-        clockManager.stopUsbListener();
-        broadcastManager.unregisterReceiver(onIncomingTimestamp);
+        clockManager.stopListener();
+        clockManager.clearTriggerHandler();
         clockManager.logDrift();
 
         logger.log("deltas: " + deltas.toString());

@@ -20,10 +20,8 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -39,7 +37,6 @@ public class DragLatencyFragment extends Fragment
     private Activity activity;
     private SimpleLogger logger;
     private ClockManager clockManager;
-    private LocalBroadcastManager broadcastManager;
     TextView mLogTextView;
     TextView mTouchCatcher;
     int moveCount = 0;
@@ -92,7 +89,6 @@ public class DragLatencyFragment extends Fragment
         activity = getActivity();
         logger = SimpleLogger.getInstance(getContext());
         clockManager = ClockManager.getInstance(getContext());
-        broadcastManager = LocalBroadcastManager.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_drag_latency, container, false);
     }
@@ -142,14 +138,11 @@ public class DragLatencyFragment extends Fragment
             return;
         }
         mTouchCatcher.setOnTouchListener(mTouchListener);
-        // Register a callback for broadcasts
-        broadcastManager.registerReceiver(
-                onIncomingTimestamp,
-                new IntentFilter(ClockManager.INCOMING_DATA_INTENT)
-        );
+        // Register a callback for triggers
+        clockManager.setTriggerHandler(triggerHandler);
         try {
             clockManager.command(ClockManager.CMD_AUTO_LASER_ON);
-            clockManager.startUsbListener();
+            clockManager.startListener();
         } catch (IOException e) {
             logger.log("Error: " + e.getMessage());
         }
@@ -176,14 +169,14 @@ public class DragLatencyFragment extends Fragment
 
 
     void finishAndShowStats() {
-        clockManager.stopUsbListener();
+        clockManager.stopListener();
         try {
             clockManager.command(ClockManager.CMD_AUTO_LASER_OFF);
         } catch (IOException e) {
             logger.log("Error: " + e.getMessage());
         }
         mTouchCatcher.setOnTouchListener(null);
-        broadcastManager.unregisterReceiver(onIncomingTimestamp);
+        clockManager.clearTriggerHandler();
 
         logger.log(String.format(
                 "Recorded %d laser events and %d touch events. ",
@@ -300,20 +293,11 @@ public class DragLatencyFragment extends Fragment
 
     }
 
-
-    private BroadcastReceiver onIncomingTimestamp = new BroadcastReceiver() {
+    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-
-            String msg = intent.getStringExtra("message");
-            logger.log("Incoming timestamp received: " + msg.trim());
-
-
-            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg.substring(1));
-
+        public void onReceive(ClockManager.TriggerMessage tmsg) {
             laserEventList.add(tmsg);
             updateCountsDisplay();
-
         }
     };
 

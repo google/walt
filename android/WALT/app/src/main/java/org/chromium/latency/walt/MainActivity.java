@@ -273,12 +273,12 @@ public class MainActivity extends AppCompatActivity {
     public void onClickStartListener(View view) {
         if (clockManager.isListenerStopped()) {
             try {
-                clockManager.startUsbListener();
+                clockManager.startListener();
             } catch (IOException e) {
                 logger.log("Error starting USB listener: " + e.getMessage());
             }
         } else {
-            clockManager.stopUsbListener();
+            clockManager.stopListener();
         }
     }
 
