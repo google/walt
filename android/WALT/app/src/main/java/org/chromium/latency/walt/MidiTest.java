@@ -50,6 +50,8 @@ class MidiTest {
     private MidiOutputPort mOutputPort;
     private MidiInputPort mInputPort;
 
+    private boolean mConnecting = false;
+
     private long last_tWalt = 0;
     private long last_tSys = 0;
     private long last_tJava = 0;
@@ -67,7 +69,17 @@ class MidiTest {
 
     void testMidiOut() {
         if (mMidiDevice == null) {
-            logger.log("MIDI device is not open!");
+            if (mConnecting) {
+                logger.log("Still connecting...");
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        testMidiOut();
+                    }
+                });
+            } else {
+                logger.log("MIDI device is not open!");
+            }
             return;
         }
         setupMidiOut();
@@ -77,7 +89,17 @@ class MidiTest {
 
     void testMidiIn() {
         if (mMidiDevice == null) {
-            logger.log("MIDI device is not open!");
+            if (mConnecting) {
+                logger.log("Still connecting...");
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        testMidiIn();
+                    }
+                });
+            } else {
+                logger.log("MIDI device is not open!");
+            }
             return;
         }
         setupMidiIn();
@@ -101,6 +123,7 @@ class MidiTest {
             logger.log("Found MIDI device named " + name);
             if(TEENSY_MIDI_NAME.equals(name)) {
                 logger.log("^^^ using this device ^^^");
+                mConnecting = true;
                 mMidiManager.openDevice(info, new MidiManager.OnDeviceOpenedListener() {
                     @Override
                     public void onDeviceOpened(MidiDevice device) {
@@ -110,6 +133,7 @@ class MidiTest {
                             logger.log("Opened MIDI device successfully!");
                             mMidiDevice = device;
                         }
+                        mConnecting = false;
                     }
                 }, null);
                 break;

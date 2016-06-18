@@ -38,6 +38,7 @@ public class ClockManager {
     static final int USB_READ_TIMEOUT_MS = 200;
     public static final String TAG = "WaltClockManager";
     private static final String USB_PERMISSION_RESPONSE_INTENT = "usb-permission-response";
+    private static final String CONNECT_INTENT = "org.chromium.latency.walt.CONNECT";
 
     // Teensy side commands. Each command is a single char
     // Based on #defines section in walt.ino
@@ -66,6 +67,7 @@ public class ClockManager {
 
     private SimpleLogger mLogger;
     private Context mContext;
+    private LocalBroadcastManager mBroadcastManager;
 
     UsbManager mUsbManager;
     UsbDevice mUsbDevice = null;
@@ -97,10 +99,26 @@ public class ClockManager {
         mContext = context;
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         mLogger = SimpleLogger.getInstance(context);
+        mBroadcastManager = LocalBroadcastManager.getInstance(context);
     }
 
     public boolean isConnected() {
         return ((mEndpointIn != null) && (mEndpointOut != null));
+    }
+
+    public void registerConnectCallback(final Runnable r) {
+        if (isConnected()) {
+            r.run();
+            return;
+        }
+
+        mBroadcastManager.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mBroadcastManager.unregisterReceiver(this);
+                r.run();
+            }
+        }, new IntentFilter(CONNECT_INTENT));
     }
 
     public void connect() {
@@ -187,6 +205,8 @@ public class ClockManager {
                         new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
 
                 syncClock();
+
+                mBroadcastManager.sendBroadcast(new Intent(CONNECT_INTENT));
             } else {
                 mLogger.log("Could not get permission to open the USB device");
             }
@@ -426,7 +446,7 @@ public class ClockManager {
                     Log.i(TAG, "Listener received data: " + s);
                     Intent intent = new Intent(INCOMING_DATA_INTENT);
                     intent.putExtra("message", s);
-                    LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+                    mBroadcastManager.sendBroadcast(intent);
                 }
             }
             state = ListenerState.STOPPED;
