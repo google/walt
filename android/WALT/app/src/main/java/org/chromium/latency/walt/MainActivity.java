@@ -29,6 +29,7 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -108,6 +109,14 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        if (intent != null && AutoRunFragment.TEST_ACTION.equals(intent.getAction())) {
+            getSupportFragmentManager().popBackStack("Automated Test",
+                    FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            Fragment autoRunFragment = new AutoRunFragment();
+            autoRunFragment.setArguments(intent.getExtras());
+            switchScreen(autoRunFragment, "Automated Test");
+        }
     }
 
     @Override
@@ -199,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
         toolbar.setTitle(title);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, newFragment);
-        transaction.addToBackStack(null);
+        transaction.addToBackStack(title);
         transaction.commit();
     }
 
