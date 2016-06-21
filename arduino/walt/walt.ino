@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
+#define VERSION                 "1"
+
 // Commands
 // Digits 1 to 9 reserved for clock sync
 #define CMD_PING_DELAYED        'D' // Ping/Pong with a delay
 #define CMD_RESET               'F' // Reset all vars
 #define CMD_SYNC_SEND           'I' // Send some digits for clock sync
 #define CMD_PING                'P' // Ping/Pong with a single byte
+#define CMD_VERSION             'V' // Determine which version is running
 #define CMD_SYNC_READOUT        'R' // Read out sync times
 #define CMD_GSHOCK              'G' // Send last shock time and watch for another shock.
 #define CMD_TIME_NOW            'T' // Current time
@@ -218,6 +221,11 @@ void process_command(char cmd) {
     } else if (cmd == CMD_RESET) {
       init_vars();
       send_ack(CMD_RESET);
+    } else if (cmd == CMD_VERSION) {
+      Serial.print(flip_case(cmd));
+      Serial.print(" ");
+      Serial.println(VERSION);
+      Serial.send_now();
     } else if (cmd == CMD_GSHOCK) {
       Serial.println(gshock.t); // TODO: Serialize trigger
       Serial.send_now();

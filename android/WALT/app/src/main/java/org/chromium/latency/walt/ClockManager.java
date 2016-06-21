@@ -21,6 +21,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Resources;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
@@ -39,6 +40,7 @@ public class ClockManager {
     static final int TEENSY_VID = 0x16c0;
     static final int USB_READ_TIMEOUT_MS = 200;
     public static final String TAG = "WaltClockManager";
+    public static final String PROTOCOL_VERSION = "1";
     private static final String USB_PERMISSION_RESPONSE_INTENT = "usb-permission-response";
     private static final String CONNECT_INTENT = "org.chromium.latency.walt.CONNECT";
 
@@ -48,6 +50,7 @@ public class ClockManager {
     static final char CMD_RESET            = 'F'; // Reset all vars
     static final char CMD_SYNC_SEND        = 'I'; // Send some digits for clock sync
     static final char CMD_PING             = 'P'; // Ping with a single byte
+    static final char CMD_VERSION          = 'V'; // Determine WALT's firmware version
     static final char CMD_SYNC_READOUT     = 'R'; // Read out sync times
     static final char CMD_GSHOCK           = 'G'; // Send last shock time and watch for another shock.
     static final char CMD_TIME_NOW         = 'T'; // Current time
@@ -208,9 +211,10 @@ public class ClockManager {
                         new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
 
                 try {
+                    checkVersion();
                     syncClock();
                 } catch (IOException e) {
-                    mLogger.log("Unable to sync clocks: " + e.getMessage());
+                    mLogger.log("Unable to communicate with WALT: " + e.getMessage());
                 }
                 
                 mBroadcastManager.sendBroadcast(new Intent(CONNECT_INTENT));
@@ -347,6 +351,18 @@ public class ClockManager {
         String s = sb.toString();
         Log.i(TAG, "readAll() received data: " + s);
         return s;
+    }
+
+    public void checkVersion() throws IOException {
+        if (!isConnected()) throw new IOException("Not connected to WALT");
+        if (!isListenerStopped()) throw new IOException("Listener is running");
+
+        String s = command(CMD_VERSION);
+        if (!PROTOCOL_VERSION.equals(s)) {
+            Resources res = mContext.getResources();
+            throw new IOException(String.format(res.getString(R.string.protocol_version_mismatch),
+                    s, PROTOCOL_VERSION));
+        }
     }
 
     public void syncClock() throws IOException {
