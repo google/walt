@@ -16,14 +16,11 @@
 
 package org.chromium.latency.walt;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.os.Handler;
-import android.support.v4.content.LocalBroadcastManager;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -36,7 +33,6 @@ class AudioTest {
     private SimpleLogger logger;
     private ClockManager clockManager;
     private Handler handler = new Handler();
-    private LocalBroadcastManager broadcastManager;
 
     // Sound params
     private final double duration = 0.3; // seconds
@@ -75,7 +71,6 @@ class AudioTest {
     AudioTest(Context context) {
         clockManager = ClockManager.getInstance(context);
         logger = SimpleLogger.getInstance(context);
-        broadcastManager = LocalBroadcastManager.getInstance(context);
 
         //Check for optimal output sample rate and buffer size
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -100,7 +95,12 @@ class AudioTest {
     }
 
     void beginRecordingTest() {
-        clockManager.syncClock();
+        try {
+            clockManager.syncClock();
+        } catch (IOException e) {
+            logger.log("Error syncing clocks: " + e.getMessage());
+            return;
+        }
         framesToRecord = (int) (0.001 * msToRecord * frameRateInt);
         createAudioRecorder(frameRateInt, framesToRecord);
         logger.log("Audio recorder created; starting test");
@@ -109,7 +109,13 @@ class AudioTest {
     }
 
     void startMeasurement() {
-        clockManager.syncClock();
+        try {
+            clockManager.syncClock();
+            clockManager.startListener();
+        } catch (IOException e) {
+            logger.log("Error starting test: " + e.getMessage());
+            return;
+        }
         deltas.clear();
 
         logger.log("Starting playback test");
@@ -117,36 +123,18 @@ class AudioTest {
         mInitiatedBeeps = 0;
         mDetectedBeeps = 0;
 
-        clockManager.startUsbListener();
-
-        broadcastManager.registerReceiver(
-                onIncomingTimestamp,
-                new IntentFilter(ClockManager.INCOMING_DATA_INTENT)
-        );
+        clockManager.setTriggerHandler(triggerHandler);
 
         handler.postDelayed(doBeepRunnable, 300);
 
     }
 
-
-    private BroadcastReceiver onIncomingTimestamp = new BroadcastReceiver() {
+    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-
-            String msg = intent.getStringExtra("message");
-            // logger.log("Incoming timestamp received " + msg);
-
-            if (msg.charAt(0) == 'a') {
-                // logger.log("Incoming ack on CMD_AUDIO");
-                return;
-            }
-
-            // TODO: check that the msg starts like a serialized trigger "G" or "G A"
-            // or allow the parseTriggerMessage below to raise something meaningful if it's not
+        public void onReceive(ClockManager.TriggerMessage tmsg) {
             // remove the far away doBeep callback(s)
             handler.removeCallbacks(doBeepRunnable);
 
-            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg);
             mDetectedBeeps++;
             long te = getTePlay();
             double dt = (tmsg.t - mLastBeepTime) / 1000.;
@@ -183,7 +171,12 @@ class AudioTest {
 
             // deltas[mInitiatedBeeps] = 0;
             mInitiatedBeeps++;
-            clockManager.sendByte(ClockManager.CMD_AUDIO);
+            try {
+                clockManager.command(ClockManager.CMD_AUDIO);
+            } catch (IOException e) {
+                logger.log("Error sending command AUDIO: " + e.getMessage());
+                return;
+            }
             long javaBeepTime = clockManager.micros();
             mLastBeepTime = playTone();
             double dtJ2N = (mLastBeepTime - javaBeepTime)/1000.;
@@ -203,12 +196,14 @@ class AudioTest {
         @Override
         public void run() {
             // logger.log("\nRequesting beep from WALT...");
-            String s = clockManager.sendReceive(ClockManager.CMD_BEEP);
-            if (s.charAt(0) != 'b') {
-                logger.log("Error, got unexpected reply to CMD_BEEP: " + s);
+            String s;
+            try {
+                s = clockManager.command(ClockManager.CMD_BEEP);
+            } catch (IOException e) {
+                logger.log("Error sending command BEEP: " + e.getMessage());
                 return;
             }
-            last_tb = Integer.parseInt(s.trim().substring(2));
+            last_tb = Integer.parseInt(s);
             logger.log("Beeped, reply: " + s);
             handler.postDelayed(processRecordingRunnable, msToRecord); // TODO: config and or randomize the delay,
         }
@@ -244,8 +239,8 @@ class AudioTest {
     };
 
     private void finishAndShowStats() {
-        clockManager.stopUsbListener();
-        broadcastManager.unregisterReceiver(onIncomingTimestamp);
+        clockManager.stopListener();
+        clockManager.clearTriggerHandler();
         clockManager.logDrift();
 
         logger.log("deltas: " + deltas.toString());

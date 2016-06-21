@@ -43,9 +43,11 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "WALT";
@@ -256,30 +258,36 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClickPing(View view) {
-        // TODO: this prints "ping reply" even if there is no connection, do something about it
         long t1 = clockManager.micros();
-        String s = clockManager.sendReceive('P');
-        long dt = clockManager.micros() - t1;
-        logger.log(String.format(
-                "Ping reply in %.1fms: \"%s\"", dt / 1000.,
-                s.trim()
-        ));
-    }
-
-    public void onClickSendT(View view) {
-        clockManager.sendByte('T');
+        try {
+            clockManager.command(ClockManager.CMD_PING);
+            long dt = clockManager.micros() - t1;
+            logger.log(String.format(Locale.US,
+                    "Ping reply in %.1fms", dt / 1000.
+            ));
+        } catch (IOException e) {
+            logger.log("Error sending ping: " + e.getMessage());
+        }
     }
 
     public void onClickStartListener(View view) {
         if (clockManager.isListenerStopped()) {
-            clockManager.startUsbListener();
+            try {
+                clockManager.startListener();
+            } catch (IOException e) {
+                logger.log("Error starting USB listener: " + e.getMessage());
+            }
         } else {
-            clockManager.stopUsbListener();
+            clockManager.stopListener();
         }
     }
 
     public void onClickSync(View view) {
-        clockManager.syncClock();
+        try {
+            clockManager.syncClock();
+        } catch (IOException e) {
+            logger.log("Error syncing clocks: " + e.getMessage());
+        }
     }
 
     public void onClickCheckDrift(View view) {

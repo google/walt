@@ -17,10 +17,7 @@
 package org.chromium.latency.walt;
 
 import android.annotation.TargetApi;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.midi.MidiDevice;
 import android.media.midi.MidiDeviceInfo;
 import android.media.midi.MidiInputPort;
@@ -28,7 +25,6 @@ import android.media.midi.MidiManager;
 import android.media.midi.MidiOutputPort;
 import android.media.midi.MidiReceiver;
 import android.os.Handler;
-import android.support.v4.content.LocalBroadcastManager;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -39,7 +35,6 @@ class MidiTest {
     private SimpleLogger logger;
     private ClockManager clockManager;
     private Handler handler = new Handler();
-    private LocalBroadcastManager broadcastManager;
 
     private static final String TEENSY_MIDI_NAME = "Teensyduino Teensy MIDI";
     private static final byte[] noteMsg = {(byte) 0x90, (byte) 99, (byte) 0};
@@ -62,7 +57,6 @@ class MidiTest {
     MidiTest(Context context) {
         clockManager = ClockManager.getInstance(context);
         logger = SimpleLogger.getInstance(context);
-        broadcastManager = LocalBroadcastManager.getInstance(context);
         mMidiManager = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);
         findMidiDevice();
     }
@@ -82,7 +76,12 @@ class MidiTest {
             }
             return;
         }
-        setupMidiOut();
+        try {
+            setupMidiOut();
+        } catch (IOException e) {
+            logger.log("Error setting up test: " + e.getMessage());
+            return;
+        }
         scheduleNote();
         handler.postDelayed(cancelMidiOutRunnable, noteDelay + timeout);
     }
@@ -102,18 +101,22 @@ class MidiTest {
             }
             return;
         }
-        setupMidiIn();
+        try {
+            setupMidiIn();
+        } catch (IOException e) {
+            logger.log("Error setting up test: " + e.getMessage());
+            return;
+        }
         handler.postDelayed(requestNoteRunnable, noteDelay);
     }
 
-    private void setupMidiOut() {
+    private void setupMidiOut() throws IOException {
         mInputPort = mMidiDevice.openInputPort(0);
 
         clockManager.syncClock();
-        clockManager.startUsbListener();
-        broadcastManager.registerReceiver(onIncomingTimestamp,
-                new IntentFilter(ClockManager.INCOMING_DATA_INTENT)
-        );
+        clockManager.command(ClockManager.CMD_MIDI);
+        clockManager.startListener();
+        clockManager.setTriggerHandler(triggerHandler);
     }
 
     private void findMidiDevice() {
@@ -141,15 +144,9 @@ class MidiTest {
         }
     }
 
-    private BroadcastReceiver onIncomingTimestamp = new BroadcastReceiver() {
+    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            String msg = intent.getStringExtra("message");
-            if(msg.charAt(0) == 'm') {
-                return;
-            }
-
-            ClockManager.TriggerMessage tmsg = clockManager.parseTriggerMessage(msg);
+        public void onReceive(ClockManager.TriggerMessage tmsg) {
             last_tWalt = tmsg.t + clockManager.baseTime;
             double dt = (last_tWalt - last_tSys) / 1000.;
 
@@ -172,7 +169,6 @@ class MidiTest {
             return;
         }
         last_tSys = t / 1000;
-        clockManager.sendByte(ClockManager.CMD_MIDI);
     }
 
     private void finishMidiOut() {
@@ -197,8 +193,8 @@ class MidiTest {
             logger.log("Error, failed to close input port: " + e.getMessage());
         }
 
-        clockManager.stopUsbListener();
-        broadcastManager.unregisterReceiver(onIncomingTimestamp);
+        clockManager.stopListener();
+        clockManager.clearTriggerHandler();
         clockManager.logDrift();
     }
 
@@ -206,16 +202,14 @@ class MidiTest {
         @Override
         public void run() {
             logger.log("Requesting note from WALT...");
-            String s = clockManager.sendReceive(ClockManager.CMD_NOTE);
-            if(s.length() == 0) {
-                logger.log("Error, failed to send message to WALT");
+            String s;
+            try {
+                s = clockManager.command(ClockManager.CMD_NOTE);
+            } catch (IOException e) {
+                logger.log("Error sending NOTE command: " + e.getMessage());
                 return;
             }
-            if (s.charAt(0) != 'n') {
-                logger.log("Error, got unexpected reply to CMD_NOTE: " + s);
-                return;
-            }
-            last_tWalt = Integer.parseInt(s.trim().substring(2));
+            last_tWalt = Integer.parseInt(s);
             handler.postDelayed(finishMidiInRunnable, noteDelay);
         }
     };
@@ -251,7 +245,7 @@ class MidiTest {
         }
     }
 
-    private void setupMidiIn() {
+    private void setupMidiIn() throws IOException {
         mOutputPort = mMidiDevice.openOutputPort(0);
         mOutputPort.connect(new WaltReceiver());
         clockManager.syncClock();

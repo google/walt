@@ -26,10 +26,12 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import java.io.IOException;
 import java.util.HashMap;
 
 public class ClockManager {
@@ -100,6 +102,7 @@ public class ClockManager {
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         mLogger = SimpleLogger.getInstance(context);
         mBroadcastManager = LocalBroadcastManager.getInstance(context);
+        mTriggerListener = new TriggerListener();
     }
 
     public boolean isConnected() {
@@ -149,7 +152,7 @@ public class ClockManager {
 
     public void disconnect() {
         if (!isListenerStopped()) {
-            stopUsbListener();
+            stopListener();
         }
         mEndpointIn = null;
         mEndpointOut = null;
@@ -204,8 +207,12 @@ public class ClockManager {
                 mContext.registerReceiver(disconnectReceiver,
                         new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
 
-                syncClock();
-
+                try {
+                    syncClock();
+                } catch (IOException e) {
+                    mLogger.log("Unable to sync clocks: " + e.getMessage());
+                }
+                
                 mBroadcastManager.sendBroadcast(new Intent(CONNECT_INTENT));
             } else {
                 mLogger.log("Could not get permission to open the USB device");
@@ -248,55 +255,72 @@ public class ClockManager {
         return usbDevice;
     }
 
-    byte[] char2byte(char c) {
+    private byte[] char2byte(char c) {
         byte[] buff = new byte[1];
         buff[0] = (byte) c;
         return buff;
     }
 
-    public void sendByte(char c) {
+    private void sendByte(char c) throws IOException {
         if (!isConnected()) {
-            mLogger.log("ERROR: Not connected - aborting sendByte()");
-            return;
+            throw new IOException("Not connected to WALT");
         }
         // mLogger.log("Sending char " + c);
         mUsbConnection.bulkTransfer(mEndpointOut, char2byte(c), 1, 100);
     }
 
-    public String readOne() {
+    private String readOne() throws IOException {
         if (!isListenerStopped()) {
-            mLogger.log("ERROR: readOne(), listener is running - aborting read.");
-            return "";
+            throw new IOException("Listener is running");
         }
 
         byte[] buff = new byte[64];
         int ret = mUsbConnection.bulkTransfer(mEndpointIn, buff, 64, USB_READ_TIMEOUT_MS);
 
-        if (ret < 0) return "";  // Timed out
+        if (ret < 0) {
+            throw new IOException("Timed out reading from WALT");
+        }
         String s = new String(buff, 0, ret);
         Log.i(TAG, "readOne() received byte: " + s);
         return s;
     }
 
 
-    public String sendReceive(char c) {
-        if (!isListenerStopped()) {
-            mLogger.log("ERROR: listener is running - aborting sendReceive()");
-            return "";
-        }
-        if (!isConnected()) {
-            mLogger.log("ERROR: Not connected, aborting sendReceive().");
-            return "";
-        }
+    private String sendReceive(char c) throws IOException {
         sendByte(c);
         return readOne();
     }
 
-    public String readAll() {
-
+    String command(char cmd, char ack) throws IOException {
         if (!isListenerStopped()) {
-            mLogger.log("ERROR: listener is running - aborting readAll().");
+            sendByte(cmd); // TODO: check response even if the listener is running
             return "";
+        }
+        String response = sendReceive(cmd);
+        if (!response.startsWith(String.valueOf(ack))) {
+            throw new IOException("Unexpected response from WALT. Expected \"" + ack
+                    + "\", got \"" + response + "\"");
+        }
+        return response.substring(1).trim();
+    }
+
+    String command(char cmd) throws IOException {
+        return command(cmd, flipCase(cmd));
+    }
+
+    private char flipCase(char c) {
+        if (Character.isUpperCase(c)) {
+            return Character.toLowerCase(c);
+        } else if (Character.isLowerCase(c)) {
+            return Character.toUpperCase(c);
+        } else {
+            return c;
+        }
+    }
+
+    public String readAll() throws IOException {
+        if (!isListenerStopped()) {
+            throw new IOException("Listener is running");
         }
 
         // Things that were sent deliberately as separate packets using
@@ -325,15 +349,13 @@ public class ClockManager {
         return s;
     }
 
-    public void syncClock() {
-        if (! isConnected()) {
-            mLogger.log("ERROR: Not connected, aborting syncClock()");
-            return;
+    public void syncClock() throws IOException {
+        if (!isConnected()) {
+            throw new IOException("Not connected to WALT");
         }
 
         if (!isListenerStopped()) {
-            mLogger.log("ERROR: listener is running - aborting syncClock().");
-            return;
+            throw new IOException("Listener is running");
         }
 
         int maxE = 0;
@@ -368,7 +390,13 @@ public class ClockManager {
     }
 
     public long readLastShockTime() {
-        String s = sendReceive(CMD_GSHOCK);
+        String s;
+        try {
+            s = sendReceive(CMD_GSHOCK);
+        } catch (IOException e) {
+            mLogger.log("Error sending GSHOCK command: " + e.getMessage());
+            return -1;
+        }
         mLogger.log("Received S reply: " + s);
         long t = 0;
         try {
@@ -380,48 +408,38 @@ public class ClockManager {
         return t;
     }
 
-    public void watchForAcclerometerShock() {
-        mLogger.log("Tap the phone screen with accelerometer probe");
-        sendByte('F');
-        sendByte(CMD_GSHOCK);
-        readAll(); // Flush the input stream.
-    }
-
-    class TriggerMessage {
+    static class TriggerMessage {
         public char tag;
         public long t;
         public int value;
         public int count;
+        // TODO: verify the format of the message while parsing it
         TriggerMessage(String s) {
             String[] parts = s.split("\\s+");
-            tag = parts[1].charAt(0);
-            t = Integer.parseInt(parts[2]);
-            value = Integer.parseInt(parts[3]);
-            count = Integer.parseInt(parts[4]);
+            tag = parts[0].charAt(0);
+            t = Integer.parseInt(parts[1]);
+            value = Integer.parseInt(parts[2]);
+            count = Integer.parseInt(parts[3]);
         }
     }
 
-    public TriggerMessage readTriggerMessage(char cmd) {
-        String s = sendReceive(cmd);
-        TriggerMessage msg = new TriggerMessage(s);
-        return msg;
+    TriggerMessage readTriggerMessage(char cmd) throws IOException {
+        return parseTriggerMessage(command(cmd, 'G'));
     }
 
-    public TriggerMessage parseTriggerMessage(String s) {
-        return new TriggerMessage(s);
+    TriggerMessage parseTriggerMessage(String s) {
+        return new TriggerMessage(s.trim());
     }
 
 
     /***********************************************************************************************
-     USB Listener
-     A thread that constantly polls the interface for incoming data and sends it as a LocalBroadcast
+     Trigger Listener
+     A thread that constantly polls the interface for incoming triggers and passes them to the handler
 
      */
 
-    private UsbListener mUsbListener = new UsbListener();
-    private Thread mUsbListenerThread;
-
-    public static final String INCOMING_DATA_INTENT = "incoming-usb-message";
+    private TriggerListener mTriggerListener;
+    private Thread mTriggerListenerThread;
 
     public enum ListenerState {
         RUNNING,
@@ -429,9 +447,36 @@ public class ClockManager {
         STOPPING
     }
 
+    abstract static class TriggerHandler {
+        private Handler handler;
 
+        TriggerHandler() {
+            handler = new Handler();
+        }
 
-    class UsbListener implements Runnable {
+        private void go(final TriggerMessage tmsg) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    onReceive(tmsg);
+                }
+            });
+        }
+
+        abstract void onReceive(TriggerMessage tmsg);
+    }
+
+    private TriggerHandler mTriggerHandler;
+
+    void setTriggerHandler(TriggerHandler triggerHandler) {
+        mTriggerHandler = triggerHandler;
+    }
+
+    void clearTriggerHandler() {
+        mTriggerHandler = null;
+    }
+
+    private class TriggerListener implements Runnable {
         static final int BUFF_SIZE = 1024 * 4;
         public ListenerState state = ListenerState.STOPPED;
         private byte[] buffer = new byte[BUFF_SIZE];
@@ -441,12 +486,12 @@ public class ClockManager {
             state = ListenerState.RUNNING;
             while(isRunning()) {
                 int ret = mUsbConnection.bulkTransfer(mEndpointIn, buffer, BUFF_SIZE, USB_READ_TIMEOUT_MS);
-                if (ret > 0) {
+                if (ret > 0 && mTriggerHandler != null) {
                     String s = new String(buffer, 0, ret);
                     Log.i(TAG, "Listener received data: " + s);
-                    Intent intent = new Intent(INCOMING_DATA_INTENT);
-                    intent.putExtra("message", s);
-                    mBroadcastManager.sendBroadcast(intent);
+                    if (s.length() > 0 && s.charAt(0) == 'G') {
+                        mTriggerHandler.go(parseTriggerMessage(s.substring(1).trim()));
+                    }
                 }
             }
             state = ListenerState.STOPPED;
@@ -466,28 +511,27 @@ public class ClockManager {
     };
 
     public boolean isListenerStopped() {
-        return mUsbListener.isStopped();
+        return mTriggerListener.isStopped();
     }
 
-    public void startUsbListener() {
+    public void startListener() throws IOException {
         if (!isConnected()) {
-            mLogger.log("ERROR: Not connected - aborting startUsbListener()");
-            return;
+            throw new IOException("Not connected to WALT");
         }
-        mUsbListenerThread = new Thread(mUsbListener);
-        mLogger.log("Starting USB Listener");
-        mUsbListenerThread.start();
+        mTriggerListenerThread = new Thread(mTriggerListener);
+        mLogger.log("Starting Listener");
+        mTriggerListenerThread.start();
     }
 
-    public void stopUsbListener() {
-        mLogger.log("Stopping USB Listener");
-        mUsbListener.stop();
+    public void stopListener() {
+        mLogger.log("Stopping Listener");
+        mTriggerListener.stop();
         try {
-            mUsbListenerThread.join();
+            mTriggerListenerThread.join();
         } catch (InterruptedException e) {
-            mLogger.log("Error while stopping USB Listener: " + e.getMessage());
+            mLogger.log("Error while stopping Listener: " + e.getMessage());
         }
-        mLogger.log("USB Listener stopped");
+        mLogger.log("Listener stopped");
     }
     //
 
