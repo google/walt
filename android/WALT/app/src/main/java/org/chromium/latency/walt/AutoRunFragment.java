@@ -66,6 +66,7 @@ public class AutoRunFragment extends Fragment {
     }
 
     private void doTest(@NonNull Bundle args) {
+        final int reps = args.getInt("Reps", 10);
         String fileName = args.getString("FileName", null);
         ResultHandler r = null;
         if (fileName != null) {
@@ -114,6 +115,7 @@ public class AutoRunFragment extends Fragment {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
+                        audioTest.setBeepCount(reps);
                         audioTest.startMeasurement();
                         toTearDown = audioTest;
                     }

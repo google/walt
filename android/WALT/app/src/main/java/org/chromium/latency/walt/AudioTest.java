@@ -50,7 +50,8 @@ class AudioTest {
     private int frameRateInt;
 
     private int mInitiatedBeeps, mDetectedBeeps;
-    private final int timesToBeep = 10;
+    private int timesToBeep = 10;
+    private static final int syncAfterBeeps = 20;
     // long[] deltas = new long[timesToBeep];
     ArrayList<Double> deltas = new ArrayList<>();
     ArrayList<Double> deltasJ2N = new ArrayList<>();
@@ -94,6 +95,10 @@ class AudioTest {
     AudioTest(Context context, AutoRunFragment.ResultHandler resultHandler) {
         this(context);
         this.resultHandler = resultHandler;
+    }
+
+    void setBeepCount(int beepCount) {
+        timesToBeep = beepCount;
     }
 
     void teardown() {
@@ -178,6 +183,19 @@ class AudioTest {
 
             // deltas[mInitiatedBeeps] = 0;
             mInitiatedBeeps++;
+
+            if (mInitiatedBeeps % syncAfterBeeps == 0) {
+                try {
+                    clockManager.stopListener();
+                    clockManager.syncClock();
+                    clockManager.startListener();
+                } catch (IOException e) {
+                    logger.log("Error re-syncing clock: " + e.getMessage());
+                    finishAndShowStats();
+                    return;
+                }
+            }
+
             try {
                 clockManager.command(ClockManager.CMD_AUDIO);
             } catch (IOException e) {
