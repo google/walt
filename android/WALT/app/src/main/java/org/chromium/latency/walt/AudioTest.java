@@ -34,6 +34,8 @@ class AudioTest {
     private ClockManager clockManager;
     private Handler handler = new Handler();
 
+    private AutoRunFragment.ResultHandler resultHandler;
+
     // Sound params
     private final double duration = 0.3; // seconds
     private final int sampleRate = 8000;
@@ -87,6 +89,11 @@ class AudioTest {
         createEngine();
         createBufferQueueAudioPlayer(frameRateInt, framesPerBufferInt);
         logger.log("Audio engine created");
+    }
+
+    AudioTest(Context context, AutoRunFragment.ResultHandler resultHandler) {
+        this(context);
+        this.resultHandler = resultHandler;
     }
 
     void teardown() {
@@ -249,5 +256,9 @@ class AudioTest {
                 Utils.median(deltasJ2N),
                 Utils.median(deltas)
         ));
+
+        if (resultHandler != null) {
+            resultHandler.onResult(deltas);
+        }
     }
 }

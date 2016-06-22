@@ -28,6 +28,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+
 public class AutoRunFragment extends Fragment {
 
     static final String TEST_ACTION = "org.chromium.latency.walt.START_TEST";
@@ -35,7 +39,44 @@ public class AutoRunFragment extends Fragment {
     private ClockManager clockManager;
     private AudioTest toTearDown; // TODO: figure out a better way to destroy the engine
 
+    private class AudioResultHandler implements ResultHandler {
+        private FileWriter fileWriter;
+
+        AudioResultHandler(String fileName) throws IOException {
+            fileWriter = new FileWriter(fileName);
+        }
+
+        @Override
+        public void onResult(ArrayList<Double> r) {
+            logger.log("Writing data file");
+            try {
+                for (double v : r) {
+                    fileWriter.write(v + ",\n");
+                }
+            } catch (IOException e) {
+                logger.log("Error writing output file: " + e.getMessage());
+            } finally {
+                try {
+                    fileWriter.close();
+                } catch (IOException e) {
+                    logger.log("Error closing output file: " + e.getMessage());
+                }
+            }
+        }
+    }
+
     private void doTest(@NonNull Bundle args) {
+        String fileName = args.getString("FileName", null);
+        ResultHandler r = null;
+        if (fileName != null) {
+            try {
+                r = new AudioResultHandler(fileName);
+            } catch (IOException e) {
+                logger.log("Unable to open output file " + e.getMessage());
+                return;
+            }
+        }
+        final ResultHandler resultHandler = r;
         switch (args.getString("TestType", "")) {
             case "MidiIn": {
                 clockManager.registerConnectCallback(new Runnable() {
@@ -72,7 +113,7 @@ public class AutoRunFragment extends Fragment {
                 clockManager.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
-                        AudioTest audioTest = new AudioTest(getContext());
+                        AudioTest audioTest = new AudioTest(getContext(), resultHandler);
                         audioTest.startMeasurement();
                         toTearDown = audioTest;
                     }
@@ -80,6 +121,10 @@ public class AutoRunFragment extends Fragment {
                 break;
             }
         }
+    }
+
+    interface ResultHandler {
+        void onResult(ArrayList<Double> r);
     }
 
     @Override
