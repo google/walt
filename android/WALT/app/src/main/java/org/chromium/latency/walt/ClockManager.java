@@ -459,6 +459,7 @@ public class ClockManager {
 
     public enum ListenerState {
         RUNNING,
+        STARTING,
         STOPPED,
         STOPPING
     }
@@ -536,6 +537,7 @@ public class ClockManager {
         }
         mTriggerListenerThread = new Thread(mTriggerListener);
         mLogger.log("Starting Listener");
+        mTriggerListener.state = ListenerState.STARTING;
         mTriggerListenerThread.start();
     }
 

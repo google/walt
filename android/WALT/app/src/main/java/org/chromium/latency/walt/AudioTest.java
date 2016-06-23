@@ -34,6 +34,8 @@ class AudioTest {
     private ClockManager clockManager;
     private Handler handler = new Handler();
 
+    private AutoRunFragment.ResultHandler resultHandler;
+
     // Sound params
     private final double duration = 0.3; // seconds
     private final int sampleRate = 8000;
@@ -48,7 +50,8 @@ class AudioTest {
     private int frameRateInt;
 
     private int mInitiatedBeeps, mDetectedBeeps;
-    private final int timesToBeep = 10;
+    private int timesToBeep = 10;
+    private static final int syncAfterBeeps = 20;
     // long[] deltas = new long[timesToBeep];
     ArrayList<Double> deltas = new ArrayList<>();
     ArrayList<Double> deltasJ2N = new ArrayList<>();
@@ -87,6 +90,15 @@ class AudioTest {
         createEngine();
         createBufferQueueAudioPlayer(frameRateInt, framesPerBufferInt);
         logger.log("Audio engine created");
+    }
+
+    AudioTest(Context context, AutoRunFragment.ResultHandler resultHandler) {
+        this(context);
+        this.resultHandler = resultHandler;
+    }
+
+    void setBeepCount(int beepCount) {
+        timesToBeep = beepCount;
     }
 
     void teardown() {
@@ -171,6 +183,19 @@ class AudioTest {
 
             // deltas[mInitiatedBeeps] = 0;
             mInitiatedBeeps++;
+
+            if (mInitiatedBeeps % syncAfterBeeps == 0) {
+                try {
+                    clockManager.stopListener();
+                    clockManager.syncClock();
+                    clockManager.startListener();
+                } catch (IOException e) {
+                    logger.log("Error re-syncing clock: " + e.getMessage());
+                    finishAndShowStats();
+                    return;
+                }
+            }
+
             try {
                 clockManager.command(ClockManager.CMD_AUDIO);
             } catch (IOException e) {
@@ -249,5 +274,9 @@ class AudioTest {
                 Utils.median(deltasJ2N),
                 Utils.median(deltas)
         ));
+
+        if (resultHandler != null) {
+            resultHandler.onResult(deltas);
+        }
     }
 }
