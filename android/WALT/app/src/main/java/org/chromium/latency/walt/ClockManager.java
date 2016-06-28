@@ -39,6 +39,7 @@ public class ClockManager {
 
     static final int TEENSY_VID = 0x16c0;
     static final int USB_READ_TIMEOUT_MS = 200;
+    static final int DEFAULT_DRIFT_LIMIT_US = 1500;
     public static final String TAG = "WaltClockManager";
     public static final String PROTOCOL_VERSION = "1";
     private static final String USB_PERMISSION_RESPONSE_INTENT = "usb-permission-response";
@@ -390,15 +391,21 @@ public class ClockManager {
         mLogger.log("Synced clocks, maxE=" + maxE + "us");
     }
 
-    public void logDrift() {
+    public void checkDrift() {
         if (! isConnected()) {
-            mLogger.log("ERROR: Not connected, aborting logDrift()");
+            mLogger.log("ERROR: Not connected, aborting checkDrift()");
             return;
         }
         updateBounds();
         int minE = getMinE();
         int maxE = getMaxE();
-        mLogger.log(String.format("Remote clock delayed between %d and %d us", minE, maxE));
+        int drift = Math.abs(minE + maxE) / 2;
+        String msg = String.format("Remote clock delayed between %d and %d us", minE, maxE);
+        // TODO: Convert the limit to user editable preference
+        if (drift > DEFAULT_DRIFT_LIMIT_US) {
+            msg = "WARNING: High clock drift. " + msg;
+        }
+        mLogger.log(msg);
     }
 
     public long readLastShockTime_mock() {
