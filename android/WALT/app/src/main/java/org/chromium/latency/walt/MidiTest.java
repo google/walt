@@ -195,7 +195,7 @@ class MidiTest {
 
         clockManager.stopListener();
         clockManager.clearTriggerHandler();
-        clockManager.logDrift();
+        clockManager.checkDrift();
     }
 
     private Runnable requestNoteRunnable = new Runnable() {

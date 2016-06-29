@@ -193,6 +193,7 @@ public class TapLatencyFragment extends Fragment
 
     void finishAndShowStats() {
         logger.log("\n\n## Processing tap latency data");
+        clockManager.checkDrift();
         logger.log(String.format(
                 "Counts: ACTION_DOWN %d (bad %d), ACTION_UP %d (bad %d), ACTION_MOVE %d",
                 okDownCount,
@@ -201,14 +202,6 @@ public class TapLatencyFragment extends Fragment
                 allUpConunt - okUpCount,
                 moveCount
         ));
-
-
-        // Check drift
-        clockManager.updateBounds();
-        int minE = clockManager.getMinE();
-        int maxE = clockManager.getMaxE();
-        logger.log(String.format("Remote clock delayed between %d and %d us", minE, maxE));
-        // TODO: check the drift and display warning if too high. Optionally interpolate drift as linear.
 
         // TODO: Here we should fire up a new fragment with histogram(s)
         // For now do the stats here and save them to log

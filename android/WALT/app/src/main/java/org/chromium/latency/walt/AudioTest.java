@@ -266,7 +266,7 @@ class AudioTest {
     private void finishAndShowStats() {
         clockManager.stopListener();
         clockManager.clearTriggerHandler();
-        clockManager.logDrift();
+        clockManager.checkDrift();
 
         logger.log("deltas: " + deltas.toString());
         logger.log(String.format(Locale.US,

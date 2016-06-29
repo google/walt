@@ -188,6 +188,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         // Unregister trigger handler
         clockManager.clearTriggerHandler();
 
+        clockManager.checkDrift();
+
         // Show deltas and the median
         logger.log("deltas: " + deltas.toString());
         logger.log(String.format(

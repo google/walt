@@ -178,6 +178,8 @@ public class DragLatencyFragment extends Fragment
         mTouchCatcher.setOnTouchListener(null);
         clockManager.clearTriggerHandler();
 
+        clockManager.checkDrift();
+
         logger.log(String.format(
                 "Recorded %d laser events and %d touch events. ",
                 laserEventList.size(),
