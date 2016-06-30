@@ -103,7 +103,8 @@ public class AutoRunFragment extends Fragment {
                 clockManager.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
-                        AudioTest audioTest = new AudioTest(getContext());
+                        AudioTest audioTest = new AudioTest(getContext(), resultHandler);
+                        audioTest.setRecordingRepetitions(reps);
                         audioTest.beginRecordingTest();
                         toTearDown = audioTest;
                     }
@@ -115,7 +116,7 @@ public class AutoRunFragment extends Fragment {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
-                        audioTest.setBeepCount(reps);
+                        audioTest.setPlaybackRepetitions(reps);
                         audioTest.startMeasurement();
                         toTearDown = audioTest;
                     }

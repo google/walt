@@ -50,11 +50,16 @@ class AudioTest {
     private int frameRateInt;
 
     private int mInitiatedBeeps, mDetectedBeeps;
-    private int timesToBeep = 10;
-    private static final int syncAfterBeeps = 20;
-    // long[] deltas = new long[timesToBeep];
-    ArrayList<Double> deltas = new ArrayList<>();
-    ArrayList<Double> deltasJ2N = new ArrayList<>();
+    private int mPlaybackRepetitions = 10;
+    private static final int playbackSyncAfterRepetitions = 20;
+
+    // Audio out
+    private int mRequestedBeeps;
+    private int mRecordingRepetitions = 5;
+    private static int recorderSyncAfterRepetitions = 10;
+
+    private ArrayList<Double> deltas = new ArrayList<>();
+    private ArrayList<Double> deltasJ2N = new ArrayList<>();
 
     long mLastBeepTime;
 
@@ -97,8 +102,12 @@ class AudioTest {
         this.resultHandler = resultHandler;
     }
 
-    void setBeepCount(int beepCount) {
-        timesToBeep = beepCount;
+    void setPlaybackRepetitions(int beepCount) {
+        mPlaybackRepetitions = beepCount;
+    }
+
+    void setRecordingRepetitions(int beepCount) {
+        mRecordingRepetitions = beepCount;
     }
 
     void teardown() {
@@ -107,15 +116,33 @@ class AudioTest {
     }
 
     void beginRecordingTest() {
-        try {
-            clockManager.syncClock();
-        } catch (IOException e) {
-            logger.log("Error syncing clocks: " + e.getMessage());
-            return;
-        }
+        deltas.clear();
+
         framesToRecord = (int) (0.001 * msToRecord * frameRateInt);
         createAudioRecorder(frameRateInt, framesToRecord);
         logger.log("Audio recorder created; starting test");
+
+        mRequestedBeeps = 0;
+        doRecordingTestRepetition();
+    }
+
+    private void doRecordingTestRepetition() {
+        if (mRequestedBeeps > mRecordingRepetitions) {
+            finishRecordingTest();
+            return;
+        }
+
+        if (mRequestedBeeps % recorderSyncAfterRepetitions == 0) {
+            try {
+                clockManager.syncClock();
+            } catch (IOException e) {
+                logger.log("Error syncing clocks: " + e.getMessage());
+                finishRecordingTest();
+                return;
+            }
+        }
+
+        mRequestedBeeps++;
         startRecording();
         handler.postDelayed(requestBeepRunnable, msToRecord / 2);
     }
@@ -129,6 +156,7 @@ class AudioTest {
             return;
         }
         deltas.clear();
+        deltasJ2N.clear();
 
         logger.log("Starting playback test");
 
@@ -175,8 +203,8 @@ class AudioTest {
                 return;
             }
 
-            if (mInitiatedBeeps >= timesToBeep) {
-                finishAndShowStats();
+            if (mInitiatedBeeps >= mPlaybackRepetitions) {
+                finishPlaybackTest();
                 return;
             }
 
@@ -184,14 +212,14 @@ class AudioTest {
             // deltas[mInitiatedBeeps] = 0;
             mInitiatedBeeps++;
 
-            if (mInitiatedBeeps % syncAfterBeeps == 0) {
+            if (mInitiatedBeeps % playbackSyncAfterRepetitions == 0) {
                 try {
                     clockManager.stopListener();
                     clockManager.syncClock();
                     clockManager.startListener();
                 } catch (IOException e) {
                     logger.log("Error re-syncing clock: " + e.getMessage());
-                    finishAndShowStats();
+                    finishPlaybackTest();
                     return;
                 }
             }
@@ -247,6 +275,7 @@ class AudioTest {
                 noisyAtFrame++;
             if (noisyAtFrame == wave.length) {
                 logger.log("WARNING: No sound detected");
+                doRecordingTestRepetition();
                 return;
             }
 
@@ -260,10 +289,13 @@ class AudioTest {
                     latencyEnqueue_ms,
                     noisyAtFrame
             ));
+
+            deltas.add(latencyCb_ms);
+            doRecordingTestRepetition();
         }
     };
 
-    private void finishAndShowStats() {
+    private void finishPlaybackTest() {
         clockManager.stopListener();
         clockManager.clearTriggerHandler();
         clockManager.checkDrift();
@@ -272,6 +304,20 @@ class AudioTest {
         logger.log(String.format(Locale.US,
                 "Median Java to native latency %.3f ms\nMedian audio latency %.1f ms",
                 Utils.median(deltasJ2N),
+                Utils.median(deltas)
+        ));
+
+        if (resultHandler != null) {
+            resultHandler.onResult(deltas);
+        }
+    }
+
+    private void finishRecordingTest() {
+        clockManager.checkDrift();
+
+        logger.log("deltas: " + deltas.toString());
+        logger.log(String.format(Locale.US,
+                "Median audio recording latency %.1f ms",
                 Utils.median(deltas)
         ));
 
