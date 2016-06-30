@@ -34,6 +34,9 @@ import java.util.ArrayList;
  * Measurement of screen response time when switching between black and white.
  */
 public class ScreenResponseFragment extends Fragment implements View.OnClickListener {
+
+    private static final int curveTimeout = 1000;  // milliseconds
+    private static final int curveBlinkTime = 250;  // milliseconds
     private Activity activity;
     private SimpleLogger logger;
     private ClockManager clockManager;
@@ -45,6 +48,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     boolean mIsBoxWhite = false;
     long mLastFlipTime;
     ArrayList<Double> deltas = new ArrayList<>();
+    private static final int color_gray = Color.argb(0xFF, 0xBB, 0xBB, 0xBB);
+    private StringBuilder brightnessCurveData = new StringBuilder();
 
     public ScreenResponseFragment() {
         // Required empty public constructor
@@ -71,6 +76,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         // Register this fragment class as the listener for some button clicks
         activity.findViewById(R.id.button_restart_screen_response).setOnClickListener(this);
         activity.findViewById(R.id.button_start_screen_response).setOnClickListener(this);
+        activity.findViewById(R.id.button_brightness_curve).setOnClickListener(this);
     }
 
 
@@ -181,6 +187,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
     };
 
+
     void finishAndShowStats() {
         // Stop the USB listener
         clockManager.stopListener();
@@ -199,13 +206,14 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
         mBlackBox.setText(logger.getLogText());
         mBlackBox.setMovementMethod(new ScrollingMovementMethod());
-        mBlackBox.setBackgroundColor(Color.argb(0xFF, 0xBB, 0xBB, 0xBB));;
+        mBlackBox.setBackgroundColor(color_gray);
     }
 
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.button_restart_screen_response) {
-            // TODO: change to "Stop measurement"
+            // TODO: change to "Stop measurement?"
+            mBlackBox.setBackgroundColor(Color.BLACK);
             return;
         }
 
@@ -215,5 +223,87 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             return;
         }
 
+        if (v.getId() == R.id.button_brightness_curve) {
+            logger.log("Starting screen brightness curve measurement");
+            startBrightnessCurve();
+            return;
+        }
+
     }
+
+    private ClockManager.TriggerHandler brightnessTriggerHandler = new ClockManager.TriggerHandler() {
+        @Override
+        public void onReceive(ClockManager.TriggerMessage tmsg) {
+            logger.log("ERROR: Brightness curve trigger got a trigger message, " +
+                    "this should never happen."
+            );
+        }
+
+        @Override
+        public void onReceiveRaw(String s) {
+            brightnessCurveData.append(s);
+            if (s.trim().equals("end")) {
+                // Remove the delayed callbed and run it now
+                handler.removeCallbacks(finishBrightnessCurve);
+                handler.post(finishBrightnessCurve);
+            }
+        }
+    };
+
+    void startBrightnessCurve() {
+        try {
+            clockManager.syncClock();
+            clockManager.startListener();
+        } catch (IOException e) {
+            logger.log("Error starting test: " + e.getMessage());
+            return;
+        }
+
+        clockManager.setTriggerHandler(brightnessTriggerHandler);
+
+        mBlackBox.setText("");
+
+        long tStart = clockManager.micros();
+
+        try {
+            clockManager.command(ClockManager.CMD_BRIGHTNESS_CURVE);
+        } catch (IOException e) {
+            logger.log("Error sending command CMD_BRIGHTNESS_CURVE: " + e.getMessage());
+            return;
+        }
+
+        mBlackBox.setBackgroundColor(Color.WHITE);
+
+        logger.log("=== Screen brightness curve: ===\nt_start: " + tStart);
+
+        handler.postDelayed(finishBrightnessCurve, curveTimeout);
+
+        // Schedule the screen to flip back to black in curveBlinkTime ms
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                long tBack = clockManager.micros();
+                mBlackBox.setBackgroundColor(Color.BLACK);
+                logger.log("t_back: " + tBack);
+
+            }
+        }, curveBlinkTime);
+
+    }
+
+    Runnable finishBrightnessCurve = new Runnable() {
+        @Override
+        public void run() {
+            clockManager.stopListener();
+            clockManager.clearTriggerHandler();
+
+            // TODO: Add option to save this data into a separate file rather than the main log.
+            logger.log(brightnessCurveData.toString());
+            logger.log("=== End of screen brightness data ===");
+
+            mBlackBox.setText(logger.getLogText());
+            mBlackBox.setMovementMethod(new ScrollingMovementMethod());
+            mBlackBox.setBackgroundColor(color_gray);
+        }
+    };
 }

@@ -21,12 +21,25 @@
                 android:layout_alignParentLeft="true"
                 android:src="@drawable/ic_refresh_black_24dp" />
 
-            <ImageButton
-                android:id="@+id/button_start_screen_response"
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
-                android:src="@drawable/ic_play_arrow_black_24dp" />
+                android:orientation="horizontal">
+                <ImageButton
+                    android:id="@+id/button_brightness_curve"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:src="@drawable/ic_equalizer_black_24dp" />
+                <ImageButton
+                    android:id="@+id/button_start_screen_response"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:src="@drawable/ic_play_arrow_black_24dp" />
+            </LinearLayout>
         </RelativeLayout>
 
         <!-- The big box that flickers between black and white -->
