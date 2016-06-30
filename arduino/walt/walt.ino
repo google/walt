@@ -31,6 +31,7 @@
 #define CMD_AUTO_SCREEN_ON      'C'
 #define CMD_AUTO_SCREEN_OFF     'c'
 #define CMD_SEND_LAST_SCREEN    'E'
+#define CMD_BRIGHTNESS_CURVE      'U'
 
 #define CMD_AUTO_LASER_ON       'L'
 #define CMD_AUTO_LASER_OFF      'l'
@@ -49,7 +50,7 @@
 // for most LEDs.
 #define LED_PIN_GREEN 16
 #define LED_PIN_RED 17
-#define LED_PIN_YELLOW 5  // or 21
+#define DEBUG_LED2 21
 
 // Pins for the relay based touch probes, collide with LEDs above
 #define TOUCH_PIN_A 16
@@ -155,7 +156,7 @@ void init_vars() {
 void setup() {
   pinMode(LED_PIN_RED, OUTPUT);
   pinMode(LED_PIN_GREEN, OUTPUT);
-  pinMode(LED_PIN_YELLOW, OUTPUT);
+  pinMode(DEBUG_LED2, OUTPUT);
   pinMode(LED_PIN_INT, OUTPUT);
 
   pinMode(TOUCH_PIN_A, OUTPUT);
@@ -176,6 +177,25 @@ void setup() {
   init_vars();
 }
 
+
+void run_brightness_curve() {
+  int i;
+  long t;
+  short v;
+  digitalWrite(DEBUG_LED2, HIGH);
+  for (i = 0; i < 1000; i++) {
+    v = analogRead(PD_SCREEN_PIN);
+    t = time_us;
+    Serial.print(t);
+    Serial.print(" ");
+    Serial.println(v);
+    delayMicroseconds(450);
+  }
+  digitalWrite(DEBUG_LED2, LOW);
+  Serial.send_now();
+  Serial.println("end");
+  Serial.send_now();
+}
 
 void process_command(char cmd) {
   int i;
@@ -284,6 +304,10 @@ void process_command(char cmd) {
     } else if (cmd == CMD_SEND_LAST_LASER) {
       send_trigger(laser);
       laser.count = 0;
+    } else if (cmd == CMD_BRIGHTNESS_CURVE) {
+      send_ack(CMD_BRIGHTNESS_CURVE);
+      // This blocks all other execution for about 1 second
+      run_brightness_curve();
     } else {
       Serial.print("Unknown command:");
       Serial.println(cmd);
