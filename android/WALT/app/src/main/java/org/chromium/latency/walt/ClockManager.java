@@ -41,7 +41,7 @@ public class ClockManager {
     static final int USB_READ_TIMEOUT_MS = 200;
     static final int DEFAULT_DRIFT_LIMIT_US = 1500;
     public static final String TAG = "WaltClockManager";
-    public static final String PROTOCOL_VERSION = "1";
+    public static final String PROTOCOL_VERSION = "2";
     private static final String USB_PERMISSION_RESPONSE_INTENT = "usb-permission-response";
     private static final String CONNECT_INTENT = "org.chromium.latency.walt.CONNECT";
 

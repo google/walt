@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define VERSION                 "1"
+#define VERSION                 "2"
 
 // Commands
 // Digits 1 to 9 reserved for clock sync
@@ -41,6 +41,8 @@
 
 #define CMD_MIDI                'M'
 #define CMD_NOTE                'N'
+
+#define NOTE_DELAY 10000 // 10 ms
 
 
 // On Teensy LC probably need to use the high current pins
@@ -252,13 +254,15 @@ void process_command(char cmd) {
       midi.autosend = true;
       send_ack(CMD_MIDI);
     } else if (cmd == CMD_NOTE) {
-      long note_time = time_us;
-      usbMIDI.sendNoteOn(60, 99, 1);
-      usbMIDI.send_now();
+      long note_time = time_us + NOTE_DELAY;
       Serial.print(flip_case(cmd));
       Serial.print(" ");
       Serial.println(note_time);
       Serial.send_now();
+      while (time_us < note_time);
+      usbMIDI.sendNoteOn(60, 99, 1);
+      usbMIDI.send_now();
+
     } else if (cmd == CMD_AUTO_SCREEN_ON) {
       screen.value = analogRead(PD_SCREEN_PIN) > SCREEN_THRESH_HIGH;
       screen.autosend = true;
