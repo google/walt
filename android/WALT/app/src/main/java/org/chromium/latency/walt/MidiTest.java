@@ -54,8 +54,9 @@ class MidiTest {
     private long last_tSys = 0;
     private long last_tJava = 0;
 
-    private static int syncAfterRepetitions = 100;
-    private int mRepetitions = 50;
+    private int mInputSyncAfterRepetitions = 100;
+    private int mOutputSyncAfterRepetitions = 20; // TODO: implement periodic clock sync for output
+    private int mInputRepetitions = 100, mOutputRepetitions = 10;
     private int mRepetitionsDone;
     private ArrayList<Double> deltasToSys = new ArrayList<>();
     private ArrayList<Double> deltasTotal = new ArrayList<>();
@@ -75,8 +76,12 @@ class MidiTest {
         this.resultHandler = resultHandler;
     }
 
-    void setRepetitions (int repetitions) {
-        mRepetitions = repetitions;
+    void setInputRepetitions(int repetitions) {
+        mInputRepetitions = repetitions;
+    }
+
+    void setOutputRepetitions(int repetitions) {
+        mOutputRepetitions = repetitions;
     }
 
     void testMidiOut() {
@@ -100,8 +105,7 @@ class MidiTest {
             logger.log("Error setting up test: " + e.getMessage());
             return;
         }
-        scheduleNote();
-        handler.postDelayed(cancelMidiOutRunnable, noteDelay + timeout);
+        handler.postDelayed(cancelMidiOutRunnable, noteDelay * mInputRepetitions + timeout);
     }
 
     void testMidiIn() {
@@ -129,12 +133,17 @@ class MidiTest {
     }
 
     private void setupMidiOut() throws IOException {
+        mRepetitionsDone = 0;
+        deltasTotal.clear();
+
         mInputPort = mMidiDevice.openInputPort(0);
 
         clockManager.syncClock();
         clockManager.command(ClockManager.CMD_MIDI);
         clockManager.startListener();
         clockManager.setTriggerHandler(triggerHandler);
+
+        scheduleNotes();
     }
 
     private void findMidiDevice() {
@@ -170,18 +179,32 @@ class MidiTest {
 
             logger.log(String.format(Locale.US, "Note detected: latency of %.3f ms", dt));
 
-            finishMidiOut();
+            last_tSys += noteDelay * 1000;
+            mRepetitionsDone++;
+
+            if (mRepetitionsDone < mOutputRepetitions) {
+                try {
+                    clockManager.command(ClockManager.CMD_MIDI);
+                } catch (IOException e) {
+                    logger.log("Failed to send command CMD_MIDI: " + e.getMessage());
+                }
+            } else {
+                finishMidiOut();
+            }
         }
     };
 
-    private void scheduleNote() {
+    private void scheduleNotes() {
         if(mInputPort == null) {
             logger.log("mInputPort is not open");
             return;
         }
-        long t = System.nanoTime() + noteDelay * 1000 * 1000;
+        long t = System.nanoTime() + ((long) noteDelay) * 1000000L;
         try {
-            mInputPort.send(noteMsg, 0, noteMsg.length, t);
+            // TODO: only schedule some, then sync clock
+            for (int i = 0; i < mOutputRepetitions; i++) {
+                mInputPort.send(noteMsg, 0, noteMsg.length, t + ((long) noteDelay) * 1000000L * i);
+            }
         } catch(IOException e) {
             logger.log("Unable to schedule note: " + e.getMessage());
             return;
@@ -193,6 +216,9 @@ class MidiTest {
         logger.log("All notes detected");
         handler.removeCallbacks(cancelMidiOutRunnable);
 
+        if (resultHandler != null) {
+            resultHandler.onResult(deltasTotal);
+        }
         teardownMidiOut();
     }
 
@@ -269,7 +295,7 @@ class MidiTest {
                 deltasTotal.add(dt);
 
                 mRepetitionsDone++;
-                if (mRepetitionsDone % syncAfterRepetitions == 0) {
+                if (mRepetitionsDone % mInputSyncAfterRepetitions == 0) {
                     try {
                         clockManager.syncClock();
                     } catch (IOException e) {
@@ -278,7 +304,7 @@ class MidiTest {
                         return;
                     }
                 }
-                if (mRepetitionsDone < mRepetitions) {
+                if (mRepetitionsDone < mInputRepetitions) {
                     handler.post(requestNoteRunnable);
                 } else {
                     handler.post(finishMidiInRunnable);

@@ -30,7 +30,6 @@ import android.widget.TextView;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 
 public class AutoRunFragment extends Fragment {
@@ -100,7 +99,7 @@ public class AutoRunFragment extends Fragment {
                     @Override
                     public void run() {
                         MidiTest midiTest = new MidiTest(getContext(), resultHandler);
-                        midiTest.setRepetitions(reps);
+                        midiTest.setInputRepetitions(reps);
                         midiTest.testMidiIn();
                     }
                 });
@@ -110,7 +109,8 @@ public class AutoRunFragment extends Fragment {
                 clockManager.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
-                        MidiTest midiTest = new MidiTest(getContext());
+                        MidiTest midiTest = new MidiTest(getContext(), resultHandler);
+                        midiTest.setOutputRepetitions(reps);
                         midiTest.testMidiOut();
                     }
                 });
