@@ -82,7 +82,7 @@
             </LinearLayout>
 
             <!-- Overlay semi-transparent view that catches the touch events -->
-            <TextView
+            <org.chromium.latency.walt.TouchCatcherView
                 android:id="@+id/tap_catcher"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
