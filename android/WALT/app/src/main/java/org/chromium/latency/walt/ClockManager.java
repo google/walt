@@ -59,6 +59,7 @@ public class ClockManager {
     static final char CMD_AUTO_SCREEN_ON   = 'C'; // Send a message on screen color change
     static final char CMD_AUTO_SCREEN_OFF  = 'c';
     static final char CMD_SEND_LAST_SCREEN = 'E'; // Send info about last screen color change
+    static final char CMD_BRIGHTNESS_CURVE = 'U'; // Probe screen for brightness vs time curve
     static final char CMD_AUTO_LASER_ON    = 'L'; // Send messages on state change of the laser
     static final char CMD_AUTO_LASER_OFF   = 'l';
     static final char CMD_SEND_LAST_LASER  = 'J';
@@ -438,20 +439,21 @@ public class ClockManager {
         public int count;
         // TODO: verify the format of the message while parsing it
         TriggerMessage(String s) {
-            String[] parts = s.split("\\s+");
+            String[] parts = s.trim().split("\\s+");
             tag = parts[0].charAt(0);
             t = Integer.parseInt(parts[1]);
             value = Integer.parseInt(parts[2]);
             count = Integer.parseInt(parts[3]);
         }
+
+        static boolean isTriggerString(String s) {
+            return s.trim().matches("G\\s+[A-Z]\\s+\\d+\\s+\\d+.*");
+        }
     }
 
     TriggerMessage readTriggerMessage(char cmd) throws IOException {
-        return parseTriggerMessage(command(cmd, 'G'));
-    }
-
-    TriggerMessage parseTriggerMessage(String s) {
-        return new TriggerMessage(s.trim());
+        String response = command(cmd, 'G');
+        return new TriggerMessage(response);
     }
 
 
@@ -478,13 +480,22 @@ public class ClockManager {
             handler = new Handler();
         }
 
-        private void go(final TriggerMessage tmsg) {
+        private void go(final String s) {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    onReceive(tmsg);
+                    onReceiveRaw(s);
                 }
             });
+        }
+
+        void onReceiveRaw(String s) {
+            if (TriggerMessage.isTriggerString(s)) {
+                TriggerMessage tmsg = new TriggerMessage(s.substring(1).trim());
+                onReceive(tmsg);
+            } else {
+                Log.i(TAG, "Malformed trigger data: " + s);
+            }
         }
 
         abstract void onReceive(TriggerMessage tmsg);
@@ -513,8 +524,8 @@ public class ClockManager {
                 if (ret > 0 && mTriggerHandler != null) {
                     String s = new String(buffer, 0, ret);
                     Log.i(TAG, "Listener received data: " + s);
-                    if (s.length() > 0 && s.charAt(0) == 'G') {
-                        mTriggerHandler.go(parseTriggerMessage(s.substring(1).trim()));
+                    if (s.length() > 0) {
+                        mTriggerHandler.go(s);
                     }
                 }
             }
