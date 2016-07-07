@@ -30,7 +30,7 @@ import android.widget.TextView;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Iterator;
 
 public class AutoRunFragment extends Fragment {
 
@@ -47,11 +47,26 @@ public class AutoRunFragment extends Fragment {
         }
 
         @Override
-        public void onResult(ArrayList<Double> r) {
+        public void onResult(Iterable[] results) {
+            if (results.length == 0) {
+                logger.log("Can't write empty data!");
+                return;
+            }
             logger.log("Writing data file");
+
+            Iterator its[] = new Iterator[results.length];
+
+            for (int i = 0; i < results.length; i++) {
+                its[i] = results[i].iterator();
+            }
             try {
-                for (double v : r) {
-                    fileWriter.write(v + ",\n");
+                while (its[0].hasNext()) {
+                    for (Iterator it : its) {
+                        if (it.hasNext()) {
+                            fileWriter.write(it.next().toString() + ",");
+                        }
+                    }
+                    fileWriter.write("\n");
                 }
             } catch (IOException e) {
                 logger.log("Error writing output file: " + e.getMessage());
@@ -83,7 +98,8 @@ public class AutoRunFragment extends Fragment {
                 clockManager.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
-                        MidiTest midiTest = new MidiTest(getContext());
+                        MidiTest midiTest = new MidiTest(getContext(), resultHandler);
+                        midiTest.setInputRepetitions(reps);
                         midiTest.testMidiIn();
                     }
                 });
@@ -93,7 +109,8 @@ public class AutoRunFragment extends Fragment {
                 clockManager.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
-                        MidiTest midiTest = new MidiTest(getContext());
+                        MidiTest midiTest = new MidiTest(getContext(), resultHandler);
+                        midiTest.setOutputRepetitions(reps);
                         midiTest.testMidiOut();
                     }
                 });
@@ -103,7 +120,8 @@ public class AutoRunFragment extends Fragment {
                 clockManager.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
-                        AudioTest audioTest = new AudioTest(getContext());
+                        AudioTest audioTest = new AudioTest(getContext(), resultHandler);
+                        audioTest.setRecordingRepetitions(reps);
                         audioTest.beginRecordingTest();
                         toTearDown = audioTest;
                     }
@@ -115,7 +133,7 @@ public class AutoRunFragment extends Fragment {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
-                        audioTest.setBeepCount(reps);
+                        audioTest.setPlaybackRepetitions(reps);
                         audioTest.startMeasurement();
                         toTearDown = audioTest;
                     }
@@ -126,7 +144,7 @@ public class AutoRunFragment extends Fragment {
     }
 
     interface ResultHandler {
-        void onResult(ArrayList<Double> r);
+        void onResult(Iterable... r);
     }
 
     @Override

@@ -27,6 +27,7 @@ import android.media.midi.MidiReceiver;
 import android.os.Handler;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Locale;
 
 @TargetApi(23)
@@ -35,6 +36,8 @@ class MidiTest {
     private SimpleLogger logger;
     private ClockManager clockManager;
     private Handler handler = new Handler();
+
+    private AutoRunFragment.ResultHandler resultHandler;
 
     private static final String TEENSY_MIDI_NAME = "Teensyduino Teensy MIDI";
     private static final byte[] noteMsg = {(byte) 0x90, (byte) 99, (byte) 0};
@@ -51,6 +54,13 @@ class MidiTest {
     private long last_tSys = 0;
     private long last_tJava = 0;
 
+    private int mInputSyncAfterRepetitions = 100;
+    private int mOutputSyncAfterRepetitions = 20; // TODO: implement periodic clock sync for output
+    private int mInputRepetitions = 100, mOutputRepetitions = 10;
+    private int mRepetitionsDone;
+    private ArrayList<Double> deltasToSys = new ArrayList<>();
+    private ArrayList<Double> deltasTotal = new ArrayList<>();
+
     private static final int noteDelay = 300;
     private static final int timeout = 1000;
 
@@ -59,6 +69,19 @@ class MidiTest {
         logger = SimpleLogger.getInstance(context);
         mMidiManager = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);
         findMidiDevice();
+    }
+
+    MidiTest(Context context, AutoRunFragment.ResultHandler resultHandler) {
+        this(context);
+        this.resultHandler = resultHandler;
+    }
+
+    void setInputRepetitions(int repetitions) {
+        mInputRepetitions = repetitions;
+    }
+
+    void setOutputRepetitions(int repetitions) {
+        mOutputRepetitions = repetitions;
     }
 
     void testMidiOut() {
@@ -82,8 +105,7 @@ class MidiTest {
             logger.log("Error setting up test: " + e.getMessage());
             return;
         }
-        scheduleNote();
-        handler.postDelayed(cancelMidiOutRunnable, noteDelay + timeout);
+        handler.postDelayed(cancelMidiOutRunnable, noteDelay * mInputRepetitions + timeout);
     }
 
     void testMidiIn() {
@@ -111,12 +133,17 @@ class MidiTest {
     }
 
     private void setupMidiOut() throws IOException {
+        mRepetitionsDone = 0;
+        deltasTotal.clear();
+
         mInputPort = mMidiDevice.openInputPort(0);
 
         clockManager.syncClock();
         clockManager.command(ClockManager.CMD_MIDI);
         clockManager.startListener();
         clockManager.setTriggerHandler(triggerHandler);
+
+        scheduleNotes();
     }
 
     private void findMidiDevice() {
@@ -152,18 +179,32 @@ class MidiTest {
 
             logger.log(String.format(Locale.US, "Note detected: latency of %.3f ms", dt));
 
-            finishMidiOut();
+            last_tSys += noteDelay * 1000;
+            mRepetitionsDone++;
+
+            if (mRepetitionsDone < mOutputRepetitions) {
+                try {
+                    clockManager.command(ClockManager.CMD_MIDI);
+                } catch (IOException e) {
+                    logger.log("Failed to send command CMD_MIDI: " + e.getMessage());
+                }
+            } else {
+                finishMidiOut();
+            }
         }
     };
 
-    private void scheduleNote() {
+    private void scheduleNotes() {
         if(mInputPort == null) {
             logger.log("mInputPort is not open");
             return;
         }
-        long t = System.nanoTime() + noteDelay * 1000 * 1000;
+        long t = System.nanoTime() + ((long) noteDelay) * 1000000L;
         try {
-            mInputPort.send(noteMsg, 0, noteMsg.length, t);
+            // TODO: only schedule some, then sync clock
+            for (int i = 0; i < mOutputRepetitions; i++) {
+                mInputPort.send(noteMsg, 0, noteMsg.length, t + ((long) noteDelay) * 1000000L * i);
+            }
         } catch(IOException e) {
             logger.log("Unable to schedule note: " + e.getMessage());
             return;
@@ -175,6 +216,9 @@ class MidiTest {
         logger.log("All notes detected");
         handler.removeCallbacks(cancelMidiOutRunnable);
 
+        if (resultHandler != null) {
+            resultHandler.onResult(deltasTotal);
+        }
         teardownMidiOut();
     }
 
@@ -210,25 +254,25 @@ class MidiTest {
                 return;
             }
             last_tWalt = Integer.parseInt(s);
-            handler.postDelayed(finishMidiInRunnable, noteDelay);
+            handler.postDelayed(finishMidiInRunnable, timeout);
         }
     };
 
     private Runnable finishMidiInRunnable = new Runnable() {
         @Override
         public void run() {
-            if(last_tSys != 0) {
-                teardownMidiIn();
-                double d1 = (last_tSys - last_tWalt) / 1000.;
-                double d2 = (last_tJava - last_tSys) / 1000.;
-                double dt = (last_tJava - last_tWalt) / 1000.;
-                logger.log(String.format(Locale.US,
-                        "Result: Time to MIDI subsystem = %.3f ms, Time to Java = %.3f ms, " +
-                                "Total = %.3f ms",
-                        d1, d2, dt));
-            } else {
-                handler.postDelayed(finishMidiInRunnable, noteDelay);
+            clockManager.checkDrift();
+
+            logger.log("deltas: " + deltasToSys.toString());
+            logger.log(String.format(Locale.US,
+                    "Median MIDI subsystem latency %.1f ms\nMedian total latency %.1f ms",
+                    Utils.median(deltasToSys), Utils.median(deltasTotal)
+            ));
+
+            if (resultHandler != null) {
+                resultHandler.onResult(deltasToSys, deltasTotal);
             }
+            teardownMidiIn();
         }
     };
 
@@ -236,8 +280,35 @@ class MidiTest {
         public void onSend(byte[] data, int offset,
                            int count, long timestamp) throws IOException {
             if(count > 0 && data[offset] == (byte) 0x90) { // NoteOn message on channel 1
+                handler.removeCallbacks(finishMidiInRunnable);
                 last_tJava = clockManager.micros();
                 last_tSys = timestamp / 1000 - clockManager.baseTime;
+
+                double d1 = (last_tSys - last_tWalt) / 1000.;
+                double d2 = (last_tJava - last_tSys) / 1000.;
+                double dt = (last_tJava - last_tWalt) / 1000.;
+                logger.log(String.format(Locale.US,
+                        "Result: Time to MIDI subsystem = %.3f ms, Time to Java = %.3f ms, " +
+                                "Total = %.3f ms",
+                        d1, d2, dt));
+                deltasToSys.add(d1);
+                deltasTotal.add(dt);
+
+                mRepetitionsDone++;
+                if (mRepetitionsDone % mInputSyncAfterRepetitions == 0) {
+                    try {
+                        clockManager.syncClock();
+                    } catch (IOException e) {
+                        logger.log("Error syncing clocks: " + e.getMessage());
+                        handler.post(finishMidiInRunnable);
+                        return;
+                    }
+                }
+                if (mRepetitionsDone < mInputRepetitions) {
+                    handler.post(requestNoteRunnable);
+                } else {
+                    handler.post(finishMidiInRunnable);
+                }
             } else {
                 logger.log(String.format(Locale.US, "Expected 0x90, got 0x%x and count was %d",
                         data[offset], count));
@@ -246,12 +317,15 @@ class MidiTest {
     }
 
     private void setupMidiIn() throws IOException {
+        mRepetitionsDone = 0;
         mOutputPort = mMidiDevice.openOutputPort(0);
         mOutputPort.connect(new WaltReceiver());
         clockManager.syncClock();
     }
 
     private void teardownMidiIn() {
+        handler.removeCallbacks(requestNoteRunnable);
+        handler.removeCallbacks(finishMidiInRunnable);
         try {
             mOutputPort.close();
         } catch (IOException e) {
