@@ -146,6 +146,7 @@ public class DragLatencyFragment extends Fragment
         } catch (IOException e) {
             logger.log("Error: " + e.getMessage());
         }
+        mTouchCatcher.startAnimation();
     }
 
     void restartMeasurement() {
@@ -155,6 +156,8 @@ public class DragLatencyFragment extends Fragment
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
         }
+
+        mTouchCatcher.startAnimation();
 
         touchEventList.clear();
 
@@ -169,6 +172,7 @@ public class DragLatencyFragment extends Fragment
 
 
     void finishAndShowStats() {
+        mTouchCatcher.stopAnimation();
         clockManager.stopListener();
         try {
             clockManager.command(ClockManager.CMD_AUTO_LASER_OFF);
