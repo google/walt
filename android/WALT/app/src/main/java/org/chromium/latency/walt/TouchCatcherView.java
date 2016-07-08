@@ -31,7 +31,7 @@ public class TouchCatcherView extends View {
     private ClockManager clockManager;
     private boolean isAnimated = false;
 
-    private double animationAmplitude = 0.4;  // Faction of view height
+    private double animationAmplitude = 0.4;  // Fraction of view height
     private double lineLength = 0.6;  // Fraction of view width
     public final int animationPeriod_us = 1000000;
 
