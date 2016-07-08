@@ -38,7 +38,7 @@ public class DragLatencyFragment extends Fragment
     private SimpleLogger logger;
     private ClockManager clockManager;
     TextView mLogTextView;
-    TextView mTouchCatcher;
+    TouchCatcherView mTouchCatcher;
     int moveCount = 0;
     int allDownConunt = 0;
     int allUpConunt = 0;
@@ -106,7 +106,7 @@ public class DragLatencyFragment extends Fragment
         activity.findViewById(R.id.button_start_drag).setOnClickListener(this);
         activity.findViewById(R.id.button_finish_drag).setOnClickListener(this);
 
-        mTouchCatcher = (TextView) activity.findViewById(R.id.tap_catcher);
+        mTouchCatcher = (TouchCatcherView) activity.findViewById(R.id.tap_catcher);
     }
 
     @Override
@@ -146,6 +146,7 @@ public class DragLatencyFragment extends Fragment
         } catch (IOException e) {
             logger.log("Error: " + e.getMessage());
         }
+        mTouchCatcher.startAnimation();
     }
 
     void restartMeasurement() {
@@ -155,6 +156,8 @@ public class DragLatencyFragment extends Fragment
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
         }
+
+        mTouchCatcher.startAnimation();
 
         touchEventList.clear();
 
@@ -169,6 +172,7 @@ public class DragLatencyFragment extends Fragment
 
 
     void finishAndShowStats() {
+        mTouchCatcher.stopAnimation();
         clockManager.stopListener();
         try {
             clockManager.command(ClockManager.CMD_AUTO_LASER_OFF);
