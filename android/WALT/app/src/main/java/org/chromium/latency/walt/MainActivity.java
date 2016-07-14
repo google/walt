@@ -250,6 +250,11 @@ public class MainActivity extends AppCompatActivity {
         switchScreen(logFragment, "Log");
     }
 
+    public void onClickOpenTestHistogram(View view) {
+        HistogramFragment newFragment = new HistogramFragment();
+        switchScreen(newFragment, "Debug hist");
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Handlers for diagnostics menu clicks
     ////////////////////////////////////////////////////////////////////////////////////////////////
