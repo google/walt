@@ -249,7 +249,7 @@
             <!-- About / Help -->
             <LinearLayout
                 style="@style/MenuItemStyle"
-                android:onClick="onClickOpenLog">
+                android:onClick="onClickOpenTestHistogram">
 
                 <ImageView
                     style="@style/MenuIconStyle"

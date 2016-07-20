@@ -151,4 +151,30 @@ public class Utils {
         return bestShift;
     }
 
+    /**
+     * Histogram
+     *
+     * @param v - Data points
+     * @param min - all values below min will be binned into the first bin
+     * @param max - all values above max will be binned into the last bin
+     * @param bin - bin width
+     * @return - histogram, cell i is a count of values within +- bin/2 of min + i*bin
+     */
+    static int[] histogram(ArrayList<Double> v, double min, double max, double bin) {
+        final int N = (int) Math.ceil((max - min) / bin);
+        // max = min + N * bin;  // Shift max to the end of the last bin
+        int[] hist = new int[N];  // Auto initialized to 0
+        for (double elem : v) {
+            double val = (elem - min) / bin;
+            if (val < 0) {
+                hist[0]++;
+            } else if (val >= N) {
+                hist[N-1]++;
+            } else {
+                hist[(int) Math.round(val)]++;
+            }
+        }
+        return hist;
+    }
+
 }

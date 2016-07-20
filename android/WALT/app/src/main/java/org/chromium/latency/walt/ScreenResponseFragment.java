@@ -37,7 +37,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     private static final int curveTimeout = 1000;  // milliseconds
     private static final int curveBlinkTime = 250;  // milliseconds
-    private Activity activity;
+    private MainActivity activity;
     private SimpleLogger logger;
     private ClockManager clockManager;
     private Handler handler = new Handler();
@@ -59,7 +59,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        activity = getActivity();
+        activity = (MainActivity) getActivity();
         clockManager = ClockManager.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
@@ -199,14 +199,22 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
         // Show deltas and the median
         logger.log("deltas: " + deltas.toString());
+        double medianDelta = Utils.median(deltas);
         logger.log(String.format(
                 "Median latency %.1f ms",
-                Utils.median(deltas)
+                medianDelta
         ));
 
         mBlackBox.setText(logger.getLogText());
         mBlackBox.setMovementMethod(new ScrollingMovementMethod());
         mBlackBox.setBackgroundColor(color_gray);
+
+        // Show histogram of the results
+        int [] hist = Utils.histogram(deltas, 0, 120, 1.0);
+        String histLable = String.format("N=%d, median=%.1f ms", deltas.size() , medianDelta);
+        HistogramFragment histogramFragment = new HistogramFragment();
+        histogramFragment.addHist(hist, histLable);
+        activity.switchScreen(histogramFragment, "Screen response stats");
     }
 
     @Override

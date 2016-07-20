@@ -205,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
     // Handlers for main menu clicks
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void switchScreen(Fragment newFragment, String title) {
+    protected void switchScreen(Fragment newFragment, String title) {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setTitle(title);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -248,6 +248,16 @@ public class MainActivity extends AppCompatActivity {
         LogFragment logFragment = new LogFragment();
         // mMenu.findItem(R.id.action_help).setVisible(false);
         switchScreen(logFragment, "Log");
+    }
+
+    // A dev harness to experiment with charts
+    public void onClickOpenTestHistogram(View view) {
+        HistogramFragment newFragment = new HistogramFragment();
+        int [] hist1 = new int[] {0, 0, 5, 6, 0, 2, 1};
+        int [] hist2 = new int[] {0, 0, 4, 7, 4, 3, 2};
+        newFragment.addHist(hist1, "First");
+        newFragment.addHist(hist2, "Second");
+        switchScreen(newFragment, "Debug hist");
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
