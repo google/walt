@@ -13,6 +13,7 @@ WALT is designed to measure the latency of physical sensors and outputs on phone
  * Drag latency (scroll) - [details](docs/DragLatency.md)
  * Screen draw latency - using a photodiode that detects whether the screen is black or white.
  * Audio output and microphone latencies - [details](docs/AudioLatency.md)
+ * MIDI input and output latencies
 
 WALT app for Android can be
 [installed from Google Play](https://play.google.com/store/apps/details?id=org.kamrik.latency.walt)
@@ -28,6 +29,5 @@ or downloaded in the [releases section](https://github.com/google/walt/releases)
   differing clock frequencies. This means they will go out of sync after
   several minutes. The workaround is to use the app to re-sync the
   clocks. Some, but not all tests in the app will sync the clocks when starting a measurement.
-* The Android app uses some native code. In order to build it run `ndk-build` in `<repo root>/android/WALT/app/src/main` before building in Android Studio.
 * Python code used to communicate with WALT from Linux and ChromeOS can be found
   [here](https://chromium.googlesource.com/chromiumos/platform/touchbot/+/master/quickstep/)
