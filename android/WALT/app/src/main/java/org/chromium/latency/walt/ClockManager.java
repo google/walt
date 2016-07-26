@@ -38,6 +38,7 @@ import java.util.HashMap;
 public class ClockManager {
 
     static final int TEENSY_VID = 0x16c0;
+    static final int TEENSY_PID = 0x0485; // TeensyLC only
     static final int USB_READ_TIMEOUT_MS = 200;
     static final int DEFAULT_DRIFT_LIMIT_US = 1500;
     public static final String TAG = "WaltClockManager";
@@ -140,6 +141,11 @@ public class ClockManager {
             return;
         }
 
+        if (usbDevice.getProductId() != TEENSY_PID || usbDevice.getVendorId() != TEENSY_VID) {
+            mLogger.log("Not a valid Teensy device");
+            return;
+        }
+
         mUsbDevice = usbDevice;
 
         // Request permission
@@ -229,7 +235,8 @@ public class ClockManager {
 
     public UsbDevice findUsbDevice() {
 
-        mLogger.log(String.format("Looking for TeensyUSB VID=0x%x", TEENSY_VID));
+        mLogger.log(String.format("Looking for TeensyUSB VID=0x%x PID=0x%x",
+                TEENSY_VID, TEENSY_PID));
 
         HashMap<String, UsbDevice> deviceHash = mUsbManager.getDeviceList();
         if (deviceHash.size() == 0) {
@@ -251,7 +258,7 @@ public class ClockManager {
             );
 
 
-            if (dev.getVendorId() == TEENSY_VID) {
+            if (dev.getVendorId() == TEENSY_VID && dev.getProductId() == TEENSY_PID) {
                 usbDevice = dev;
                 msg += " <- using this one.";
             }
