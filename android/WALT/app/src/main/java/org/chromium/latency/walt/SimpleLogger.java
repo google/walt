@@ -27,7 +27,7 @@ import android.util.Log;
  * A very simple mLogger that keeps its data in a StringBuilder. We need on screen log because the
  * USB port is often taken and we don't have easy access to adb log.
  */
-class SimpleLogger {
+public class SimpleLogger {
     private static final String LOG_INTENT = "log-message";
     public static final String TAG = "WALTlogger";
 
