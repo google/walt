@@ -31,7 +31,7 @@ public class Programmer {
     private SimpleLogger logger;
 
     private FirmwareImage mImage;
-    private Connection mConn;
+    private BootloaderConnection mConn;
 
     private Context mContext;
 
@@ -49,7 +49,7 @@ public class Programmer {
             Log.e(TAG, "Parsing input file: ", e);
         }
 
-        mConn = new Connection(mContext);
+        mConn = new BootloaderConnection(mContext);
         mConn.connect();
 
         new Thread(new Runnable() {

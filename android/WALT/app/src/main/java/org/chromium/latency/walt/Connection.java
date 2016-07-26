@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.chromium.latency.walt.programmer;
+package org.chromium.latency.walt;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -23,57 +23,53 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
-import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
-
-import org.chromium.latency.walt.SimpleLogger;
+import android.support.v4.content.LocalBroadcastManager;
 
 import java.util.HashMap;
 import java.util.Locale;
 
-class Connection {
-    private static final String USB_PERMISSION_RESPONSE_INTENT =
-            "usb-permission-response-programmer";
-    private static final int HALFKAY_VID = 0x16C0;
-    private static final int HALFKAY_PID = 0x0478;
+public abstract class Connection {
+    private static final String USB_PERMISSION_RESPONSE_INTENT = "usb-permission-response";
+    private static final String CONNECT_INTENT = "org.chromium.latency.walt.CONNECT";
 
-    private SimpleLogger mLogger;
-    private Context mContext;
+    protected SimpleLogger mLogger;
+    protected Context mContext;
+    private LocalBroadcastManager mBroadcastManager;
 
     private UsbManager mUsbManager;
-    private UsbDevice mUsbDevice = null;
-    private UsbDeviceConnection mUsbConnection;
+    protected UsbDevice mUsbDevice = null;
+    protected UsbDeviceConnection mUsbConnection;
 
-    Connection(Context context) {
+    public Connection(Context context) {
         mContext = context;
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         mLogger = SimpleLogger.getInstance(context);
+        mBroadcastManager = LocalBroadcastManager.getInstance(context);
     }
 
-    public void write(byte[] buf, int timeout) {
-        write(buf, 0, buf.length, timeout);
-    }
-
-    public void write(byte[] buf, int index, int len, int timeout) {
-        if (!isConnected()) return;
-
-        while (timeout > 0) {
-            // USB HID Set_Report message
-            int result = mUsbConnection.controlTransfer(0x21, 9, 0x0200, index, buf, len, timeout);
-
-            if (result >= 0) break;
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            timeout -= 10;
-        }
-
-    }
+    public abstract void onConnect();
+    public abstract void onDisconnect();
+    public abstract int getVid();
+    public abstract int getPid();
 
     public boolean isConnected() {
         return mUsbConnection != null;
+    }
+
+    public void registerConnectCallback(final Runnable r) {
+        if (isConnected()) {
+            r.run();
+            return;
+        }
+
+        mBroadcastManager.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mBroadcastManager.unregisterReceiver(this);
+                r.run();
+            }
+        }, new IntentFilter(CONNECT_INTENT));
     }
 
     public void connect() {
@@ -83,7 +79,12 @@ class Connection {
 
     public void connect(UsbDevice usbDevice) {
         if (usbDevice == null) {
-            mLogger.log("TeensyUSB not found. Try pressing the button on the Teensy first.");
+            mLogger.log("Device not found.");
+            return;
+        }
+
+        if (usbDevice.getProductId() != getPid() || usbDevice.getVendorId() != getVid()) {
+            mLogger.log("Not a valid device");
             return;
         }
 
@@ -102,6 +103,27 @@ class Connection {
         mUsbManager.requestPermission(mUsbDevice, permissionIntent);
     }
 
+    public void disconnect() {
+        onDisconnect();
+
+        mUsbConnection.close();
+        mUsbConnection = null;
+        mUsbDevice = null;
+
+        mContext.unregisterReceiver(disconnectReceiver);
+    }
+
+    private BroadcastReceiver disconnectReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+            if (isConnected() && mUsbDevice.equals(usbDevice)) {
+                mLogger.log("WALT was detached");
+                disconnect();
+            }
+        }
+    };
+
     private BroadcastReceiver respondToUsbPermission = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -111,19 +133,16 @@ class Connection {
                 return;
             }
 
-            if(intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)){
+            if(intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) &&
+                    mUsbDevice.equals(intent.getParcelableExtra(UsbManager.EXTRA_DEVICE))){
                 mUsbConnection = mUsbManager.openDevice(mUsbDevice);
 
-                int ifIdx = 0;
+                mContext.registerReceiver(disconnectReceiver,
+                        new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
 
-                UsbInterface iface = mUsbDevice.getInterface(ifIdx);
+                onConnect();
 
-                if (mUsbConnection.claimInterface(iface, true)) {
-                    mLogger.log("Interface claimed successfully\n");
-                } else {
-                    mLogger.log("ERROR - can't claim interface\n");
-                    return;
-                }
+                mBroadcastManager.sendBroadcast(new Intent(CONNECT_INTENT));
             } else {
                 mLogger.log("Could not get permission to open the USB device");
             }
@@ -133,7 +152,7 @@ class Connection {
 
     public UsbDevice findUsbDevice() {
 
-        mLogger.log(String.format("Looking for TeensyUSB VID=0x%x", HALFKAY_VID));
+        mLogger.log(String.format("Looking for TeensyUSB VID=0x%x PID=0x%x", getVid(), getPid()));
 
         HashMap<String, UsbDevice> deviceHash = mUsbManager.getDeviceList();
         if (deviceHash.size() == 0) {
@@ -150,14 +169,13 @@ class Connection {
             UsbDevice dev = deviceHash.get(key);
 
             String msg = String.format(Locale.US,
-                    "USB Device: %s, VID:PID - %x:%x, %d interfaces, class 0x%x",
-                    key, dev.getVendorId(), dev.getProductId(), dev.getInterfaceCount(),
-                    dev.getDeviceClass()
+                    "USB Device: %s, VID:PID - %x:%x, %d interfaces",
+                    key, dev.getVendorId(), dev.getProductId(), dev.getInterfaceCount()
             );
 
-            if (dev.getVendorId() == HALFKAY_VID && dev.getProductId() == HALFKAY_PID) {
+            if (dev.getVendorId() == getVid() && dev.getProductId() == getPid()) {
                 usbDevice = dev;
-                msg += " <- using this one as HalfKay";
+                msg += " <- using this one.";
             }
 
             mLogger.log(msg);

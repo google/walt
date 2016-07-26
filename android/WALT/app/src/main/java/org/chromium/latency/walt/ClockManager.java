@@ -16,35 +16,27 @@
 
 package org.chromium.latency.walt;
 
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Resources;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
-import android.hardware.usb.UsbManager;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.HashMap;
 
-public class ClockManager {
+public class ClockManager extends Connection {
 
-    static final int TEENSY_VID = 0x16c0;
-    static final int TEENSY_PID = 0x0485; // TeensyLC only
-    static final int USB_READ_TIMEOUT_MS = 200;
-    static final int DEFAULT_DRIFT_LIMIT_US = 1500;
-    public static final String TAG = "WaltClockManager";
+    private static final int TEENSY_VID = 0x16c0;
+    private static final int TEENSY_PID = 0x0485; // TeensyLC only
+    private static final int USB_READ_TIMEOUT_MS = 200;
+    private static final int DEFAULT_DRIFT_LIMIT_US = 1500;
+    private static final String TAG = "WaltClockManager";
     public static final String PROTOCOL_VERSION = "2";
-    private static final String USB_PERMISSION_RESPONSE_INTENT = "usb-permission-response";
-    private static final String CONNECT_INTENT = "org.chromium.latency.walt.CONNECT";
+
+    private UsbEndpoint mEndpointIn = null;
+    private UsbEndpoint mEndpointOut = null;
 
     // Teensy side commands. Each command is a single char
     // Based on #defines section in walt.ino
@@ -73,16 +65,6 @@ public class ClockManager {
 
     public long lastSync = 0;
 
-    private SimpleLogger mLogger;
-    private Context mContext;
-    private LocalBroadcastManager mBroadcastManager;
-
-    UsbManager mUsbManager;
-    UsbDevice mUsbDevice = null;
-    UsbDeviceConnection mUsbConnection;
-    UsbEndpoint mEndpointIn = null;
-    UsbEndpoint mEndpointOut = null;
-
     private static final Object mLock = new Object();
     private static ClockManager mInstance;
 
@@ -95,6 +77,58 @@ public class ClockManager {
         }
     }
 
+    @Override
+    public int getPid() {
+        return TEENSY_PID;
+    }
+
+    @Override
+    public int getVid() {
+        return TEENSY_VID;
+    }
+
+    @Override
+    public void onDisconnect() {
+        if (!isListenerStopped()) {
+            stopListener();
+        }
+        mEndpointIn = null;
+        mEndpointOut = null;
+    }
+
+    @Override
+    public void onConnect() {
+        // Serial mode only
+        // TODO: find the interface and endpoint indexes no matter what mode it is
+        int ifIdx = 1;
+        int epInIdx = 1;
+        int epOutIdx = 0;
+
+        UsbInterface iface = mUsbDevice.getInterface(ifIdx);
+
+        if (mUsbConnection.claimInterface(iface, true)) {
+            mLogger.log("Interface claimed successfully\n");
+        } else {
+            mLogger.log("ERROR - can't claim interface\n");
+            return;
+        }
+
+        mEndpointIn = iface.getEndpoint(epInIdx);
+        mEndpointOut = iface.getEndpoint(epOutIdx);
+
+        try {
+            checkVersion();
+            syncClock();
+        } catch (IOException e) {
+            mLogger.log("Unable to communicate with WALT: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean isConnected() {
+        return super.isConnected() && (mEndpointIn != null) && (mEndpointOut != null);
+    }
+
     public static long microTime() {
         return System.nanoTime() / 1000;
     }
@@ -104,169 +138,10 @@ public class ClockManager {
     }
 
     private ClockManager(Context context) {
-        mContext = context;
-        mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
-        mLogger = SimpleLogger.getInstance(context);
-        mBroadcastManager = LocalBroadcastManager.getInstance(context);
+        super(context);
         mTriggerListener = new TriggerListener();
     }
 
-    public boolean isConnected() {
-        return ((mEndpointIn != null) && (mEndpointOut != null));
-    }
-
-    public void registerConnectCallback(final Runnable r) {
-        if (isConnected()) {
-            r.run();
-            return;
-        }
-
-        mBroadcastManager.registerReceiver(new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                mBroadcastManager.unregisterReceiver(this);
-                r.run();
-            }
-        }, new IntentFilter(CONNECT_INTENT));
-    }
-
-    public void connect() {
-        UsbDevice usbDevice = findUsbDevice();
-        connect(usbDevice);
-    }
-
-    public void connect(UsbDevice usbDevice) {
-        if (usbDevice == null) {
-            mLogger.log("TeensyUSB not found.");
-            return;
-        }
-
-        if (usbDevice.getProductId() != TEENSY_PID || usbDevice.getVendorId() != TEENSY_VID) {
-            mLogger.log("Not a valid Teensy device");
-            return;
-        }
-
-        mUsbDevice = usbDevice;
-
-        // Request permission
-        // This displays a dialog asking user for permission to use the device.
-        // No dialog is displayed if the permission was already given before or the app started as a
-        // result of intent filter when the device was plugged in.
-
-        PendingIntent permissionIntent = PendingIntent.getBroadcast(mContext, 0,
-                new Intent(USB_PERMISSION_RESPONSE_INTENT), 0);
-        mContext.registerReceiver(respondToUsbPermission,
-                new IntentFilter(USB_PERMISSION_RESPONSE_INTENT));
-        mLogger.log("Requesting permission for USB device.");
-        mUsbManager.requestPermission(mUsbDevice, permissionIntent);
-    }
-
-    public void disconnect() {
-        if (!isListenerStopped()) {
-            stopListener();
-        }
-        mEndpointIn = null;
-        mEndpointOut = null;
-        mUsbDevice = null;
-        mUsbConnection.close();
-        mUsbConnection = null;
-
-        mContext.unregisterReceiver(disconnectReceiver);
-    }
-
-    BroadcastReceiver disconnectReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-            if (isConnected() && mUsbDevice.equals(usbDevice)) {
-                mLogger.log("WALT was detached");
-                disconnect();
-            }
-        }
-    };
-
-    BroadcastReceiver respondToUsbPermission = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            if (mUsbDevice == null) {
-                mLogger.log("USB device was not properly opened");
-                return;
-            }
-
-            if(intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)){
-                mUsbConnection = mUsbManager.openDevice(mUsbDevice);
-
-                // Serial mode only
-                // TODO: find the interface and endpoint indexes no matter what mode it is
-                int ifIdx = 1;
-                int epInIdx = 1;
-                int epOutIdx = 0;
-
-                UsbInterface iface = mUsbDevice.getInterface(ifIdx);
-
-                if (mUsbConnection.claimInterface(iface, true)) {
-                    mLogger.log("Interface claimed successfully\n");
-                } else {
-                    mLogger.log("ERROR - can't claim interface\n");
-                    return;
-                }
-
-                mEndpointIn = iface.getEndpoint(epInIdx);
-                mEndpointOut = iface.getEndpoint(epOutIdx);
-
-                mContext.registerReceiver(disconnectReceiver,
-                        new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
-
-                try {
-                    checkVersion();
-                    syncClock();
-                } catch (IOException e) {
-                    mLogger.log("Unable to communicate with WALT: " + e.getMessage());
-                }
-                
-                mBroadcastManager.sendBroadcast(new Intent(CONNECT_INTENT));
-            } else {
-                mLogger.log("Could not get permission to open the USB device");
-            }
-            mContext.unregisterReceiver(respondToUsbPermission);
-        }
-    };
-
-    public UsbDevice findUsbDevice() {
-
-        mLogger.log(String.format("Looking for TeensyUSB VID=0x%x PID=0x%x",
-                TEENSY_VID, TEENSY_PID));
-
-        HashMap<String, UsbDevice> deviceHash = mUsbManager.getDeviceList();
-        if (deviceHash.size() == 0) {
-            mLogger.log("No connected USB devices found");
-            return null;
-        }
-
-        mLogger.log("Found " + deviceHash.size() + " connected USB devices:");
-
-        UsbDevice usbDevice = null;
-
-        for (String key : deviceHash.keySet()) {
-
-            UsbDevice dev = deviceHash.get(key);
-
-            String msg = String.format(
-                    "USB Device: %s, VID:PID - %x:%x, %d interfaces",
-                    key, dev.getVendorId(), dev.getProductId(), dev.getInterfaceCount()
-            );
-
-
-            if (dev.getVendorId() == TEENSY_VID && dev.getProductId() == TEENSY_PID) {
-                usbDevice = dev;
-                msg += " <- using this one.";
-            }
-
-            mLogger.log(msg);
-        }
-        return usbDevice;
-    }
 
     private byte[] char2byte(char c) {
         byte[] buff = new byte[1];
