@@ -5,7 +5,7 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_crash_log">Crash Log</string>
     <string name="protocol_version_mismatch">WALT reports protocol version %1$s, which is not
-        supported. Please program WALT to a firmware with protocol version %2$s. More information
-        can be found on the GitHub page.</string>
+        supported. Please program WALT to a firmware with protocol version %2$s. To do this
+        from the app, choose "Reprogram" from the "Clock sync" menu.</string>
 
 </resources>

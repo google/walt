@@ -41,6 +41,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import org.chromium.latency.walt.programmer.Programmer;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -295,6 +297,10 @@ public class MainActivity extends AppCompatActivity {
         int minE = clockManager.getMinE();
         int maxE = clockManager.getMaxE();
         logger.log(String.format("Remote clock delayed between %d and %d us", minE, maxE));
+    }
+
+    public void onClickProgram(View view) {
+        new Programmer(this).program();
     }
 
     private void attemptSaveAndShareLog() {
