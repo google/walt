@@ -49,52 +49,45 @@ public class Programmer {
             Log.e(TAG, "Parsing input file: ", e);
         }
 
-        mConn = new BootloaderConnection(mContext);
-        mConn.connect();
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                
-                int tries = 0;
-                while (!mConn.isConnected()) {
-                    logger.log("Not connected!");
-                    if (++tries > 3) return;
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                logger.log("About to start programming");
-
-                // The logic for this is ported from
-                // https://github.com/PaulStoffregen/teensy_loader_cli
-                byte[] buf = new byte[DeviceConstants.BLOCK_SIZE + 64];
-                for (int addr = 0; addr < DeviceConstants.FIRMWARE_SIZE;
-                     addr += DeviceConstants.BLOCK_SIZE) {
-                    if (!mImage.shouldWrite(addr, DeviceConstants.BLOCK_SIZE) && addr != 0)
-                        continue; // don't need to flash this block
-
-                    buf[0] = (byte) (addr & 255);
-                    buf[1] = (byte) ((addr >>> 8) & 255);
-                    buf[2] = (byte) ((addr >>> 16) & 255);
-                    Arrays.fill(buf, 3, 64, (byte) 0);
-                    mImage.getData(buf, 64, addr, DeviceConstants.BLOCK_SIZE);
-
-                    mConn.write(buf, (addr == 0) ? 3000 : 250);
-                }
-
-                logger.log("Programming complete. Rebooting.");
-
-                // reboot the device
-                buf[0] = (byte) 0xFF;
-                buf[1] = (byte) 0xFF;
-                buf[2] = (byte) 0xFF;
-                Arrays.fill(buf, 3, DeviceConstants.BLOCK_SIZE + 64, (byte) 0);
-                mConn.write(buf, 250);
-            }
-        }).start();
+        mConn = BootloaderConnection.getInstance(mContext);
+        // TODO: automatically reboot into the bootloader
+        logger.log("\nRemember to press the button on the Teensy first\n");
+        mConn.registerConnectCallback(programRunnable);
+        if (!mConn.isConnected()) {
+            mConn.connect();
+        }
     }
+
+    private Runnable programRunnable = new Runnable() {
+        @Override
+        public void run() {
+            logger.log("Programming...");
+
+            // The logic for this is ported from
+            // https://github.com/PaulStoffregen/teensy_loader_cli
+            byte[] buf = new byte[DeviceConstants.BLOCK_SIZE + 64];
+            for (int addr = 0; addr < DeviceConstants.FIRMWARE_SIZE;
+                 addr += DeviceConstants.BLOCK_SIZE) {
+                if (!mImage.shouldWrite(addr, DeviceConstants.BLOCK_SIZE) && addr != 0)
+                    continue; // don't need to flash this block
+
+                buf[0] = (byte) (addr & 255);
+                buf[1] = (byte) ((addr >>> 8) & 255);
+                buf[2] = (byte) ((addr >>> 16) & 255);
+                Arrays.fill(buf, 3, 64, (byte) 0);
+                mImage.getData(buf, 64, addr, DeviceConstants.BLOCK_SIZE);
+
+                mConn.write(buf, (addr == 0) ? 3000 : 250);
+            }
+
+            logger.log("Programming complete. Rebooting.");
+
+            // reboot the device
+            buf[0] = (byte) 0xFF;
+            buf[1] = (byte) 0xFF;
+            buf[2] = (byte) 0xFF;
+            Arrays.fill(buf, 3, DeviceConstants.BLOCK_SIZE + 64, (byte) 0);
+            mConn.write(buf, 250);
+        }
+    };
 }

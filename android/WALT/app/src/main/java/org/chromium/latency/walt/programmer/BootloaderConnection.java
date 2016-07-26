@@ -9,8 +9,16 @@ class BootloaderConnection extends Connection {
     private static final int HALFKAY_VID = 0x16C0;
     private static final int HALFKAY_PID = 0x0478;
 
-    BootloaderConnection(Context context) {
-        super(context);
+    private static final Object mLock = new Object();
+    private static BootloaderConnection mInstance;
+
+    public static BootloaderConnection getInstance(Context context) {
+        synchronized (mLock) {
+            if (mInstance == null) {
+                mInstance = new BootloaderConnection(context.getApplicationContext());
+            }
+            return mInstance;
+        }
     }
 
     @Override
@@ -58,5 +66,9 @@ class BootloaderConnection extends Connection {
             }
             timeout -= 10;
         }
+    }
+
+    private BootloaderConnection(Context context) {
+        super(context);
     }
 }

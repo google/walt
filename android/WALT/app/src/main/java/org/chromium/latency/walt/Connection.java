@@ -36,6 +36,7 @@ public abstract class Connection {
     protected SimpleLogger mLogger;
     protected Context mContext;
     private LocalBroadcastManager mBroadcastManager;
+    private BroadcastReceiver mCurrentConnectReceiver;
 
     private UsbManager mUsbManager;
     protected UsbDevice mUsbDevice = null;
@@ -53,23 +54,38 @@ public abstract class Connection {
     public abstract int getVid();
     public abstract int getPid();
 
+    private String getConnectIntent() {
+        return CONNECT_INTENT + getVid() + ":" + getPid();
+    }
+
+    private String getUsbPermissionResponseIntent() {
+        return USB_PERMISSION_RESPONSE_INTENT + getVid() + ":" + getPid();
+    }
+
     public boolean isConnected() {
         return mUsbConnection != null;
     }
 
     public void registerConnectCallback(final Runnable r) {
+        if (mCurrentConnectReceiver != null) {
+            mBroadcastManager.unregisterReceiver(mCurrentConnectReceiver);
+            mCurrentConnectReceiver = null;
+        }
+
         if (isConnected()) {
             r.run();
             return;
         }
 
-        mBroadcastManager.registerReceiver(new BroadcastReceiver() {
+        mCurrentConnectReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 mBroadcastManager.unregisterReceiver(this);
                 r.run();
             }
-        }, new IntentFilter(CONNECT_INTENT));
+        };
+        mBroadcastManager.registerReceiver(mCurrentConnectReceiver,
+                new IntentFilter(getConnectIntent()));
     }
 
     public void connect() {
@@ -96,9 +112,9 @@ public abstract class Connection {
         // result of intent filter when the device was plugged in.
 
         PendingIntent permissionIntent = PendingIntent.getBroadcast(mContext, 0,
-                new Intent(USB_PERMISSION_RESPONSE_INTENT), 0);
+                new Intent(getUsbPermissionResponseIntent()), 0);
         mContext.registerReceiver(respondToUsbPermission,
-                new IntentFilter(USB_PERMISSION_RESPONSE_INTENT));
+                new IntentFilter(getUsbPermissionResponseIntent()));
         mLogger.log("Requesting permission for USB device.");
         mUsbManager.requestPermission(mUsbDevice, permissionIntent);
     }
@@ -142,7 +158,7 @@ public abstract class Connection {
 
                 onConnect();
 
-                mBroadcastManager.sendBroadcast(new Intent(CONNECT_INTENT));
+                mBroadcastManager.sendBroadcast(new Intent(getConnectIntent()));
             } else {
                 mLogger.log("Could not get permission to open the USB device");
             }
