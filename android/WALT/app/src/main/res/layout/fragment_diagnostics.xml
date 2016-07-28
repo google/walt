@@ -136,6 +136,36 @@
 
             <View style="@style/MenuDivider" />
 
+            <!-- Program -->
+            <LinearLayout
+                style="@style/MenuItemStyle"
+                android:onClick="onClickProgram">
+
+                <ImageView
+                    style="@style/MenuIconStyle"
+                    android:src="@drawable/ic_system_update_alt_black_24dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/MenuTextTop"
+                        android:text="Reprogram WALT" />
+
+                    <TextView
+                        style="@style/MenuTextBottom"
+                        android:text="Please press the button on the Teensy first" />
+
+
+                </LinearLayout>
+            </LinearLayout>
+            <!-- Program -->
+
+            <View style="@style/MenuDivider" />
+
             <!-- Start/stop listener -->
             <LinearLayout
                 style="@style/MenuItemStyle"
