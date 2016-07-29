@@ -30,6 +30,9 @@ class AudioTest {
         System.loadLibrary("sync_clock_jni");
     }
 
+    static final int CONTINUOUS_TEST_PERIOD = 500;
+    static final int COLD_TEST_PERIOD = 5000;
+
     enum AudioMode {COLD, CONTINUOUS}
 
     private SimpleLogger logger;
@@ -351,7 +354,7 @@ class AudioTest {
         ));
 
         if (resultHandler != null) {
-            resultHandler.onResult(deltas);
+            resultHandler.onResult(deltas, deltas2);
         }
     }
 

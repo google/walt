@@ -46,10 +46,6 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
 
     private static final int PERMISSION_REQUEST_RECORD_AUDIO = 1;
 
-    // TODO: make these configurable
-    private static final int CONTINUOUS_TEST_PERIOD = 500;
-    private static final int COLD_TEST_PERIOD = 5000;
-
     public AudioFragment() {
         // Required empty public constructor
     }
@@ -126,11 +122,11 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
             switch (position) {
                 case 0:
                     mAudioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
-                    mAudioTest.setPeriod(CONTINUOUS_TEST_PERIOD);
+                    mAudioTest.setPeriod(AudioTest.CONTINUOUS_TEST_PERIOD);
                     break;
                 case 1:
                     mAudioTest.setAudioMode(AudioTest.AudioMode.COLD);
-                    mAudioTest.setPeriod(COLD_TEST_PERIOD);
+                    mAudioTest.setPeriod(AudioTest.COLD_TEST_PERIOD);
                     break;
             }
         }
