@@ -274,7 +274,7 @@ void process_command(char cmd) {
       midi.autosend = true;
       send_ack(CMD_MIDI);
     } else if (cmd == CMD_NOTE) {
-      long note_time = time_us + NOTE_DELAY;
+      unsigned long note_time = time_us + NOTE_DELAY;
       Serial.print(flip_case(cmd));
       Serial.print(" ");
       Serial.println(note_time);
