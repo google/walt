@@ -28,12 +28,16 @@ import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class AudioFragment extends Fragment implements View.OnClickListener {
+public class AudioFragment extends Fragment implements View.OnClickListener,
+        AdapterView.OnItemSelectedListener {
 
     private Activity activity;
     private SimpleLogger logger;
@@ -57,7 +61,16 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
         mAudioTest = new AudioTest(activity);
 
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_audio, container, false);
+        View view = inflater.inflate(R.layout.fragment_audio, container, false);
+
+        // Configure the audio mode spinner
+        Spinner mode = (Spinner) view.findViewById(R.id.spinner_audio_mode);
+        ArrayAdapter<CharSequence> mode_adapter = ArrayAdapter.createFromResource(activity,
+                R.array.audio_mode_array, android.R.layout.simple_spinner_item);
+        mode_adapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
+        mode.setAdapter(mode_adapter);
+
+        return view;
     }
 
     @Override
@@ -69,6 +82,9 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
         // Register this fragment class as the listener for some button clicks
         activity.findViewById(R.id.button_start_audio_play).setOnClickListener(this);
         activity.findViewById(R.id.button_start_audio_rec).setOnClickListener(this);
+
+        Spinner spinner_audio_mode = (Spinner) activity.findViewById(R.id.spinner_audio_mode);
+        spinner_audio_mode.setOnItemSelectedListener(this);
 
         // mLogTextView.setMovementMethod(new ScrollingMovementMethod());
         mTextView.setText(logger.getLogText());
@@ -97,6 +113,29 @@ public class AudioFragment extends Fragment implements View.OnClickListener {
             case R.id.button_start_audio_play:
                 mAudioTest.startMeasurement();
                 break;
+        }
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        if (parent.getId() == R.id.spinner_audio_mode) {
+            switch (position) {
+                case 0:
+                    mAudioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
+                    mAudioTest.setPeriod(AudioTest.CONTINUOUS_TEST_PERIOD);
+                    break;
+                case 1:
+                    mAudioTest.setAudioMode(AudioTest.AudioMode.COLD);
+                    mAudioTest.setPeriod(AudioTest.COLD_TEST_PERIOD);
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+        if (parent.getId() == R.id.spinner_audio_mode) {
+            mAudioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS); // set the default
         }
     }
 

@@ -35,6 +35,7 @@ import java.util.Iterator;
 public class AutoRunFragment extends Fragment {
 
     static final String TEST_ACTION = "org.chromium.latency.walt.START_TEST";
+    static final String MODE_COLD = "Cold";
 
     private ClockManager clockManager;
     private AudioTest toTearDown; // TODO: figure out a better way to destroy the engine
@@ -92,6 +93,7 @@ public class AutoRunFragment extends Fragment {
                 return;
             }
         }
+        final String mode = args.getString("Mode", "");
         final ResultHandler resultHandler = r;
         switch (args.getString("TestType", "")) {
             case "MidiIn": {
@@ -122,6 +124,8 @@ public class AutoRunFragment extends Fragment {
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
                         audioTest.setRecordingRepetitions(reps);
+                        audioTest.setAudioMode(MODE_COLD.equals(mode) ?
+                                AudioTest.AudioMode.COLD : AudioTest.AudioMode.CONTINUOUS);
                         audioTest.beginRecordingTest();
                         toTearDown = audioTest;
                     }
@@ -129,11 +133,20 @@ public class AutoRunFragment extends Fragment {
                 break;
             }
             case "AudioOut": {
+                final int period = args.getInt("Period", -1);
                 clockManager.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
                         audioTest.setPlaybackRepetitions(reps);
+                        audioTest.setAudioMode(MODE_COLD.equals(mode) ?
+                                AudioTest.AudioMode.COLD : AudioTest.AudioMode.CONTINUOUS);
+                        if (period > 0) {
+                            audioTest.setPeriod(period);
+                        } else {
+                            audioTest.setPeriod(MODE_COLD.equals(mode) ?
+                                    AudioTest.COLD_TEST_PERIOD : AudioTest.CONTINUOUS_TEST_PERIOD);
+                        }
                         audioTest.startMeasurement();
                         toTearDown = audioTest;
                     }

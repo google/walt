@@ -7,5 +7,10 @@
     <string name="protocol_version_mismatch">WALT reports protocol version %1$s, which is not
         supported. Please program WALT to a firmware with protocol version %2$s. To do this
         from the app, choose "Reprogram" from the "Clock sync" menu.</string>
+    <string name="audio_mode">Audio Testing Mode</string>
+    <string-array name="audio_mode_array">
+        <item>Continuous Latency</item>
+        <item>Cold Latency</item>
+    </string-array>
 
 </resources>

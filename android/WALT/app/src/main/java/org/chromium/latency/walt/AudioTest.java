@@ -30,6 +30,11 @@ class AudioTest {
         System.loadLibrary("sync_clock_jni");
     }
 
+    static final int CONTINUOUS_TEST_PERIOD = 500;
+    static final int COLD_TEST_PERIOD = 5000;
+
+    enum AudioMode {COLD, CONTINUOUS}
+
     private SimpleLogger logger;
     private ClockManager clockManager;
     private Handler handler = new Handler();
@@ -42,6 +47,9 @@ class AudioTest {
     private final int numSamples = (int) (duration * sampleRate);
     private final byte generatedSnd[] = new byte[2 * numSamples];
     private final double freqOfTone = 880; // hz
+
+    private AudioMode mMode;
+    private int mPeriod = 500; // time between runs in ms
 
     // Audio in
     private long last_tb = 0;
@@ -59,12 +67,14 @@ class AudioTest {
     private static int recorderSyncAfterRepetitions = 10;
 
     private ArrayList<Double> deltas = new ArrayList<>();
+    private ArrayList<Double> deltas2 = new ArrayList<>();
     private ArrayList<Double> deltasJ2N = new ArrayList<>();
 
     long mLastBeepTime;
 
     public static native long playTone();
-    // public static native void stopPlaying();
+    public static native void startWarmTest();
+    public static native void stopTests();
     public static native void createEngine();
     public static native void destroyEngine();
     public static native void createBufferQueueAudioPlayer(int frameRate, int framesPerBuffer);
@@ -110,6 +120,14 @@ class AudioTest {
         mRecordingRepetitions = beepCount;
     }
 
+    void setPeriod(int period) {
+        mPeriod = period;
+    }
+
+    void setAudioMode(AudioMode mode) {
+        mMode = mode;
+    }
+
     void teardown() {
         destroyEngine();
         logger.log("Audio engine destroyed");
@@ -144,10 +162,21 @@ class AudioTest {
 
         mRequestedBeeps++;
         startRecording();
-        handler.postDelayed(requestBeepRunnable, msToRecord / 2);
+        switch (mMode) {
+            case CONTINUOUS:
+                handler.postDelayed(requestBeepRunnable, msToRecord / 2);
+                break;
+            case COLD: // TODO: find a more accurate method to measure cold input latency
+                requestBeepRunnable.run();
+                break;
+        }
+        handler.postDelayed(stopBeepRunnable, msToRecord);
     }
 
     void startMeasurement() {
+        if (mMode == AudioMode.CONTINUOUS) {
+            startWarmTest();
+        }
         try {
             clockManager.syncClock();
             clockManager.startListener();
@@ -156,6 +185,7 @@ class AudioTest {
             return;
         }
         deltas.clear();
+        deltas2.clear();
         deltasJ2N.clear();
 
         logger.log("Starting playback test");
@@ -180,15 +210,17 @@ class AudioTest {
             double dt = (tmsg.t - mLastBeepTime) / 1000.;
 
             double dt2 = (tmsg.t - te) / 1000.;
-            deltas.add(dt2);
+            deltas.add(dt);
+            deltas2.add(dt2);
 
             logger.log(String.format(Locale.US,
-                    "beep detected, dt = %.2f, dt_enqueue = %.2f, mInitiatedBeeps = %d, mDetectedBeeps = %d",
+                    "beep detected, total latency = %.2f, normal latency = %.2f, "
+                            + "mInitiatedBeeps = %d, mDetectedBeeps = %d",
                     dt, dt2, mInitiatedBeeps, mDetectedBeeps
             ));
 
             // Schedule another beep soon-ish
-            handler.postDelayed(doBeepRunnable, 500); // TODO: randomize the delay
+            handler.postDelayed(doBeepRunnable, mPeriod); // TODO: randomize the delay
         }
     };
 
@@ -239,7 +271,7 @@ class AudioTest {
 
             // Repost doBeep to some far away time to blink again even if nothing arrives from
             // Teensy. This callback will almost always get cancelled by onIncomingTimestamp()
-            handler.postDelayed(doBeepRunnable, 1500); // TODO: config and or randomize the delay,
+            handler.postDelayed(doBeepRunnable, mPeriod * 3); // TODO: config and or randomize the delay,
 
         }
     };
@@ -258,7 +290,18 @@ class AudioTest {
             }
             last_tb = Integer.parseInt(s);
             logger.log("Beeped, reply: " + s);
-            handler.postDelayed(processRecordingRunnable, msToRecord); // TODO: config and or randomize the delay,
+            handler.postDelayed(processRecordingRunnable, msToRecord * 2); // TODO: config and or randomize the delay,
+        }
+    };
+
+    private Runnable stopBeepRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                clockManager.command(ClockManager.CMD_BEEP_STOP);
+            } catch (IOException e) {
+                logger.log("Error stopping tone from WALT: " + e.getMessage());
+            }
         }
     };
 
@@ -296,19 +339,22 @@ class AudioTest {
     };
 
     private void finishPlaybackTest() {
+        stopTests();
         clockManager.stopListener();
         clockManager.clearTriggerHandler();
         clockManager.checkDrift();
 
         logger.log("deltas: " + deltas.toString());
         logger.log(String.format(Locale.US,
-                "Median Java to native latency %.3f ms\nMedian audio latency %.1f ms",
+                "Median Java to native latency %.3f ms\nMedian total audio latency %.1f ms"
+                        + "\nMedian callback to output time %.1f ms",
                 Utils.median(deltasJ2N),
-                Utils.median(deltas)
+                Utils.median(deltas),
+                Utils.median(deltas2)
         ));
 
         if (resultHandler != null) {
-            resultHandler.onResult(deltas);
+            resultHandler.onResult(deltas, deltas2);
         }
     }
 

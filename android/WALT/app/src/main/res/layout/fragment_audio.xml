@@ -29,6 +29,12 @@
                 android:src="@drawable/ic_play_arrow_black_24dp" />
         </RelativeLayout>
 
+        <Spinner
+            android:id="@+id/spinner_audio_mode"
+            android:layout_height="30dp"
+            android:layout_width="fill_parent"
+            android:prompt="@string/audio_mode"/>
+
         <!-- For now the results are just listed in this textView -->
         <TextView
             android:id="@+id/txt_box_audio"
