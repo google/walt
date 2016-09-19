@@ -1,5 +1,5 @@
 ## Hardware assembly ##
-Note, this is not a precise recipe. Depending on your specific needs, you may want to introduce some variations.
+Depending on your specific needs, you may want to introduce some variations.
 In most cases it's possible to assemble a device with partial functionality (e.g. only for audio latency) on a solderless breadboard.
 
 ### List of suggested parts ###
@@ -18,6 +18,12 @@ In most cases it's possible to assemble a device with partial functionality (e.g
  * TRRS connector or wire for audio measurements
  * Clipboard, like [this one](https://upload.wikimedia.org/wikipedia/commons/c/c0/Wood-clipboard.jpg)
 
+### Schematic ###
+The current hardware version we use (r0.7) can be found as KiCAD project in this directory.
+ * [PDF](WALT_schematic.pdf)
+ * Blank PCBs can be ordered directly via [this shared project on OSH Park](https://oshpark.com/shared_projects/M5Z8fYCX)
+ * List of parts for version r0.7 - [BOM as a tsv file](WALT_bom_r07.tsv)
+
 
 ### Microcontroller code ###
 
@@ -29,18 +35,11 @@ Important pin numbers from the code listed below, defined in [walt.ino](../ardui
  * AUDIO_PIN 22 // Same as A8 - Detects audio signal from headphones output
  * MIC_PIN 23 // Same as A9 - uses PWM to generate a tone for measuring microphone latency.
 
-Optional pins for LEDs used for extra debugging signals
-LEDs that use more than 5mA should be connected to the hight current pins on TeensyLC (marked with bold on the [Teensy LC pinout sheet](https://www.pjrc.com/teensy/teensylc_front_pinout.png)) they can provide 20mA vs the usual 5mA.
-
- * LED_PIN_GREEN 16
- * LED_PIN_RED 17
-
-
-### Schematic ###
-A version of schematic you can fork can be found
+### Schematic - older version ###
+An older version can be found
 [here on Upverter](https://upverter.com/kamrik/8af1f3b04e47ab78/WALT_w_audio/)
 
-![WALT Schematic](WALT_schematic_simplified.png)
+![Slightly simplified WALT Schematic](WALT_schematic_simplified.png)
 
 
 ### Notes ###
