@@ -4,14 +4,14 @@ In most cases it's possible to assemble a device with partial functionality (e.g
 
 ### List of suggested parts ###
 
- * USB OTG cable like 
+ * USB OTG cable like
    [this](http://www.amazon.com/Generic-Micro-Cable-Cellphone-Tablet/dp/B00AYPEL56)
    (or a USB Type-C to A adapter)
    for connecting WALT to your phone or tablet
  * Microcontroller board - [Teensy LC](https://www.pjrc.com/teensy/teensyLC.html)
  * Photodiodes - [BPW34](http://www.digikey.com/product-detail/en/osram-opto-semiconductors-inc/BPW34/475-1070-ND/607274) (3 units)
  * Laser - any laser pointer will do, ~1 mW is just fine (5 mW is ok, but avoid stronger ones)
- * Accelerometer board [Adafruit ADXL335](https://www.adafruit.com/product/163) **with filter capacitors removed**. 
+ * Accelerometer board [Adafruit ADXL335](https://www.adafruit.com/product/163) **with filter capacitors removed**.
    It's very important to remove the filter capacitors, otherwise they smooth out the abrupt shock we are looking for.
    Alternatively use the ADXL335 chip directly without the breakout board, but it's rather difficult to solder manually.
  * Some resistors and capacitors - see schematics
@@ -40,14 +40,14 @@ LEDs that use more than 5mA should be connected to the hight current pins on Tee
 A version of schematic you can fork can be found
 [here on Upverter](https://upverter.com/kamrik/8af1f3b04e47ab78/WALT_w_audio/)
 
-![WALT Schematic](WALT_schematic_20160404.png)
+![WALT Schematic](WALT_schematic_simplified.png)
 
 
 ### Notes ###
 
  * If using Teensy 3.1 instead of LC, it won’t be able to directly read
-   the screen photodiodes - a buffer opamp will be needed. The screen photodiodes 
-   are bundled as a couple to produce more current, a single photodiode with 1.5M 
+   the screen photodiodes - a buffer opamp will be needed. The screen photodiodes
+   are bundled as a couple to produce more current, a single photodiode with 1.5M
    resistor should provide the same result, but might be at the limit of what the
    teensy can measure (input impedance), and again, an opamp will be needed.
  * BPW34 photodiode has a small protrusion on the cathode pin (cathode marker).
