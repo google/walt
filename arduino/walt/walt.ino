@@ -31,7 +31,7 @@
 #define CMD_AUTO_SCREEN_ON      'C'
 #define CMD_AUTO_SCREEN_OFF     'c'
 #define CMD_SEND_LAST_SCREEN    'E'
-#define CMD_BRIGHTNESS_CURVE      'U'
+#define CMD_BRIGHTNESS_CURVE    'U'
 
 #define CMD_AUTO_LASER_ON       'L'
 #define CMD_AUTO_LASER_OFF      'l'
@@ -40,6 +40,8 @@
 #define CMD_AUDIO               'A'
 #define CMD_BEEP                'B'
 #define CMD_BEEP_STOP           'S'
+
+#define CMD_SAMPLE_ALL          'Q'
 
 #define CMD_MIDI                'M'
 #define CMD_NOTE                'N'
@@ -312,6 +314,16 @@ void process_command(char cmd) {
       send_ack(CMD_BRIGHTNESS_CURVE);
       // This blocks all other execution for about 1 second
       run_brightness_curve();
+    } else if (cmd == CMD_SAMPLE_ALL) {
+      Serial.print(flip_case(cmd));
+      Serial.print(" G:");
+      Serial.print(analogRead(G_PIN));
+      Serial.print(" PD_screen:");
+      Serial.print(analogRead(PD_SCREEN_PIN));
+      Serial.print(" PD_laser:");
+      Serial.print(analogRead(PD_LASER_PIN));
+      Serial.println();
+      Serial.send_now();
     } else {
       Serial.print("Unknown command:");
       Serial.println(cmd);
