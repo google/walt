@@ -31,7 +31,7 @@
 #define CMD_AUTO_SCREEN_ON      'C'
 #define CMD_AUTO_SCREEN_OFF     'c'
 #define CMD_SEND_LAST_SCREEN    'E'
-#define CMD_BRIGHTNESS_CURVE      'U'
+#define CMD_BRIGHTNESS_CURVE    'U'
 
 #define CMD_AUTO_LASER_ON       'L'
 #define CMD_AUTO_LASER_OFF      'l'
@@ -76,8 +76,6 @@
 #define SCREEN_THRESH_LOW  90
 
 elapsedMicros time_us;
-
-
 
 boolean led_state;
 char tmp_str[256];
@@ -253,124 +251,121 @@ void run_brightness_curve() {
 void process_command(char cmd) {
   int i;
   if (cmd == CMD_SYNC_ZERO) {
-      noInterrupts();
-      time_us = 0;
-      init_clock();
-      clock.is_synced = true;
-      interrupts();
-      send_ack(CMD_SYNC_ZERO);
-    } else if (cmd == CMD_TIME_NOW) {
-      send("t ");
-      send(time_us);
-      send_line();
-    } else if (cmd == CMD_PING) {
-      send_ack(CMD_PING);
-    } else if (cmd == CMD_PING_DELAYED) {
-      delay(10);
-      send_ack(CMD_PING_DELAYED);
-    } else if (cmd >= '1' && cmd <= '9') {
-      clock.sync_times[cmd - '1'] = time_us;
-    } else if (cmd == CMD_SYNC_READOUT) {
-      clock.last_sent++;
-      int t = 0;
-      if (clock.last_sent < CLOCK_SYNC_N) {
-        t = clock.sync_times[clock.last_sent];
-      }
-      send(clock.last_sent + 1);
-      send(':');
-      send(t);
-      send_line();
-    } else if (cmd == CMD_SYNC_SEND) {
-      clock.last_sent = -1;
-      // Send CLOCK_SYNC_N times
-      for (i = 0; i < CLOCK_SYNC_N; ++i) {
-        delayMicroseconds(737); // TODO: change to some congifurable random
-        char c = '1' + i;
-        clock.sync_times[i] = time_us;
-        send(c);
-        send_line();
-      }
-    } else if (cmd == CMD_RESET) {
-      init_vars();
-      send_ack(CMD_RESET);
-    } else if (cmd == CMD_VERSION) {
-      send(flip_case(cmd));
-      send(' ');
-      send(VERSION);
-      send_line();
-    } else if (cmd == CMD_GSHOCK) {
-      send(gshock.t);  // TODO: Serialize trigger
-      send_line();
-      gshock.t = 0;
-      gshock.count = 0;
-      gshock.probe = true;
-    } else if (cmd == CMD_AUDIO) {
-      sound.t = 0;
-      sound.count = 0;
-      sound.probe = true;
-      sound.autosend = true;
-      send_ack(CMD_AUDIO);
-    } else if (cmd == CMD_BEEP) {
-      long beep_time = time_us;
-      tone(MIC_PIN, 5000 /* Hz */);
-      send(flip_case(cmd));
-      send(' ');
-      send(beep_time);
-      send_line();
-    } else if (cmd == CMD_BEEP_STOP) {
-      noTone(MIC_PIN);
-      send_ack(CMD_BEEP_STOP);
-    } else if (cmd == CMD_MIDI) {
-      midi.t = 0;
-      midi.count = 0;
-      midi.probe = true;
-      midi.autosend = true;
-      send_ack(CMD_MIDI);
-    } else if (cmd == CMD_NOTE) {
-      unsigned long note_time = time_us + NOTE_DELAY;
-      send(flip_case(cmd));
-      send(' ');
-      send(note_time);
-      send_line();
-      while (time_us < note_time);
-      usbMIDI.sendNoteOn(60, 99, 1);
-      usbMIDI.send_now();
-
-    } else if (cmd == CMD_AUTO_SCREEN_ON) {
-      screen.value = analogRead(PD_SCREEN_PIN) > SCREEN_THRESH_HIGH;
-      screen.autosend = true;
-      screen.probe = true;
-      send_ack(CMD_AUTO_SCREEN_ON);
-    } else if (cmd == CMD_AUTO_SCREEN_OFF) {
-      screen.autosend = false;
-      screen.probe = false;
-      send_ack(CMD_AUTO_SCREEN_OFF);
-    } else if (cmd == CMD_SEND_LAST_SCREEN) {
-      send_trigger(screen);
-      screen.count = 0;
-    } else if (cmd == CMD_AUTO_LASER_ON) {
-      laser.autosend = true;
-      send_ack(CMD_AUTO_LASER_ON);
-    } else if (cmd == CMD_AUTO_LASER_OFF) {
-      laser.autosend = false;
-      send_ack(CMD_AUTO_LASER_OFF);
-    } else if (cmd == CMD_SEND_LAST_LASER) {
-      send_trigger(laser);
-      laser.count = 0;
-    } else if (cmd == CMD_BRIGHTNESS_CURVE) {
-      send_ack(CMD_BRIGHTNESS_CURVE);
-      // This blocks all other execution for about 1 second
-      run_brightness_curve();
-    } else {
-      send("Unknown command: ");
-      send(cmd);
+    noInterrupts();
+    time_us = 0;
+    init_clock();
+    clock.is_synced = true;
+    interrupts();
+    send_ack(CMD_SYNC_ZERO);
+  } else if (cmd == CMD_TIME_NOW) {
+    send("t ");
+    send(time_us);
+    send_line();
+  } else if (cmd == CMD_PING) {
+    send_ack(CMD_PING);
+  } else if (cmd == CMD_PING_DELAYED) {
+    delay(10);
+    send_ack(CMD_PING_DELAYED);
+  } else if (cmd >= '1' && cmd <= '9') {
+    clock.sync_times[cmd - '1'] = time_us;
+  } else if (cmd == CMD_SYNC_READOUT) {
+    clock.last_sent++;
+    int t = 0;
+    if (clock.last_sent < CLOCK_SYNC_N) {
+      t = clock.sync_times[clock.last_sent];
+    }
+    send(clock.last_sent + 1);
+    send(':');
+    send(t);
+    send_line();
+  } else if (cmd == CMD_SYNC_SEND) {
+    clock.last_sent = -1;
+    // Send CLOCK_SYNC_N times
+    for (i = 0; i < CLOCK_SYNC_N; ++i) {
+      delayMicroseconds(737); // TODO: change to some congifurable random
+      char c = '1' + i;
+      clock.sync_times[i] = time_us;
+      send(c);
       send_line();
     }
+  } else if (cmd == CMD_RESET) {
+    init_vars();
+    send_ack(CMD_RESET);
+  } else if (cmd == CMD_VERSION) {
+    send(flip_case(cmd));
+    send(' ');
+    send(VERSION);
+    send_line();
+  } else if (cmd == CMD_GSHOCK) {
+    send(gshock.t);  // TODO: Serialize trigger
+    send_line();
+    gshock.t = 0;
+    gshock.count = 0;
+    gshock.probe = true;
+  } else if (cmd == CMD_AUDIO) {
+    sound.t = 0;
+    sound.count = 0;
+    sound.probe = true;
+    sound.autosend = true;
+    send_ack(CMD_AUDIO);
+  } else if (cmd == CMD_BEEP) {
+    long beep_time = time_us;
+    tone(MIC_PIN, 5000 /* Hz */);
+    send(flip_case(cmd));
+    send(' ');
+    send(beep_time);
+    send_line();
+  } else if (cmd == CMD_BEEP_STOP) {
+    noTone(MIC_PIN);
+    send_ack(CMD_BEEP_STOP);
+  } else if (cmd == CMD_MIDI) {
+    midi.t = 0;
+    midi.count = 0;
+    midi.probe = true;
+    midi.autosend = true;
+    send_ack(CMD_MIDI);
+  } else if (cmd == CMD_NOTE) {
+    unsigned long note_time = time_us + NOTE_DELAY;
+    send(flip_case(cmd));
+    send(' ');
+    send(note_time);
+    send_line();
+    while (time_us < note_time);
+    usbMIDI.sendNoteOn(60, 99, 1);
+    usbMIDI.send_now();
+  } else if (cmd == CMD_AUTO_SCREEN_ON) {
+    screen.value = analogRead(PD_SCREEN_PIN) > SCREEN_THRESH_HIGH;
+    screen.autosend = true;
+    screen.probe = true;
+    send_ack(CMD_AUTO_SCREEN_ON);
+  } else if (cmd == CMD_AUTO_SCREEN_OFF) {
+    screen.autosend = false;
+    screen.probe = false;
+    send_ack(CMD_AUTO_SCREEN_OFF);
+  } else if (cmd == CMD_SEND_LAST_SCREEN) {
+    send_trigger(screen);
+    screen.count = 0;
+  } else if (cmd == CMD_AUTO_LASER_ON) {
+    laser.autosend = true;
+    send_ack(CMD_AUTO_LASER_ON);
+  } else if (cmd == CMD_AUTO_LASER_OFF) {
+    laser.autosend = false;
+    send_ack(CMD_AUTO_LASER_OFF);
+  } else if (cmd == CMD_SEND_LAST_LASER) {
+    send_trigger(laser);
+    laser.count = 0;
+  } else if (cmd == CMD_BRIGHTNESS_CURVE) {
+    send_ack(CMD_BRIGHTNESS_CURVE);
+    // This blocks all other execution for about 1 second
+    run_brightness_curve();
+  } else {
+    send("Unknown command: ");
+    send(cmd);
+    send_line();
   }
-
+}
 
 void loop() {
-
   digitalWrite(LED_PIN_INT, led_state);
 
   // Probe the accelerometer
@@ -417,7 +412,6 @@ void loop() {
 
   // Send out any triggers with autosend and pending data
   for (int i = 0; i < TRIGGER_COUNT; i++) {
-
     boolean should_send = false;
 
     noInterrupts();
@@ -449,3 +443,4 @@ void loop() {
     process_command(cmd);
   }
 }
+
