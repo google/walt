@@ -41,6 +41,8 @@
 #define CMD_BEEP                'B'
 #define CMD_BEEP_STOP           'S'
 
+#define CMD_SAMPLE_ALL          'Q'
+
 #define CMD_MIDI                'M'
 #define CMD_NOTE                'N'
 
@@ -358,6 +360,15 @@ void process_command(char cmd) {
     send_ack(CMD_BRIGHTNESS_CURVE);
     // This blocks all other execution for about 1 second
     run_brightness_curve();
+  } else if (cmd == CMD_SAMPLE_ALL) {
+    send(flip_case(cmd));
+    send(" G:");
+    send(analogRead(G_PIN));
+    send(" PD_screen:");
+    send(analogRead(PD_SCREEN_PIN));
+    send(" PD_laser:");
+    send(analogRead(PD_LASER_PIN));
+    send_line();
   } else {
     send("Unknown command: ");
     send(cmd);

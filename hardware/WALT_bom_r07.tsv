@@ -1,0 +1,14 @@
+Ref	Qty	Description	Type	Package	Manufacturer	Mfg Part #
+U3	1	Single Op Amp LM321 (TI, SOT-23)	SMD	SOT-23	Texas Instruments	LM321MFX/NOPB
+U2	1	Small, Low Power, 3-Axis 3g Accelerometer	SMD	16-Lead LFCSP_LQ	Analog Devices	ADXL335BCPZ
+D3	1	LED GREEN CLEAR 0603 SMD	SMD	0603 (1608 metric), polarized	Lite-On Inc.	LTST-C191KGKT
+D4	1	LED RED CLEAR 0603 SMD	SMD	0603 (1608 metric), polarized	Lite-On Inc.	LTST-C191KRKT
+C1 C2	2	Capacitor (0.1uF)	SMD	0805 (2012 metric)	Samsung Electro-Mechanics America, Inc.	CL21F104ZBCNNNC
+R7,R5	2	Resistor (100) 100 Ohm	SMD	0603 (1608 metric)	Yageo	RC0603FR-07100RL
+R4, R6	2	Resistor (3300) 3.3k	SMD	0603 (1608 metric)	Yageo	RC0603JR-073K3L
+R3	1	Resistor (510000) 510k	SMD	0603 (1608 metric)	Yageo	RC0603FR-07510KL
+R2,R1	2	Resistor (330R) 330 Ohm	SMD	0603 (1608 metric)	Yageo	RC0603JR-07330RL
+D1, D2	2	Photodiode	Thru-hole	2-DIP (5.4mm), polarized	Vishay / OSRAM (either)	BPW34
+J1	1	Audio jack 3.5 mm, TRRS 4 conductors	Thru-hole	Audio connector, non standard	CUI Inc.	SJ-43514
+HEADERS4U1	2	Female headers 2.54mm, 14 pins	Thru-hole		Generic	Generic
+P1	1	Male straight headers 2.54mm, 6 pins	Thru-hole		Generic	Generic

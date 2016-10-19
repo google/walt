@@ -35,6 +35,7 @@ On some systems it requires running as root.
 import argparse
 import glob
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -74,6 +75,7 @@ class Walt(object):
     CMD_AUTO_LASER_OFF = 'l'
     CMD_GSHOCK = 'G'
     CMD_VERSION = 'V'
+    CMD_SAMPLE_ALL = 'Q'
 
 
     def __init__(self, serial_dev):
@@ -206,12 +208,12 @@ def parse_args():
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('input',
+    parser.add_argument('-i', '--input', default='',
                         help='input device, e.g: 6 or /dev/input/event6')
     parser.add_argument('-s', '--serial', default=serial,
                         help='WALT serial port')
     parser.add_argument('-t', '--type', default='drag',
-                        help='Test type, "drag" or "tap"')
+                        help='Test type: drag|tap|sanity')
     parser.add_argument('-l', '--logdir', default=temp_dir,
                         help='where to store logs')
     parser.add_argument('-n', default=40, type=int,
@@ -230,6 +232,11 @@ def parse_args():
 
 
 def run_drag_latency_test(args):
+
+    if not args.input:
+        print('Error: --input argument is required for drag latency test')
+        sys.exit(1)
+
     # Create names for log files
     prefix = time.strftime('WALT_%Y_%m_%d__%H%M_%S')
     laser_file_name = os.path.join(args.logdir,  prefix + '_laser.log')
@@ -282,6 +289,11 @@ def run_drag_latency_test(args):
 
 
 def run_tap_latency_test(args):
+
+    if not args.input:
+        print('Error: --input argument is required for tap latency test')
+        sys.exit(1)
+
     print('Starting tap latency test')
 
     with Walt(args.serial) as walt:
@@ -337,11 +349,35 @@ def run_tap_latency_test(args):
     print('Median latency, down: %0.1f, up: %0.1f' % (median_down_ms, meidan_up_ms))
 
 
+def run_walt_sanity_test(args):
+    print('Starting sanity test')
+
+    with Walt(args.serial) as walt:
+        walt.sndrcv(Walt.CMD_RESET)
+
+        not_digit = re.compile('\D+')
+        lows = numpy.zeros(3) + 1024
+        highs = numpy.zeros(3)
+        while True:
+            t, s = walt.sndrcv(Walt.CMD_SAMPLE_ALL)
+            nums = not_digit.sub(' ', s).strip().split()
+            if not nums:
+                continue
+            ints = numpy.array([int(x) for x in nums])
+            lows = numpy.array([lows, ints]).min(axis=0)
+            highs = numpy.array([highs, ints]).max(axis=0)
+
+            minmax = ' '.join(['%d-%d' % (lows[i], highs[i]) for i in range(3)])
+            print(s.strip() + '\tmin-max: ' + minmax)
+            time.sleep(0.1)
+
+
 if __name__ == '__main__':
     args = parse_args()
     if args.type == 'tap':
         run_tap_latency_test(args)
+    elif args.type == 'sanity':
+        run_walt_sanity_test(args)
     else:
         run_drag_latency_test(args)
-
 
