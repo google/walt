@@ -46,6 +46,7 @@ import numpy
 
 import evparser
 import minimization
+import screen_stats
 
 
 # Globals
@@ -73,14 +74,16 @@ class Walt(object):
     CMD_TIME_NOW = 'T'
     CMD_AUTO_LASER_ON = 'L'
     CMD_AUTO_LASER_OFF = 'l'
+    CMD_AUTO_SCREEN_ON = 'C'
+    CMD_AUTO_SCREEN_OFF = 'c'
     CMD_GSHOCK = 'G'
     CMD_VERSION = 'V'
     CMD_SAMPLE_ALL = 'Q'
 
 
-    def __init__(self, serial_dev):
+    def __init__(self, serial_dev, timeout=None):
         self.serial_dev = serial_dev
-        self.ser = serial.Serial(serial_dev, 115200)
+        self.ser = serial.Serial(serial_dev, baudrate=115200, timeout=timeout)
 
     def __enter__(self):
         return self
@@ -182,7 +185,7 @@ class Walt(object):
 
         parts = trigger_line.strip().split()
         if len(parts) != 5:
-            raise Exception('Malformed laser trigger line:\n' + trigger_line)
+            raise Exception('Malformed trigger line: "%s"\n' % trigger_line)
         t_us = int(parts[2])
         val = int(parts[3])
         return (t_us / 1e6, val)
@@ -213,7 +216,7 @@ def parse_args():
     parser.add_argument('-s', '--serial', default=serial,
                         help='WALT serial port')
     parser.add_argument('-t', '--type', default='drag',
-                        help='Test type: drag|tap|sanity')
+                        help='Test type: drag|tap|screen|sanity')
     parser.add_argument('-l', '--logdir', default=temp_dir,
                         help='where to store logs')
     parser.add_argument('-n', default=40, type=int,
@@ -286,6 +289,61 @@ def run_drag_latency_test(args):
     print "\nProcessing data, may take a minute or two..."
     # lm.main(evtest_file_name, laser_file_name)
     minimization.minimize(evtest_file_name, laser_file_name)
+
+
+def run_screen_latency_test(args):
+
+    # Create names for log files
+    prefix = time.strftime('WALT_%Y_%m_%d__%H%M_%S')
+    sensor_file_name = os.path.join(args.logdir,  prefix + '_screen_sensor.log')
+    blinker_file_name = os.path.join(args.logdir,  prefix + '_blinker.log')
+
+    print('Starting drag latency test')
+    print('Input device   : ' + args.input)
+    print('Serial device  : ' + args.serial)
+    print('Laser log file : ' + sensor_file_name)
+    print('evtest log file: ' + blinker_file_name)
+
+    with Walt(args.serial, timeout=1) as walt:
+        walt.sndrcv(Walt.CMD_RESET)
+
+        t_zero = walt.zeroClock()
+        if t_zero < 0:
+            print('Error: Couldn\'t zero clock, exitting')
+            sys.exit(1)
+
+        # Fire up the walt_blinker process
+        cmd = 'walt_blink %d > %s' % (args.n, blinker_file_name, )
+        blinker = subprocess.Popen(cmd, shell=True)
+
+        # Turn on laser trigger auto-sending
+        walt.sndrcv(Walt.CMD_AUTO_SCREEN_ON)
+        trigger_count = 0
+
+        # Iterate while the blinker process is alive
+        # TODO: re-sync clocks every once in a while
+        while blinker.poll() is None:
+            # The following line blocks until a message from WALT arrives
+            trigger_line = walt.readline()
+            if not trigger_line:
+                # This usually happens when readline timeouts on last iteration
+                continue
+            trigger_count += 1
+            log('#%d/%d - ' % (trigger_count, args.n) +
+                trigger_line.strip())
+
+            if not debug_mode:
+                sys.stdout.write('.')
+                sys.stdout.flush()
+
+            t, val = walt.parseTrigger(trigger_line)
+            t += t_zero
+            with open(sensor_file_name, 'at') as flaser:
+                flaser.write('%.3f %d\n' % (t, val))
+        walt.sndrcv(Walt.CMD_AUTO_SCREEN_OFF)
+
+    print("\nProcessing data ...")
+    screen_stats.screen_stats(blinker_file_name, sensor_file_name)
 
 
 def run_tap_latency_test(args):
@@ -376,6 +434,8 @@ if __name__ == '__main__':
     args = parse_args()
     if args.type == 'tap':
         run_tap_latency_test(args)
+    elif args.type == 'screen':
+        run_screen_latency_test(args)
     elif args.type == 'sanity':
         run_walt_sanity_test(args)
     else:
