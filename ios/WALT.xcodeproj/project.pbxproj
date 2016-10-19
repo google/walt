@@ -1,0 +1,441 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		932918081D8376BE0029432C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 932918071D8376BE0029432C /* main.m */; };
+		9329180B1D8376BE0029432C /* WALTAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9329180A1D8376BE0029432C /* WALTAppDelegate.m */; };
+		9329180E1D8376BE0029432C /* MenuController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9329180D1D8376BE0029432C /* MenuController.m */; };
+		932918111D8376BE0029432C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9329180F1D8376BE0029432C /* Main.storyboard */; };
+		932918131D8376BE0029432C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 932918121D8376BE0029432C /* Assets.xcassets */; };
+		9329181F1D837A3E0029432C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9329181D1D837A3E0029432C /* LaunchScreen.storyboard */; };
+		932B1C6A1D861108008F3025 /* TapLatencyController.m in Sources */ = {isa = PBXBuildFile; fileRef = 932B1C691D861108008F3025 /* TapLatencyController.m */; };
+		932B1C761D865AE2008F3025 /* WALTLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = 932B1C751D865AE2008F3025 /* WALTLogger.m */; };
+		93B35DE31D8CA7D000BE2E58 /* DebugLogController.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B35DE21D8CA7D000BE2E58 /* DebugLogController.m */; };
+		93B35DEC1D90639500BE2E58 /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 93B35DEB1D90639500BE2E58 /* CoreMIDI.framework */; };
+		93B35DEF1D90B4C500BE2E58 /* MIDIClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B35DEE1D90B4C500BE2E58 /* MIDIClient.m */; };
+		93B35DF31D90B7C200BE2E58 /* MIDIEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B35DF21D90B7C200BE2E58 /* MIDIEndpoint.m */; };
+		93B35E081D91F1FE00BE2E58 /* MIDIMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B35E071D91F1FE00BE2E58 /* MIDIMessage.m */; };
+		93B35E0C1D92FA6200BE2E58 /* WALTClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B35E0B1D92FA6200BE2E58 /* WALTClient.m */; };
+		93B44C781D9AF97600D9BEC9 /* WALTTouch.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B44C771D9AF97600D9BEC9 /* WALTTouch.m */; };
+		93B44C7D1D9C433A00D9BEC9 /* SettingsController.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B44C7C1D9C433A00D9BEC9 /* SettingsController.m */; };
+		93B44C801D9C4DE300D9BEC9 /* ScreenResponseController.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B44C7F1D9C4DE300D9BEC9 /* ScreenResponseController.m */; };
+		93B44C831D9D9E1F00D9BEC9 /* NSArray+Extensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B44C821D9D9E1F00D9BEC9 /* NSArray+Extensions.m */; };
+		93B44C881D9EE33400D9BEC9 /* UIAlertView+Extensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 93B44C871D9EE33400D9BEC9 /* UIAlertView+Extensions.m */; };
+		93B44C8B1D9F1D3700D9BEC9 /* DragLatencyController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 93B44C8A1D9F1D3700D9BEC9 /* DragLatencyController.mm */; };
+		93B44C901DA8562E00D9BEC9 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 93B44C8F1DA8562E00D9BEC9 /* UIKit.framework */; };
+		93B44C921DA8563900D9BEC9 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 93B44C911DA8563900D9BEC9 /* CoreGraphics.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		932918031D8376BE0029432C /* WALT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WALT.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		932918071D8376BE0029432C /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		932918091D8376BE0029432C /* WALTAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WALTAppDelegate.h; sourceTree = "<group>"; };
+		9329180A1D8376BE0029432C /* WALTAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WALTAppDelegate.m; sourceTree = "<group>"; };
+		9329180C1D8376BE0029432C /* MenuController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MenuController.h; sourceTree = "<group>"; };
+		9329180D1D8376BE0029432C /* MenuController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MenuController.m; sourceTree = "<group>"; };
+		932918101D8376BE0029432C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		932918121D8376BE0029432C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		932918171D8376BE0029432C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9329181E1D837A3E0029432C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		932B1C681D861108008F3025 /* TapLatencyController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TapLatencyController.h; sourceTree = "<group>"; };
+		932B1C691D861108008F3025 /* TapLatencyController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TapLatencyController.m; sourceTree = "<group>"; };
+		932B1C741D865AE2008F3025 /* WALTLogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WALTLogger.h; sourceTree = "<group>"; };
+		932B1C751D865AE2008F3025 /* WALTLogger.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WALTLogger.m; sourceTree = "<group>"; };
+		93B35DE11D8CA7D000BE2E58 /* DebugLogController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DebugLogController.h; sourceTree = "<group>"; };
+		93B35DE21D8CA7D000BE2E58 /* DebugLogController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DebugLogController.m; sourceTree = "<group>"; };
+		93B35DEB1D90639500BE2E58 /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
+		93B35DED1D90B4C500BE2E58 /* MIDIClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIDIClient.h; sourceTree = "<group>"; };
+		93B35DEE1D90B4C500BE2E58 /* MIDIClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIDIClient.m; sourceTree = "<group>"; };
+		93B35DF11D90B7C200BE2E58 /* MIDIEndpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIDIEndpoint.h; sourceTree = "<group>"; };
+		93B35DF21D90B7C200BE2E58 /* MIDIEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIDIEndpoint.m; sourceTree = "<group>"; };
+		93B35E061D91F1FE00BE2E58 /* MIDIMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MIDIMessage.h; sourceTree = "<group>"; };
+		93B35E071D91F1FE00BE2E58 /* MIDIMessage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MIDIMessage.m; sourceTree = "<group>"; };
+		93B35E0A1D92FA6200BE2E58 /* WALTClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WALTClient.h; sourceTree = "<group>"; };
+		93B35E0B1D92FA6200BE2E58 /* WALTClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WALTClient.m; sourceTree = "<group>"; };
+		93B44C761D9AF97600D9BEC9 /* WALTTouch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WALTTouch.h; sourceTree = "<group>"; };
+		93B44C771D9AF97600D9BEC9 /* WALTTouch.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WALTTouch.m; sourceTree = "<group>"; };
+		93B44C7B1D9C433A00D9BEC9 /* SettingsController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SettingsController.h; sourceTree = "<group>"; };
+		93B44C7C1D9C433A00D9BEC9 /* SettingsController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SettingsController.m; sourceTree = "<group>"; };
+		93B44C7E1D9C4DE300D9BEC9 /* ScreenResponseController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ScreenResponseController.h; sourceTree = "<group>"; };
+		93B44C7F1D9C4DE300D9BEC9 /* ScreenResponseController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ScreenResponseController.m; sourceTree = "<group>"; };
+		93B44C811D9D9E1F00D9BEC9 /* NSArray+Extensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSArray+Extensions.h"; sourceTree = "<group>"; };
+		93B44C821D9D9E1F00D9BEC9 /* NSArray+Extensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSArray+Extensions.m"; sourceTree = "<group>"; };
+		93B44C861D9EE33400D9BEC9 /* UIAlertView+Extensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIAlertView+Extensions.h"; sourceTree = "<group>"; };
+		93B44C871D9EE33400D9BEC9 /* UIAlertView+Extensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIAlertView+Extensions.m"; sourceTree = "<group>"; };
+		93B44C891D9F1D3700D9BEC9 /* DragLatencyController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DragLatencyController.h; sourceTree = "<group>"; };
+		93B44C8A1D9F1D3700D9BEC9 /* DragLatencyController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DragLatencyController.mm; sourceTree = "<group>"; };
+		93B44C8F1DA8562E00D9BEC9 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		93B44C911DA8563900D9BEC9 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		932918001D8376BD0029432C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				93B44C921DA8563900D9BEC9 /* CoreGraphics.framework in Frameworks */,
+				93B44C901DA8562E00D9BEC9 /* UIKit.framework in Frameworks */,
+				93B35DEC1D90639500BE2E58 /* CoreMIDI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		932917FA1D8376BD0029432C = {
+			isa = PBXGroup;
+			children = (
+				932918051D8376BE0029432C /* WALT */,
+				932918041D8376BE0029432C /* Products */,
+				932B1C211D83B14A008F3025 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		932918041D8376BE0029432C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				932918031D8376BE0029432C /* WALT.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		932918051D8376BE0029432C /* WALT */ = {
+			isa = PBXGroup;
+			children = (
+				932918091D8376BE0029432C /* WALTAppDelegate.h */,
+				9329180A1D8376BE0029432C /* WALTAppDelegate.m */,
+				932B1C741D865AE2008F3025 /* WALTLogger.h */,
+				932B1C751D865AE2008F3025 /* WALTLogger.m */,
+				93B44C761D9AF97600D9BEC9 /* WALTTouch.h */,
+				93B44C771D9AF97600D9BEC9 /* WALTTouch.m */,
+				93B44C811D9D9E1F00D9BEC9 /* NSArray+Extensions.h */,
+				93B44C821D9D9E1F00D9BEC9 /* NSArray+Extensions.m */,
+				93B44C861D9EE33400D9BEC9 /* UIAlertView+Extensions.h */,
+				93B44C871D9EE33400D9BEC9 /* UIAlertView+Extensions.m */,
+				932B1C6C1D861803008F3025 /* Connectivity */,
+				932B1C6D1D861809008F3025 /* UI */,
+				932918061D8376BE0029432C /* Supporting Files */,
+			);
+			path = WALT;
+			sourceTree = "<group>";
+		};
+		932918061D8376BE0029432C /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				932918071D8376BE0029432C /* main.m */,
+				932918171D8376BE0029432C /* Info.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		932B1C211D83B14A008F3025 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				93B44C911DA8563900D9BEC9 /* CoreGraphics.framework */,
+				93B44C8F1DA8562E00D9BEC9 /* UIKit.framework */,
+				93B35DEB1D90639500BE2E58 /* CoreMIDI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		932B1C6C1D861803008F3025 /* Connectivity */ = {
+			isa = PBXGroup;
+			children = (
+				93B35DED1D90B4C500BE2E58 /* MIDIClient.h */,
+				93B35DEE1D90B4C500BE2E58 /* MIDIClient.m */,
+				93B35DF11D90B7C200BE2E58 /* MIDIEndpoint.h */,
+				93B35DF21D90B7C200BE2E58 /* MIDIEndpoint.m */,
+				93B35E061D91F1FE00BE2E58 /* MIDIMessage.h */,
+				93B35E071D91F1FE00BE2E58 /* MIDIMessage.m */,
+				93B35E0A1D92FA6200BE2E58 /* WALTClient.h */,
+				93B35E0B1D92FA6200BE2E58 /* WALTClient.m */,
+			);
+			name = Connectivity;
+			sourceTree = "<group>";
+		};
+		932B1C6D1D861809008F3025 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				9329180C1D8376BE0029432C /* MenuController.h */,
+				9329180D1D8376BE0029432C /* MenuController.m */,
+				93B35DE11D8CA7D000BE2E58 /* DebugLogController.h */,
+				93B35DE21D8CA7D000BE2E58 /* DebugLogController.m */,
+				93B44C891D9F1D3700D9BEC9 /* DragLatencyController.h */,
+				93B44C8A1D9F1D3700D9BEC9 /* DragLatencyController.mm */,
+				93B44C7B1D9C433A00D9BEC9 /* SettingsController.h */,
+				93B44C7C1D9C433A00D9BEC9 /* SettingsController.m */,
+				93B44C7E1D9C4DE300D9BEC9 /* ScreenResponseController.h */,
+				93B44C7F1D9C4DE300D9BEC9 /* ScreenResponseController.m */,
+				932B1C681D861108008F3025 /* TapLatencyController.h */,
+				932B1C691D861108008F3025 /* TapLatencyController.m */,
+				9329180F1D8376BE0029432C /* Main.storyboard */,
+				9329181D1D837A3E0029432C /* LaunchScreen.storyboard */,
+				932918121D8376BE0029432C /* Assets.xcassets */,
+			);
+			name = UI;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		932918021D8376BD0029432C /* WALT */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9329181A1D8376BE0029432C /* Build configuration list for PBXNativeTarget "WALT" */;
+			buildPhases = (
+				932917FF1D8376BD0029432C /* Sources */,
+				932918001D8376BD0029432C /* Frameworks */,
+				932918011D8376BD0029432C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WALT;
+			productName = WALT;
+			productReference = 932918031D8376BE0029432C /* WALT.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		932917FB1D8376BD0029432C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0800;
+				ORGANIZATIONNAME = "Google Inc.";
+				TargetAttributes = {
+					932918021D8376BD0029432C = {
+						CreatedOnToolsVersion = 7.3.1;
+						DevelopmentTeam = M624B4DA33;
+						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+							com.apple.WAC = {
+								enabled = 0;
+							};
+						};
+					};
+				};
+			};
+			buildConfigurationList = 932917FE1D8376BD0029432C /* Build configuration list for PBXProject "WALT" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 932917FA1D8376BD0029432C;
+			productRefGroup = 932918041D8376BE0029432C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				932918021D8376BD0029432C /* WALT */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		932918011D8376BD0029432C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9329181F1D837A3E0029432C /* LaunchScreen.storyboard in Resources */,
+				932918131D8376BE0029432C /* Assets.xcassets in Resources */,
+				932918111D8376BE0029432C /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		932917FF1D8376BD0029432C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				93B44C7D1D9C433A00D9BEC9 /* SettingsController.m in Sources */,
+				93B35E081D91F1FE00BE2E58 /* MIDIMessage.m in Sources */,
+				93B44C881D9EE33400D9BEC9 /* UIAlertView+Extensions.m in Sources */,
+				93B44C831D9D9E1F00D9BEC9 /* NSArray+Extensions.m in Sources */,
+				93B44C8B1D9F1D3700D9BEC9 /* DragLatencyController.mm in Sources */,
+				93B35DE31D8CA7D000BE2E58 /* DebugLogController.m in Sources */,
+				9329180E1D8376BE0029432C /* MenuController.m in Sources */,
+				93B35DEF1D90B4C500BE2E58 /* MIDIClient.m in Sources */,
+				93B35DF31D90B7C200BE2E58 /* MIDIEndpoint.m in Sources */,
+				9329180B1D8376BE0029432C /* WALTAppDelegate.m in Sources */,
+				932B1C6A1D861108008F3025 /* TapLatencyController.m in Sources */,
+				932918081D8376BE0029432C /* main.m in Sources */,
+				93B44C801D9C4DE300D9BEC9 /* ScreenResponseController.m in Sources */,
+				93B35E0C1D92FA6200BE2E58 /* WALTClient.m in Sources */,
+				932B1C761D865AE2008F3025 /* WALTLogger.m in Sources */,
+				93B44C781D9AF97600D9BEC9 /* WALTTouch.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		9329180F1D8376BE0029432C /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				932918101D8376BE0029432C /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		9329181D1D837A3E0029432C /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				9329181E1D837A3E0029432C /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		932918181D8376BE0029432C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		932918191D8376BE0029432C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		9329181B1D8376BE0029432C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				INFOPLIST_FILE = WALT/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = org.chromium.latency.WALT;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
+			};
+			name = Debug;
+		};
+		9329181C1D8376BE0029432C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				INFOPLIST_FILE = WALT/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = org.chromium.latency.WALT;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		932917FE1D8376BD0029432C /* Build configuration list for PBXProject "WALT" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				932918181D8376BE0029432C /* Debug */,
+				932918191D8376BE0029432C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9329181A1D8376BE0029432C /* Build configuration list for PBXNativeTarget "WALT" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9329181B1D8376BE0029432C /* Debug */,
+				9329181C1D8376BE0029432C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 932917FB1D8376BD0029432C /* Project object */;
+}

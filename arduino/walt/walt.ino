@@ -48,6 +48,12 @@
 
 #define NOTE_DELAY 10000 // 10 ms
 
+// Message types for MIDI encapsulation
+#define MIDI_MODE_TYPE 4  // Program Change
+#define MIDI_COMMAND_TYPE 5  // Channel Pressure
+
+#define MIDI_SYSEX_BEGIN '\xF0'
+#define MIDI_SYSEX_END '\xF7'
 
 // On Teensy LC probably need to use the high current pins
 // for most LEDs.
@@ -73,10 +79,11 @@
 
 elapsedMicros time_us;
 
-
-
 boolean led_state;
 char tmp_str[256];
+
+boolean serial_over_midi;
+String send_buffer;
 
 struct trigger {
   long t;  // time of latest occurrence in microseconds
@@ -110,11 +117,52 @@ void irq_laser(void) {
   led_state = !led_state;
 }
 
+void send(char c) { send_buffer += c; }
+void send(String s) { send_buffer += s; }
+
+void send(long l) {
+  char s[32];
+  sprintf(s, "%ld", l);
+  send(s);
+}
+
+void send(unsigned long l) {
+  char s[32];
+  sprintf(s, "%lud", l);
+  send(s);
+}
+
+void send(short i) { send((long)i); }
+void send(int i) { send((long)i); }
+void send(unsigned short i) { send ((unsigned long)i); }
+void send(unsigned int i) { send ((unsigned int)i); }
+
+void send_now() {
+  if (serial_over_midi) {
+    usbMIDI.sendSysEx(send_buffer.length(), (const uint8_t *)send_buffer.c_str());
+    usbMIDI.send_now();
+    send_buffer = MIDI_SYSEX_BEGIN;
+  } else {
+    Serial.write(send_buffer.c_str(), send_buffer.length());
+    Serial.send_now();
+    send_buffer = String();
+  }
+}
+
+void send_line() {
+  if (!serial_over_midi) {
+    send('\n');
+  } else {
+    send(MIDI_SYSEX_END);
+  }
+  send_now();
+}
+
 void send_trigger(struct trigger t) {
   char s[256];
   sprintf(s, "G %c %ld %d %d", t.tag, t.t, t.value, t.count);
-  Serial.println(s);
-  Serial.send_now();
+  send(s);
+  send_line();
 }
 
 // flips case for a give char. Unchanged if not in [A-Za-z].
@@ -130,8 +178,8 @@ char flip_case(char c) {
 
 // Print the same char as the cmd but with flipped case
 void send_ack(char cmd) {
-  Serial.println(flip_case(cmd));
-  Serial.send_now();
+  send(flip_case(cmd));
+  send_line();
 }
 
 void init_clock() {
@@ -177,6 +225,8 @@ void setup() {
   // digitalWrite(LED_PIN_RED, HIGH);
   Serial.begin(115200);
 
+  serial_over_midi = false;
+
   init_vars();
 }
 
@@ -189,150 +239,144 @@ void run_brightness_curve() {
   for (i = 0; i < 1000; i++) {
     v = analogRead(PD_SCREEN_PIN);
     t = time_us;
-    Serial.print(t);
-    Serial.print(" ");
-    Serial.println(v);
+    send(t);
+    send(' ');
+    send(v);
+    send_line();
     delayMicroseconds(450);
   }
   digitalWrite(DEBUG_LED2, LOW);
-  Serial.send_now();
-  Serial.println("end");
-  Serial.send_now();
+  send("end");
+  send_line();
 }
 
 void process_command(char cmd) {
   int i;
   if (cmd == CMD_SYNC_ZERO) {
-      noInterrupts();
-      time_us = 0;
-      init_clock();
-      clock.is_synced = true;
-      interrupts();
-      send_ack(CMD_SYNC_ZERO);
-    } else if (cmd == CMD_TIME_NOW) {
-      Serial.print("t ");
-      Serial.println(time_us);
-      Serial.send_now();
-    } else if (cmd == CMD_PING) {
-      send_ack(CMD_PING);
-    } else if (cmd == CMD_PING_DELAYED) {
-      delay(10);
-      send_ack(CMD_PING_DELAYED);
-    } else if (cmd >= '1' && cmd <= '9') {
-      clock.sync_times[cmd - '1'] = time_us;
-    } else if (cmd == CMD_SYNC_READOUT) {
-      clock.last_sent++;
-      int t = 0;
-      if (clock.last_sent < CLOCK_SYNC_N) {
-        t = clock.sync_times[clock.last_sent];
-      }
-      Serial.print(clock.last_sent + 1);
-      Serial.print(":");
-      Serial.println(t);
-      Serial.send_now();
-    } else if (cmd == CMD_SYNC_SEND) {
-      clock.last_sent = -1;
-      // Send CLOCK_SYNC_N times
-      for (i = 0; i < CLOCK_SYNC_N; ++i) {
-        delayMicroseconds(737); // TODO: change to some congifurable random
-        char c = '1' + i;
-        clock.sync_times[i] = time_us;
-        Serial.print(c);
-        Serial.send_now();
-      }
-      // TODO: This newline is useful for debugging, think if it's ok with the rest.
-      Serial.println();
-      Serial.send_now();
-    } else if (cmd == CMD_RESET) {
-      init_vars();
-      send_ack(CMD_RESET);
-    } else if (cmd == CMD_VERSION) {
-      Serial.print(flip_case(cmd));
-      Serial.print(" ");
-      Serial.println(VERSION);
-      Serial.send_now();
-    } else if (cmd == CMD_GSHOCK) {
-      Serial.println(gshock.t); // TODO: Serialize trigger
-      Serial.send_now();
-      gshock.t = 0;
-      gshock.count = 0;
-      gshock.probe = true;
-    } else if (cmd == CMD_AUDIO) {
-      sound.t = 0;
-      sound.count = 0;
-      sound.probe = true;
-      sound.autosend = true;
-      send_ack(CMD_AUDIO);
-    } else if (cmd == CMD_BEEP) {
-      long beep_time = time_us;
-      tone(MIC_PIN, 5000 /* Hz */);
-      Serial.print(flip_case(cmd));
-      Serial.print(" ");
-      Serial.println(beep_time);
-      Serial.send_now();
-    } else if (cmd == CMD_BEEP_STOP) {
-      noTone(MIC_PIN);
-      send_ack(CMD_BEEP_STOP);
-    } else if (cmd == CMD_MIDI) {
-      midi.t = 0;
-      midi.count = 0;
-      midi.probe = true;
-      midi.autosend = true;
-      send_ack(CMD_MIDI);
-    } else if (cmd == CMD_NOTE) {
-      unsigned long note_time = time_us + NOTE_DELAY;
-      Serial.print(flip_case(cmd));
-      Serial.print(" ");
-      Serial.println(note_time);
-      Serial.send_now();
-      while (time_us < note_time);
-      usbMIDI.sendNoteOn(60, 99, 1);
-      usbMIDI.send_now();
-
-    } else if (cmd == CMD_AUTO_SCREEN_ON) {
-      screen.value = analogRead(PD_SCREEN_PIN) > SCREEN_THRESH_HIGH;
-      screen.autosend = true;
-      screen.probe = true;
-      send_ack(CMD_AUTO_SCREEN_ON);
-    } else if (cmd == CMD_AUTO_SCREEN_OFF) {
-      screen.autosend = false;
-      screen.probe = false;
-      send_ack(CMD_AUTO_SCREEN_OFF);
-    } else if (cmd == CMD_SEND_LAST_SCREEN) {
-      send_trigger(screen);
-      screen.count = 0;
-    } else if (cmd == CMD_AUTO_LASER_ON) {
-      laser.autosend = true;
-      send_ack(CMD_AUTO_LASER_ON);
-    } else if (cmd == CMD_AUTO_LASER_OFF) {
-      laser.autosend = false;
-      send_ack(CMD_AUTO_LASER_OFF);
-    } else if (cmd == CMD_SEND_LAST_LASER) {
-      send_trigger(laser);
-      laser.count = 0;
-    } else if (cmd == CMD_BRIGHTNESS_CURVE) {
-      send_ack(CMD_BRIGHTNESS_CURVE);
-      // This blocks all other execution for about 1 second
-      run_brightness_curve();
-    } else if (cmd == CMD_SAMPLE_ALL) {
-      Serial.print(flip_case(cmd));
-      Serial.print(" G:");
-      Serial.print(analogRead(G_PIN));
-      Serial.print(" PD_screen:");
-      Serial.print(analogRead(PD_SCREEN_PIN));
-      Serial.print(" PD_laser:");
-      Serial.print(analogRead(PD_LASER_PIN));
-      Serial.println();
-      Serial.send_now();
-    } else {
-      Serial.print("Unknown command:");
-      Serial.println(cmd);
+    noInterrupts();
+    time_us = 0;
+    init_clock();
+    clock.is_synced = true;
+    interrupts();
+    send_ack(CMD_SYNC_ZERO);
+  } else if (cmd == CMD_TIME_NOW) {
+    send("t ");
+    send(time_us);
+    send_line();
+  } else if (cmd == CMD_PING) {
+    send_ack(CMD_PING);
+  } else if (cmd == CMD_PING_DELAYED) {
+    delay(10);
+    send_ack(CMD_PING_DELAYED);
+  } else if (cmd >= '1' && cmd <= '9') {
+    clock.sync_times[cmd - '1'] = time_us;
+  } else if (cmd == CMD_SYNC_READOUT) {
+    clock.last_sent++;
+    int t = 0;
+    if (clock.last_sent < CLOCK_SYNC_N) {
+      t = clock.sync_times[clock.last_sent];
     }
+    send(clock.last_sent + 1);
+    send(':');
+    send(t);
+    send_line();
+  } else if (cmd == CMD_SYNC_SEND) {
+    clock.last_sent = -1;
+    // Send CLOCK_SYNC_N times
+    for (i = 0; i < CLOCK_SYNC_N; ++i) {
+      delayMicroseconds(737); // TODO: change to some congifurable random
+      char c = '1' + i;
+      clock.sync_times[i] = time_us;
+      send(c);
+      send_line();
+    }
+  } else if (cmd == CMD_RESET) {
+    init_vars();
+    send_ack(CMD_RESET);
+  } else if (cmd == CMD_VERSION) {
+    send(flip_case(cmd));
+    send(' ');
+    send(VERSION);
+    send_line();
+  } else if (cmd == CMD_GSHOCK) {
+    send(gshock.t);  // TODO: Serialize trigger
+    send_line();
+    gshock.t = 0;
+    gshock.count = 0;
+    gshock.probe = true;
+  } else if (cmd == CMD_AUDIO) {
+    sound.t = 0;
+    sound.count = 0;
+    sound.probe = true;
+    sound.autosend = true;
+    send_ack(CMD_AUDIO);
+  } else if (cmd == CMD_BEEP) {
+    long beep_time = time_us;
+    tone(MIC_PIN, 5000 /* Hz */);
+    send(flip_case(cmd));
+    send(' ');
+    send(beep_time);
+    send_line();
+  } else if (cmd == CMD_BEEP_STOP) {
+    noTone(MIC_PIN);
+    send_ack(CMD_BEEP_STOP);
+  } else if (cmd == CMD_MIDI) {
+    midi.t = 0;
+    midi.count = 0;
+    midi.probe = true;
+    midi.autosend = true;
+    send_ack(CMD_MIDI);
+  } else if (cmd == CMD_NOTE) {
+    unsigned long note_time = time_us + NOTE_DELAY;
+    send(flip_case(cmd));
+    send(' ');
+    send(note_time);
+    send_line();
+    while (time_us < note_time);
+    usbMIDI.sendNoteOn(60, 99, 1);
+    usbMIDI.send_now();
+  } else if (cmd == CMD_AUTO_SCREEN_ON) {
+    screen.value = analogRead(PD_SCREEN_PIN) > SCREEN_THRESH_HIGH;
+    screen.autosend = true;
+    screen.probe = true;
+    send_ack(CMD_AUTO_SCREEN_ON);
+  } else if (cmd == CMD_AUTO_SCREEN_OFF) {
+    screen.autosend = false;
+    screen.probe = false;
+    send_ack(CMD_AUTO_SCREEN_OFF);
+  } else if (cmd == CMD_SEND_LAST_SCREEN) {
+    send_trigger(screen);
+    screen.count = 0;
+  } else if (cmd == CMD_AUTO_LASER_ON) {
+    laser.autosend = true;
+    send_ack(CMD_AUTO_LASER_ON);
+  } else if (cmd == CMD_AUTO_LASER_OFF) {
+    laser.autosend = false;
+    send_ack(CMD_AUTO_LASER_OFF);
+  } else if (cmd == CMD_SEND_LAST_LASER) {
+    send_trigger(laser);
+    laser.count = 0;
+  } else if (cmd == CMD_BRIGHTNESS_CURVE) {
+    send_ack(CMD_BRIGHTNESS_CURVE);
+    // This blocks all other execution for about 1 second
+    run_brightness_curve();
+  } else if (cmd == CMD_SAMPLE_ALL) {
+    send(flip_case(cmd));
+    send(" G:");
+    send(analogRead(G_PIN));
+    send(" PD_screen:");
+    send(analogRead(PD_SCREEN_PIN));
+    send(" PD_laser:");
+    send(analogRead(PD_LASER_PIN));
+    send_line();
+  } else {
+    send("Unknown command: ");
+    send(cmd);
+    send_line();
   }
-
+}
 
 void loop() {
-
   digitalWrite(LED_PIN_INT, led_state);
 
   // Probe the accelerometer
@@ -358,13 +402,12 @@ void loop() {
   }
 
   // Probe MIDI
-  if(midi.probe) {
-    if(usbMIDI.read()) {
-      midi.t = time_us;
-      midi.count++;
-      midi.probe = false;
-      led_state = !led_state;
-    }
+  boolean has_midi = usbMIDI.read(1);
+  if(has_midi && midi.probe && usbMIDI.getType() == 1) {  // Type 1: note on
+    midi.t = time_us;
+    midi.count++;
+    midi.probe = false;
+    led_state = !led_state;
   }
 
   // Probe screen
@@ -380,7 +423,6 @@ void loop() {
 
   // Send out any triggers with autosend and pending data
   for (int i = 0; i < TRIGGER_COUNT; i++) {
-
     boolean should_send = false;
 
     noInterrupts();
@@ -397,8 +439,19 @@ void loop() {
   }
 
   // Check if we got incoming commands from the host
+  if (has_midi) {
+    if (usbMIDI.getType() == MIDI_MODE_TYPE) {
+      short program = usbMIDI.getData1();
+      serial_over_midi = (program == 1);
+      send_buffer = (serial_over_midi ? MIDI_SYSEX_BEGIN : String());
+    } else if (usbMIDI.getType() == MIDI_COMMAND_TYPE) {
+      char cmd = usbMIDI.getData1();
+      process_command(cmd);
+    }
+  }
   if (Serial.available()) {
     char cmd = Serial.read();
     process_command(cmd);
   }
 }
+
