@@ -27,7 +27,7 @@
 #import "WALTLogger.h"
 #import "WALTTouch.h"
 
-static const NSTimeInterval kGoalpostFrequency = 0.55;
+static const NSTimeInterval kGoalpostFrequency = 0.55;  // TODO(pquinn): User-configurable settings.
 static const NSUInteger kMinTouchEvents = 100;
 static const NSUInteger kMinLaserEvents = 8;
 static const char kWALTLaserTag = 'L';
