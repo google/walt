@@ -385,7 +385,7 @@ static void Sleep(int64_t us) {
     }
     
     int digit = c - '0';
-    digitTimes.local[digit] = CurrentTime(_clock) - _sync.base;
+    digitTimes.local[digit - 1] = CurrentTime(_clock) - _sync.base;
   }
   
   if (![self readRemoteTimestamps:digitTimes.remote error:error]) {
@@ -434,7 +434,7 @@ static void Sleep(int64_t us) {
       }
       return NO;
     }
-    times[digit] = timestamp;
+    times[digit - 1] = timestamp;
   }
   return YES;
 }
