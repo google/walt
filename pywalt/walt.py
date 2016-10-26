@@ -79,6 +79,7 @@ class Walt(object):
     CMD_GSHOCK = 'G'
     CMD_VERSION = 'V'
     CMD_SAMPLE_ALL = 'Q'
+    CMD_BRIGHTNESS_CURVE = 'U'
 
 
     def __init__(self, serial_dev, timeout=None):
@@ -216,7 +217,7 @@ def parse_args():
     parser.add_argument('-s', '--serial', default=serial,
                         help='WALT serial port')
     parser.add_argument('-t', '--type', default='drag',
-                        help='Test type: drag|tap|screen|sanity')
+                        help='Test type: drag|tap|screen|sanity|curve')
     parser.add_argument('-l', '--logdir', default=temp_dir,
                         help='where to store logs')
     parser.add_argument('-n', default=40, type=int,
@@ -289,6 +290,27 @@ def run_drag_latency_test(args):
     print "\nProcessing data, may take a minute or two..."
     # lm.main(evtest_file_name, laser_file_name)
     minimization.minimize(evtest_file_name, laser_file_name)
+
+def run_screen_curve(args):
+
+    with Walt(args.serial, timeout=1) as walt:
+        walt.sndrcv(Walt.CMD_RESET)
+
+        t_zero = walt.zeroClock()
+        if t_zero < 0:
+            print('Error: Couldn\'t zero clock, exitting')
+            sys.exit(1)
+
+        # Fire up the walt_blinker process
+        cmd = 'walt_blink 1'
+        blinker = subprocess.Popen(cmd, shell=True)
+
+        # Turn on laser trigger auto-sending
+        walt.sndrcv(Walt.CMD_BRIGHTNESS_CURVE)
+        s = 'dummy'
+        while s:
+            s = walt.readline()
+            print(s.strip())
 
 
 def run_screen_latency_test(args):
@@ -438,6 +460,8 @@ if __name__ == '__main__':
         run_screen_latency_test(args)
     elif args.type == 'sanity':
         run_walt_sanity_test(args)
+    elif args.type == 'curve':
+        run_screen_curve(args)
     else:
         run_drag_latency_test(args)
 
