@@ -24,6 +24,8 @@ The current hardware version we use (r0.7) can be found as KiCAD project in this
  * Blank PCBs can be ordered directly via [this shared project on OSH Park](https://oshpark.com/shared_projects/M5Z8fYCX)
  * List of parts for version r0.7 - [BOM as a tsv file](WALT_bom_r07.tsv)
 
+ ![WALT r0.7 photo](docs/WALT_r07_photo.jpg)
+
 
 ### Microcontroller code ###
 
