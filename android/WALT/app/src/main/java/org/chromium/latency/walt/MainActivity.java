@@ -150,8 +150,11 @@ public class MainActivity extends AppCompatActivity {
         logger = SimpleLogger.getInstance(this);
         broadcastManager = LocalBroadcastManager.getInstance(this);
 
-        // Add basic device info to the log
-        logger.log("DEVICE INFO");
+        // Add basic version and device info to the log
+        logger.log(String.format("WALT v%s  (versionCode=%d)",
+                BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE));
+        logger.log("WALT protocol version " + clockManager.PROTOCOL_VERSION);
+        logger.log("DEVICE INFO:");
         logger.log("  " + Build.FINGERPRINT);
         logger.log("  Build.SDK_INT=" + Build.VERSION.SDK_INT);
         logger.log("  os.version=" + System.getProperty("os.version"));
