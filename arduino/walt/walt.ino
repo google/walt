@@ -123,7 +123,7 @@ void send(long l) {
 
 void send(unsigned long l) {
   char s[32];
-  sprintf(s, "%lud", l);
+  sprintf(s, "%lu", l);
   send(s);
 }
 
