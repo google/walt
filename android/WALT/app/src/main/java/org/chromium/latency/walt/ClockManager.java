@@ -36,7 +36,7 @@ public class ClockManager extends Connection {
     private static final int USB_READ_TIMEOUT_MS = 200;
     private static final int DEFAULT_DRIFT_LIMIT_US = 1500;
     private static final String TAG = "WaltClockManager";
-    public static final String PROTOCOL_VERSION = "3";
+    public static final String PROTOCOL_VERSION = "4";
 
     private UsbEndpoint mEndpointIn = null;
     private UsbEndpoint mEndpointOut = null;
