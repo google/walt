@@ -1,6 +1,7 @@
 package org.chromium.latency.walt.programmer;
 
 import android.content.Context;
+import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbInterface;
 
 import org.chromium.latency.walt.Connection;
@@ -29,6 +30,12 @@ class BootloaderConnection extends Connection {
     @Override
     public int getVid() {
         return HALFKAY_VID;
+    }
+
+    @Override
+    protected boolean isCompatibleUsbDevice(UsbDevice usbDevice) {
+        return ((usbDevice.getProductId() == HALFKAY_PID) &&
+                (usbDevice.getVendorId() == HALFKAY_VID));
     }
 
     @Override

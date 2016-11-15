@@ -18,6 +18,7 @@ package org.chromium.latency.walt;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.os.Handler;
@@ -29,7 +30,9 @@ import java.io.IOException;
 public class ClockManager extends Connection {
 
     private static final int TEENSY_VID = 0x16c0;
-    private static final int TEENSY_PID = 0x0485; // TeensyLC only
+    // TODO: refactor to demystify PID. See Connection.isCompatibleUsbDevice()
+    private static final int TEENSY_PID = 0;
+    private static final int HALFKAY_PID = 0x0478;
     private static final int USB_READ_TIMEOUT_MS = 200;
     private static final int DEFAULT_DRIFT_LIMIT_US = 1500;
     private static final String TAG = "WaltClockManager";
@@ -86,6 +89,14 @@ public class ClockManager extends Connection {
     @Override
     public int getVid() {
         return TEENSY_VID;
+    }
+
+    @Override
+    protected boolean isCompatibleUsbDevice(UsbDevice usbDevice) {
+        // Allow any Teensy, but not in HalfKay bootloader mode
+        // Teensy PID depends on mode (e.g: Serail + MIDI) and also changed in TeensyDuino 1.31
+        return ((usbDevice.getProductId() != HALFKAY_PID) &&
+                (usbDevice.getVendorId() == TEENSY_VID));
     }
 
     @Override

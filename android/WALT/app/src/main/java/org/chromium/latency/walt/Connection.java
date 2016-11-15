@@ -54,6 +54,11 @@ public abstract class Connection {
     public abstract int getVid();
     public abstract int getPid();
 
+    // Used to distinguish between bootloader and normal mode that differ by PID
+    // TODO: change intent strings to reduce dependence on PID
+    protected abstract boolean isCompatibleUsbDevice(UsbDevice usbDevice);
+
+
     private String getConnectIntent() {
         return CONNECT_INTENT + getVid() + ":" + getPid();
     }
@@ -99,7 +104,7 @@ public abstract class Connection {
             return;
         }
 
-        if (usbDevice.getProductId() != getPid() || usbDevice.getVendorId() != getVid()) {
+        if (!isCompatibleUsbDevice(usbDevice)) {
             mLogger.log("Not a valid device");
             return;
         }
@@ -189,9 +194,11 @@ public abstract class Connection {
                     key, dev.getVendorId(), dev.getProductId(), dev.getInterfaceCount()
             );
 
-            if (dev.getVendorId() == getVid() && dev.getProductId() == getPid()) {
+            if (isCompatibleUsbDevice(dev)) {
                 usbDevice = dev;
-                msg += " <- using this one.";
+                msg = "Using " + msg;
+            } else {
+                msg = "Skipping " + msg;
             }
 
             mLogger.log(msg);
