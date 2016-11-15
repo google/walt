@@ -55,23 +55,17 @@
 #define MIDI_SYSEX_BEGIN '\xF0'
 #define MIDI_SYSEX_END '\xF7'
 
-// On Teensy LC probably need to use the high current pins
-// for most LEDs.
-#define LED_PIN_GREEN 16
-#define LED_PIN_RED 17
-#define DEBUG_LED2 21
+// LEDs
+#define LED_PIN_INT 13 // Built-in LED
+#define DEBUG_LED1 11  // On r0.7 PCB: D4 - Red
+#define DEBUG_LED2 12  // On r0.7 PCB: D3 - Green
 
-// Pins for the relay based touch probes, collide with LEDs above
-#define TOUCH_PIN_A 16
-#define TOUCH_PIN_B 17
-
-// An pins below are the same on Teeny LC and 3.1
-#define LED_PIN_INT 13
+// WALT sensors
 #define PD_LASER_PIN 14
-#define PD_SCREEN_PIN 20 // Same as A6
-#define G_PIN 15 // Same as A1
-#define AUDIO_PIN 22 // Same as A8
-#define MIC_PIN 23 // Same as A9
+#define PD_SCREEN_PIN 20  // Same as A6
+#define G_PIN 15          // Same as A1
+#define AUDIO_PIN 22      // Same as A8
+#define MIC_PIN 23        // Same as A9
 
 // Threshold and hysteresis for screen on/off reading
 #define SCREEN_THRESH_HIGH  110
@@ -113,8 +107,9 @@ void irq_laser(void) {
   // May need to remove the 'not' if not using internal pullup resistor
   laser.value = !digitalRead(PD_LASER_PIN);
   laser.count++;
-  // digitalWrite(LED_PIN_INT, laser.value );
-  led_state = !led_state;
+
+  digitalWrite(DEBUG_LED2, laser.value);
+  // led_state = !led_state;
 }
 
 void send(char c) { send_buffer += c; }
@@ -200,34 +195,29 @@ void init_vars() {
   sound.tag = 'A';  // for Audio
   midi.tag = 'M';
 
-  led_state = false;
   interrupts();
 }
 
 void setup() {
-  pinMode(LED_PIN_RED, OUTPUT);
-  pinMode(LED_PIN_GREEN, OUTPUT);
+    // LEDs
+  pinMode(DEBUG_LED1, OUTPUT);
   pinMode(DEBUG_LED2, OUTPUT);
   pinMode(LED_PIN_INT, OUTPUT);
 
-  pinMode(TOUCH_PIN_A, OUTPUT);
-  pinMode(TOUCH_PIN_B, OUTPUT);
-
-  pinMode(PD_LASER_PIN, INPUT_PULLUP);
+  // Sensors
   pinMode(PD_SCREEN_PIN, INPUT);
   pinMode(G_PIN, INPUT);
-
+  pinMode(PD_LASER_PIN, INPUT_PULLUP);
   attachInterrupt(PD_LASER_PIN, irq_laser, CHANGE);
 
-  // Turn on the red LED, will be turned off once time is synced
-  led_state = HIGH;
-  digitalWrite(LED_PIN_INT, led_state);
-  // digitalWrite(LED_PIN_RED, HIGH);
   Serial.begin(115200);
-
   serial_over_midi = false;
-
   init_vars();
+
+  led_state = HIGH;  // Turn on all LEDs on startup
+  digitalWrite(LED_PIN_INT, led_state);
+  digitalWrite(DEBUG_LED1, HIGH);
+  digitalWrite(DEBUG_LED2, HIGH);
 }
 
 
@@ -235,7 +225,7 @@ void run_brightness_curve() {
   int i;
   long t;
   short v;
-  digitalWrite(DEBUG_LED2, HIGH);
+  digitalWrite(DEBUG_LED1, HIGH);
   for (i = 0; i < 1000; i++) {
     v = analogRead(PD_SCREEN_PIN);
     t = time_us;
@@ -245,7 +235,7 @@ void run_brightness_curve() {
     send_line();
     delayMicroseconds(450);
   }
-  digitalWrite(DEBUG_LED2, LOW);
+  digitalWrite(DEBUG_LED1, LOW);
   send("end");
   send_line();
 }
@@ -258,6 +248,9 @@ void process_command(char cmd) {
     init_clock();
     clock.is_synced = true;
     interrupts();
+    led_state = LOW;
+    digitalWrite(DEBUG_LED1, LOW);
+    digitalWrite(DEBUG_LED2, LOW);
     send_ack(CMD_SYNC_ZERO);
   } else if (cmd == CMD_TIME_NOW) {
     send("t ");
