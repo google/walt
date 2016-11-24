@@ -4,9 +4,9 @@ import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbInterface;
 
-import org.chromium.latency.walt.Connection;
+import org.chromium.latency.walt.BaseUsbConnection;
 
-class BootloaderConnection extends Connection {
+class BootloaderConnection extends BaseUsbConnection {
     private static final int HALFKAY_VID = 0x16C0;
     private static final int HALFKAY_PID = 0x0478;
 

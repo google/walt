@@ -29,7 +29,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import java.util.HashMap;
 import java.util.Locale;
 
-public abstract class Connection {
+public abstract class BaseUsbConnection {
     private static final String USB_PERMISSION_RESPONSE_INTENT = "usb-permission-response";
     private static final String CONNECT_INTENT = "org.chromium.latency.walt.CONNECT";
 
@@ -42,7 +42,7 @@ public abstract class Connection {
     protected UsbDevice mUsbDevice = null;
     protected UsbDeviceConnection mUsbConnection;
 
-    public Connection(Context context) {
+    public BaseUsbConnection(Context context) {
         mContext = context;
         mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         mLogger = SimpleLogger.getInstance(context);

@@ -27,10 +27,10 @@ import android.util.Log;
 
 import java.io.IOException;
 
-public class ClockManager extends Connection {
+public class ClockManager extends BaseUsbConnection {
 
     private static final int TEENSY_VID = 0x16c0;
-    // TODO: refactor to demystify PID. See Connection.isCompatibleUsbDevice()
+    // TODO: refactor to demystify PID. See BaseUsbConnection.isCompatibleUsbDevice()
     private static final int TEENSY_PID = 0;
     private static final int HALFKAY_PID = 0x0478;
     private static final int USB_READ_TIMEOUT_MS = 200;
