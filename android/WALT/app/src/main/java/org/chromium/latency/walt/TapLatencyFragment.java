@@ -38,7 +38,7 @@ public class TapLatencyFragment extends Fragment
 
     private Activity activity;
     private SimpleLogger logger;
-    private ClockManager clockManager;
+    private WaltDevice waltDevice;
     TextView mLogTextView;
     TextView mTapCatcher;
     int moveCount = 0;
@@ -63,7 +63,7 @@ public class TapLatencyFragment extends Fragment
     private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            UsMotionEvent tapEvent = new UsMotionEvent(event, clockManager.baseTime);
+            UsMotionEvent tapEvent = new UsMotionEvent(event, waltDevice.baseTime);
             String action = tapEvent.getActionString();
 
             if(tapEvent.action != MotionEvent.ACTION_UP && tapEvent.action != MotionEvent.ACTION_DOWN) {
@@ -74,7 +74,7 @@ public class TapLatencyFragment extends Fragment
             }
 
             logger.log("\n"+ action + " event received: " + tapEvent.toStringLong());
-            tapEvent.physicalTime = clockManager.readLastShockTime();
+            tapEvent.physicalTime = waltDevice.readLastShockTime();
 
             tapEvent.isOk = checkTapSanity(tapEvent);
             // Save it in any case so we can do stats on bad events later
@@ -106,7 +106,7 @@ public class TapLatencyFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         activity = getActivity();
-        clockManager = ClockManager.getInstance(getContext());
+        waltDevice = WaltDevice.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_tap_latency, container, false);
@@ -174,7 +174,7 @@ public class TapLatencyFragment extends Fragment
     void restartMeasurement() {
         logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
         try {
-            clockManager.syncClock();
+            waltDevice.syncClock();
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
             return;
@@ -193,7 +193,7 @@ public class TapLatencyFragment extends Fragment
 
     void finishAndShowStats() {
         logger.log("\n\n## Processing tap latency data");
-        clockManager.checkDrift();
+        waltDevice.checkDrift();
         logger.log(String.format(
                 "Counts: ACTION_DOWN %d (bad %d), ACTION_UP %d (bad %d), ACTION_MOVE %d",
                 okDownCount,

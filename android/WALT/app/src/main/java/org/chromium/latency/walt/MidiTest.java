@@ -34,7 +34,7 @@ import java.util.Locale;
 class MidiTest {
 
     private SimpleLogger logger;
-    private ClockManager clockManager;
+    private WaltDevice waltDevice;
     private Handler handler = new Handler();
 
     private AutoRunFragment.ResultHandler resultHandler;
@@ -65,7 +65,7 @@ class MidiTest {
     private static final int timeout = 1000;
 
     MidiTest(Context context) {
-        clockManager = ClockManager.getInstance(context);
+        waltDevice = WaltDevice.getInstance(context);
         logger = SimpleLogger.getInstance(context);
         mMidiManager = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);
         findMidiDevice();
@@ -138,10 +138,10 @@ class MidiTest {
 
         mInputPort = mMidiDevice.openInputPort(0);
 
-        clockManager.syncClock();
-        clockManager.command(ClockManager.CMD_MIDI);
-        clockManager.startListener();
-        clockManager.setTriggerHandler(triggerHandler);
+        waltDevice.syncClock();
+        waltDevice.command(WaltDevice.CMD_MIDI);
+        waltDevice.startListener();
+        waltDevice.setTriggerHandler(triggerHandler);
 
         scheduleNotes();
     }
@@ -171,10 +171,10 @@ class MidiTest {
         }
     }
 
-    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
+    private WaltDevice.TriggerHandler triggerHandler = new WaltDevice.TriggerHandler() {
         @Override
-        public void onReceive(ClockManager.TriggerMessage tmsg) {
-            last_tWalt = tmsg.t + clockManager.baseTime;
+        public void onReceive(WaltDevice.TriggerMessage tmsg) {
+            last_tWalt = tmsg.t + waltDevice.baseTime;
             double dt = (last_tWalt - last_tSys) / 1000.;
 
             logger.log(String.format(Locale.US, "Note detected: latency of %.3f ms", dt));
@@ -184,7 +184,7 @@ class MidiTest {
 
             if (mRepetitionsDone < mOutputRepetitions) {
                 try {
-                    clockManager.command(ClockManager.CMD_MIDI);
+                    waltDevice.command(WaltDevice.CMD_MIDI);
                 } catch (IOException e) {
                     logger.log("Failed to send command CMD_MIDI: " + e.getMessage());
                 }
@@ -237,9 +237,9 @@ class MidiTest {
             logger.log("Error, failed to close input port: " + e.getMessage());
         }
 
-        clockManager.stopListener();
-        clockManager.clearTriggerHandler();
-        clockManager.checkDrift();
+        waltDevice.stopListener();
+        waltDevice.clearTriggerHandler();
+        waltDevice.checkDrift();
     }
 
     private Runnable requestNoteRunnable = new Runnable() {
@@ -248,7 +248,7 @@ class MidiTest {
             logger.log("Requesting note from WALT...");
             String s;
             try {
-                s = clockManager.command(ClockManager.CMD_NOTE);
+                s = waltDevice.command(WaltDevice.CMD_NOTE);
             } catch (IOException e) {
                 logger.log("Error sending NOTE command: " + e.getMessage());
                 return;
@@ -261,7 +261,7 @@ class MidiTest {
     private Runnable finishMidiInRunnable = new Runnable() {
         @Override
         public void run() {
-            clockManager.checkDrift();
+            waltDevice.checkDrift();
 
             logger.log("deltas: " + deltasToSys.toString());
             logger.log(String.format(Locale.US,
@@ -281,8 +281,8 @@ class MidiTest {
                            int count, long timestamp) throws IOException {
             if(count > 0 && data[offset] == (byte) 0x90) { // NoteOn message on channel 1
                 handler.removeCallbacks(finishMidiInRunnable);
-                last_tJava = clockManager.micros();
-                last_tSys = timestamp / 1000 - clockManager.baseTime;
+                last_tJava = waltDevice.micros();
+                last_tSys = timestamp / 1000 - waltDevice.baseTime;
 
                 double d1 = (last_tSys - last_tWalt) / 1000.;
                 double d2 = (last_tJava - last_tSys) / 1000.;
@@ -297,7 +297,7 @@ class MidiTest {
                 mRepetitionsDone++;
                 if (mRepetitionsDone % mInputSyncAfterRepetitions == 0) {
                     try {
-                        clockManager.syncClock();
+                        waltDevice.syncClock();
                     } catch (IOException e) {
                         logger.log("Error syncing clocks: " + e.getMessage());
                         handler.post(finishMidiInRunnable);
@@ -320,7 +320,7 @@ class MidiTest {
         mRepetitionsDone = 0;
         mOutputPort = mMidiDevice.openOutputPort(0);
         mOutputPort.connect(new WaltReceiver());
-        clockManager.syncClock();
+        waltDevice.syncClock();
     }
 
     private void teardownMidiIn() {

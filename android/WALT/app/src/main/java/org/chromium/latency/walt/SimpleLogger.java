@@ -29,7 +29,7 @@ import android.util.Log;
  */
 public class SimpleLogger {
     private static final String LOG_INTENT = "log-message";
-    public static final String TAG = "WALTlogger";
+    public static final String TAG = "WaltLogger";
 
     private static final Object mLock = new Object();
     private static SimpleLogger mInstance;

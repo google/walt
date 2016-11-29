@@ -45,7 +45,7 @@ public class UsMotionEvent {
      * @param baseTime - base time of the last clock sync.
      */
     public UsMotionEvent(MotionEvent event, long baseTime) {
-        createTime = ClockManager.microTime() - baseTime;
+        createTime = WaltDevice.microTime() - baseTime;
         this.baseTime = baseTime;
         slot = -1;
         kernelTime = getEventTimeMicro(event) - baseTime;
@@ -55,7 +55,7 @@ public class UsMotionEvent {
     }
 
     public UsMotionEvent(MotionEvent event, long baseTime, int pos) {
-        createTime = ClockManager.microTime() - baseTime;
+        createTime = WaltDevice.microTime() - baseTime;
         this.baseTime = baseTime;
         slot = pos;
         action = MotionEvent.ACTION_MOVE; // Only MOVE events get bundled with history

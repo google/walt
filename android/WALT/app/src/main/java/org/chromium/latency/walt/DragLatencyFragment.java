@@ -36,7 +36,7 @@ public class DragLatencyFragment extends Fragment
 
     private Activity activity;
     private SimpleLogger logger;
-    private ClockManager clockManager;
+    private WaltDevice waltDevice;
     TextView mLogTextView;
     TouchCatcherView mTouchCatcher;
     int moveCount = 0;
@@ -47,7 +47,7 @@ public class DragLatencyFragment extends Fragment
 
 
     ArrayList<UsMotionEvent> touchEventList = new ArrayList<>();
-    ArrayList<ClockManager.TriggerMessage> laserEventList = new ArrayList<>();
+    ArrayList<WaltDevice.TriggerMessage> laserEventList = new ArrayList<>();
 
 
     private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
@@ -66,10 +66,10 @@ public class DragLatencyFragment extends Fragment
 
             int histLen = event.getHistorySize();
             for (int i = 0; i < histLen; i++){
-                UsMotionEvent eh = new UsMotionEvent(event, clockManager.baseTime, i);
+                UsMotionEvent eh = new UsMotionEvent(event, waltDevice.baseTime, i);
                 touchEventList.add(eh);
             }
-            UsMotionEvent e = new UsMotionEvent(event, clockManager.baseTime);
+            UsMotionEvent e = new UsMotionEvent(event, waltDevice.baseTime);
             touchEventList.add(e);
             moveCount += histLen + 1;
 
@@ -88,7 +88,7 @@ public class DragLatencyFragment extends Fragment
                              Bundle savedInstanceState) {
         activity = getActivity();
         logger = SimpleLogger.getInstance(getContext());
-        clockManager = ClockManager.getInstance(getContext());
+        waltDevice = WaltDevice.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_drag_latency, container, false);
     }
@@ -132,17 +132,17 @@ public class DragLatencyFragment extends Fragment
     void startMeasurement() {
         logger.log("Starting drag latency test");
         try {
-            clockManager.syncClock();
+            waltDevice.syncClock();
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
             return;
         }
         mTouchCatcher.setOnTouchListener(mTouchListener);
         // Register a callback for triggers
-        clockManager.setTriggerHandler(triggerHandler);
+        waltDevice.setTriggerHandler(triggerHandler);
         try {
-            clockManager.command(ClockManager.CMD_AUTO_LASER_ON);
-            clockManager.startListener();
+            waltDevice.command(WaltDevice.CMD_AUTO_LASER_ON);
+            waltDevice.startListener();
         } catch (IOException e) {
             logger.log("Error: " + e.getMessage());
         }
@@ -152,7 +152,7 @@ public class DragLatencyFragment extends Fragment
     void restartMeasurement() {
         logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
         try {
-            clockManager.syncClock();
+            waltDevice.syncClock();
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
         }
@@ -173,16 +173,16 @@ public class DragLatencyFragment extends Fragment
 
     void finishAndShowStats() {
         mTouchCatcher.stopAnimation();
-        clockManager.stopListener();
+        waltDevice.stopListener();
         try {
-            clockManager.command(ClockManager.CMD_AUTO_LASER_OFF);
+            waltDevice.command(WaltDevice.CMD_AUTO_LASER_OFF);
         } catch (IOException e) {
             logger.log("Error: " + e.getMessage());
         }
         mTouchCatcher.setOnTouchListener(null);
-        clockManager.clearTriggerHandler();
+        waltDevice.clearTriggerHandler();
 
-        clockManager.checkDrift();
+        waltDevice.checkDrift();
 
         logger.log(String.format(
                 "Recorded %d laser events and %d touch events. ",
@@ -299,9 +299,9 @@ public class DragLatencyFragment extends Fragment
 
     }
 
-    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
+    private WaltDevice.TriggerHandler triggerHandler = new WaltDevice.TriggerHandler() {
         @Override
-        public void onReceive(ClockManager.TriggerMessage tmsg) {
+        public void onReceive(WaltDevice.TriggerMessage tmsg) {
             laserEventList.add(tmsg);
             updateCountsDisplay();
         }

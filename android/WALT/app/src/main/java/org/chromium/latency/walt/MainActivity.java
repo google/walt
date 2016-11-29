@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private Toolbar toolbar;
     LocalBroadcastManager broadcastManager;
     private SimpleLogger logger;
-    private ClockManager clockManager;
+    private WaltDevice waltDevice;
     public Menu mMenu;
 
     public Handler handler = new Handler();
@@ -107,9 +107,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 if (usbDevice == null) {
-                    clockManager.connect();
+                    waltDevice.connect();
                 } else {
-                    clockManager.connect(usbDevice);
+                    waltDevice.connect(usbDevice);
                 }
             }
         });
@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         toolbar = (Toolbar) findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
 
-        clockManager = ClockManager.getInstance(this);
+        waltDevice = WaltDevice.getInstance(this);
 
         // Create front page fragment
         FrontPageFragment frontPageFragment = new FrontPageFragment();
@@ -153,13 +153,13 @@ public class MainActivity extends AppCompatActivity {
         // Add basic version and device info to the log
         logger.log(String.format("WALT v%s  (versionCode=%d)",
                 BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE));
-        logger.log("WALT protocol version " + clockManager.PROTOCOL_VERSION);
+        logger.log("WALT protocol version " + waltDevice.PROTOCOL_VERSION);
         logger.log("DEVICE INFO:");
         logger.log("  " + Build.FINGERPRINT);
         logger.log("  Build.SDK_INT=" + Build.VERSION.SDK_INT);
         logger.log("  os.version=" + System.getProperty("os.version"));
 
-        logger.log(" Current time in seconds is:" + ClockManager.microTime() / 1e6);
+        logger.log(" Current time in seconds is:" + WaltDevice.microTime() / 1e6);
     }
 
     @Override
@@ -261,14 +261,14 @@ public class MainActivity extends AppCompatActivity {
     // Handlers for diagnostics menu clicks
     ////////////////////////////////////////////////////////////////////////////////////////////////
     public void onClickReconnect(View view) {
-        clockManager.connect();
+        waltDevice.connect();
     }
 
     public void onClickPing(View view) {
-        long t1 = clockManager.micros();
+        long t1 = waltDevice.micros();
         try {
-            clockManager.command(ClockManager.CMD_PING);
-            long dt = clockManager.micros() - t1;
+            waltDevice.command(WaltDevice.CMD_PING);
+            long dt = waltDevice.micros() - t1;
             logger.log(String.format(Locale.US,
                     "Ping reply in %.1fms", dt / 1000.
             ));
@@ -278,29 +278,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClickStartListener(View view) {
-        if (clockManager.isListenerStopped()) {
+        if (waltDevice.isListenerStopped()) {
             try {
-                clockManager.startListener();
+                waltDevice.startListener();
             } catch (IOException e) {
                 logger.log("Error starting USB listener: " + e.getMessage());
             }
         } else {
-            clockManager.stopListener();
+            waltDevice.stopListener();
         }
     }
 
     public void onClickSync(View view) {
         try {
-            clockManager.syncClock();
+            waltDevice.syncClock();
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
         }
     }
 
     public void onClickCheckDrift(View view) {
-        clockManager.updateBounds();
-        int minE = clockManager.getMinE();
-        int maxE = clockManager.getMaxE();
+        waltDevice.updateBounds();
+        int minE = waltDevice.getMinE();
+        int maxE = waltDevice.getMaxE();
         logger.log(String.format("Remote clock delayed between %d and %d us", minE, maxE));
     }
 

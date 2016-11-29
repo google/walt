@@ -37,7 +37,7 @@ public class AutoRunFragment extends Fragment {
     static final String TEST_ACTION = "org.chromium.latency.walt.START_TEST";
     static final String MODE_COLD = "Cold";
 
-    private ClockManager clockManager;
+    private WaltDevice waltDevice;
     private AudioTest toTearDown; // TODO: figure out a better way to destroy the engine
 
     private class AudioResultHandler implements ResultHandler {
@@ -97,7 +97,7 @@ public class AutoRunFragment extends Fragment {
         final ResultHandler resultHandler = r;
         switch (args.getString("TestType", "")) {
             case "MidiIn": {
-                clockManager.registerConnectCallback(new Runnable() {
+                waltDevice.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
                         MidiTest midiTest = new MidiTest(getContext(), resultHandler);
@@ -108,7 +108,7 @@ public class AutoRunFragment extends Fragment {
                 break;
             }
             case "MidiOut": {
-                clockManager.registerConnectCallback(new Runnable() {
+                waltDevice.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
                         MidiTest midiTest = new MidiTest(getContext(), resultHandler);
@@ -119,7 +119,7 @@ public class AutoRunFragment extends Fragment {
                 break;
             }
             case "AudioIn": {
-                clockManager.registerConnectCallback(new Runnable() {
+                waltDevice.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
@@ -134,7 +134,7 @@ public class AutoRunFragment extends Fragment {
             }
             case "AudioOut": {
                 final int period = args.getInt("Period", -1);
-                clockManager.registerConnectCallback(new Runnable() {
+                waltDevice.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
@@ -188,7 +188,7 @@ public class AutoRunFragment extends Fragment {
                              Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         logger = SimpleLogger.getInstance(getContext());
-        clockManager = ClockManager.getInstance(getContext());
+        waltDevice = WaltDevice.getInstance(getContext());
 
         View view = inflater.inflate(R.layout.fragment_auto_run, container, false);
 

@@ -27,7 +27,10 @@ import android.util.Log;
 
 import java.io.IOException;
 
-public class ClockManager extends BaseUsbConnection {
+/**
+ * A singleton used as an interface for the physical WALT device.
+ */
+public class WaltDevice extends BaseUsbConnection {
 
     private static final int TEENSY_VID = 0x16c0;
     // TODO: refactor to demystify PID. See BaseUsbConnection.isCompatibleUsbDevice()
@@ -35,7 +38,7 @@ public class ClockManager extends BaseUsbConnection {
     private static final int HALFKAY_PID = 0x0478;
     private static final int USB_READ_TIMEOUT_MS = 200;
     private static final int DEFAULT_DRIFT_LIMIT_US = 1500;
-    private static final String TAG = "WaltClockManager";
+    private static final String TAG = "WaltDevice";
     public static final String PROTOCOL_VERSION = "4";
 
     private UsbEndpoint mEndpointIn = null;
@@ -70,12 +73,12 @@ public class ClockManager extends BaseUsbConnection {
     public long lastSync = 0;
 
     private static final Object mLock = new Object();
-    private static ClockManager mInstance;
+    private static WaltDevice mInstance;
 
-    public static ClockManager getInstance(Context context) {
+    public static WaltDevice getInstance(Context context) {
         synchronized (mLock) {
             if (mInstance == null) {
-                mInstance = new ClockManager(context.getApplicationContext());
+                mInstance = new WaltDevice(context.getApplicationContext());
             }
             return mInstance;
         }
@@ -153,7 +156,7 @@ public class ClockManager extends BaseUsbConnection {
         return microTime() - baseTime;
     }
 
-    private ClockManager(Context context) {
+    private WaltDevice(Context context) {
         super(context);
         mTriggerListener = new TriggerListener();
     }

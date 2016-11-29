@@ -39,7 +39,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private static final int curveBlinkTime = 250;  // milliseconds
     private Activity activity;
     private SimpleLogger logger;
-    private ClockManager clockManager;
+    private WaltDevice waltDevice;
     private Handler handler = new Handler();
     TextView mBlackBox;
     int timesToBlink = 20; // TODO: load this from settings
@@ -60,7 +60,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         activity = getActivity();
-        clockManager = ClockManager.getInstance(getContext());
+        waltDevice = WaltDevice.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_screen_response, container, false);
@@ -85,7 +85,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         deltas.clear();
 
         try {
-            clockManager.syncClock();
+            waltDevice.syncClock();
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
             return;
@@ -106,19 +106,19 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         public void run() {
             try {
                 // Check for PWM
-                ClockManager.TriggerMessage tmsg = clockManager.readTriggerMessage(ClockManager.CMD_SEND_LAST_SCREEN);
+                WaltDevice.TriggerMessage tmsg = waltDevice.readTriggerMessage(WaltDevice.CMD_SEND_LAST_SCREEN);
                 logger.log("Blink count was: "+ tmsg.count);
-                clockManager.command(ClockManager.CMD_AUTO_SCREEN_ON);
+                waltDevice.command(WaltDevice.CMD_AUTO_SCREEN_ON);
 
                 // Start the listener
-                clockManager.syncClock();
-                clockManager.startListener();
+                waltDevice.syncClock();
+                waltDevice.startListener();
             } catch (IOException e) {
                 logger.log("Error: " + e.getMessage());
             }
 
             // Register a callback for triggers
-            clockManager.setTriggerHandler(triggerHandler);
+            waltDevice.setTriggerHandler(triggerHandler);
 
             // post doBlink runnable
             handler.postDelayed(doBlinkRunnable, 100);
@@ -148,7 +148,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             int nextColor = mIsBoxWhite ? Color.WHITE : Color.BLACK;
             mInitiatedBlinks++;
             mBlackBox.setBackgroundColor(nextColor);
-            mLastFlipTime = clockManager.micros(); // TODO: is this the right time to save?
+            mLastFlipTime = waltDevice.micros(); // TODO: is this the right time to save?
 
 
             // Repost doBlink to some far away time to blink again even if nothing arrives from
@@ -158,9 +158,9 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
     };
 
-    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
+    private WaltDevice.TriggerHandler triggerHandler = new WaltDevice.TriggerHandler() {
         @Override
-        public void onReceive(ClockManager.TriggerMessage tmsg) {
+        public void onReceive(WaltDevice.TriggerMessage tmsg) {
             // Remove the far away doBlink callback
             handler.removeCallbacks(doBlinkRunnable);
 
@@ -190,12 +190,12 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     void finishAndShowStats() {
         // Stop the USB listener
-        clockManager.stopListener();
+        waltDevice.stopListener();
 
         // Unregister trigger handler
-        clockManager.clearTriggerHandler();
+        waltDevice.clearTriggerHandler();
 
-        clockManager.checkDrift();
+        waltDevice.checkDrift();
 
         // Show deltas and the median
         logger.log("deltas: " + deltas.toString());
@@ -231,9 +231,9 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     }
 
-    private ClockManager.TriggerHandler brightnessTriggerHandler = new ClockManager.TriggerHandler() {
+    private WaltDevice.TriggerHandler brightnessTriggerHandler = new WaltDevice.TriggerHandler() {
         @Override
-        public void onReceive(ClockManager.TriggerMessage tmsg) {
+        public void onReceive(WaltDevice.TriggerMessage tmsg) {
             logger.log("ERROR: Brightness curve trigger got a trigger message, " +
                     "this should never happen."
             );
@@ -252,21 +252,21 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     void startBrightnessCurve() {
         try {
-            clockManager.syncClock();
-            clockManager.startListener();
+            waltDevice.syncClock();
+            waltDevice.startListener();
         } catch (IOException e) {
             logger.log("Error starting test: " + e.getMessage());
             return;
         }
 
-        clockManager.setTriggerHandler(brightnessTriggerHandler);
+        waltDevice.setTriggerHandler(brightnessTriggerHandler);
 
         mBlackBox.setText("");
 
-        long tStart = clockManager.micros();
+        long tStart = waltDevice.micros();
 
         try {
-            clockManager.command(ClockManager.CMD_BRIGHTNESS_CURVE);
+            waltDevice.command(WaltDevice.CMD_BRIGHTNESS_CURVE);
         } catch (IOException e) {
             logger.log("Error sending command CMD_BRIGHTNESS_CURVE: " + e.getMessage());
             return;
@@ -282,7 +282,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                long tBack = clockManager.micros();
+                long tBack = waltDevice.micros();
                 mBlackBox.setBackgroundColor(Color.BLACK);
                 logger.log("t_back: " + tBack);
 
@@ -294,8 +294,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     Runnable finishBrightnessCurve = new Runnable() {
         @Override
         public void run() {
-            clockManager.stopListener();
-            clockManager.clearTriggerHandler();
+            waltDevice.stopListener();
+            waltDevice.clearTriggerHandler();
 
             // TODO: Add option to save this data into a separate file rather than the main log.
             logger.log(brightnessCurveData.toString());

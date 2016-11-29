@@ -36,7 +36,7 @@ class AudioTest {
     enum AudioMode {COLD, CONTINUOUS}
 
     private SimpleLogger logger;
-    private ClockManager clockManager;
+    private WaltDevice waltDevice;
     private Handler handler = new Handler();
 
     private AutoRunFragment.ResultHandler resultHandler;
@@ -87,7 +87,7 @@ class AudioTest {
     public static native long getTePlay();
 
     AudioTest(Context context) {
-        clockManager = ClockManager.getInstance(context);
+        waltDevice = WaltDevice.getInstance(context);
         logger = SimpleLogger.getInstance(context);
 
         //Check for optimal output sample rate and buffer size
@@ -152,7 +152,7 @@ class AudioTest {
 
         if (mRequestedBeeps % recorderSyncAfterRepetitions == 0) {
             try {
-                clockManager.syncClock();
+                waltDevice.syncClock();
             } catch (IOException e) {
                 logger.log("Error syncing clocks: " + e.getMessage());
                 finishRecordingTest();
@@ -178,8 +178,8 @@ class AudioTest {
             startWarmTest();
         }
         try {
-            clockManager.syncClock();
-            clockManager.startListener();
+            waltDevice.syncClock();
+            waltDevice.startListener();
         } catch (IOException e) {
             logger.log("Error starting test: " + e.getMessage());
             return;
@@ -193,15 +193,15 @@ class AudioTest {
         mInitiatedBeeps = 0;
         mDetectedBeeps = 0;
 
-        clockManager.setTriggerHandler(triggerHandler);
+        waltDevice.setTriggerHandler(triggerHandler);
 
         handler.postDelayed(doBeepRunnable, 300);
 
     }
 
-    private ClockManager.TriggerHandler triggerHandler = new ClockManager.TriggerHandler() {
+    private WaltDevice.TriggerHandler triggerHandler = new WaltDevice.TriggerHandler() {
         @Override
-        public void onReceive(ClockManager.TriggerMessage tmsg) {
+        public void onReceive(WaltDevice.TriggerMessage tmsg) {
             // remove the far away doBeep callback(s)
             handler.removeCallbacks(doBeepRunnable);
 
@@ -246,9 +246,9 @@ class AudioTest {
 
             if (mInitiatedBeeps % playbackSyncAfterRepetitions == 0) {
                 try {
-                    clockManager.stopListener();
-                    clockManager.syncClock();
-                    clockManager.startListener();
+                    waltDevice.stopListener();
+                    waltDevice.syncClock();
+                    waltDevice.startListener();
                 } catch (IOException e) {
                     logger.log("Error re-syncing clock: " + e.getMessage());
                     finishPlaybackTest();
@@ -257,12 +257,12 @@ class AudioTest {
             }
 
             try {
-                clockManager.command(ClockManager.CMD_AUDIO);
+                waltDevice.command(WaltDevice.CMD_AUDIO);
             } catch (IOException e) {
                 logger.log("Error sending command AUDIO: " + e.getMessage());
                 return;
             }
-            long javaBeepTime = clockManager.micros();
+            long javaBeepTime = waltDevice.micros();
             mLastBeepTime = playTone();
             double dtJ2N = (mLastBeepTime - javaBeepTime)/1000.;
             deltasJ2N.add(dtJ2N);
@@ -283,7 +283,7 @@ class AudioTest {
             // logger.log("\nRequesting beep from WALT...");
             String s;
             try {
-                s = clockManager.command(ClockManager.CMD_BEEP);
+                s = waltDevice.command(WaltDevice.CMD_BEEP);
             } catch (IOException e) {
                 logger.log("Error sending command BEEP: " + e.getMessage());
                 return;
@@ -298,7 +298,7 @@ class AudioTest {
         @Override
         public void run() {
             try {
-                clockManager.command(ClockManager.CMD_BEEP_STOP);
+                waltDevice.command(WaltDevice.CMD_BEEP_STOP);
             } catch (IOException e) {
                 logger.log("Error stopping tone from WALT: " + e.getMessage());
             }
@@ -340,9 +340,9 @@ class AudioTest {
 
     private void finishPlaybackTest() {
         stopTests();
-        clockManager.stopListener();
-        clockManager.clearTriggerHandler();
-        clockManager.checkDrift();
+        waltDevice.stopListener();
+        waltDevice.clearTriggerHandler();
+        waltDevice.checkDrift();
 
         logger.log("deltas: " + deltas.toString());
         logger.log(String.format(Locale.US,
@@ -359,7 +359,7 @@ class AudioTest {
     }
 
     private void finishRecordingTest() {
-        clockManager.checkDrift();
+        waltDevice.checkDrift();
 
         logger.log("deltas: " + deltas.toString());
         logger.log(String.format(Locale.US,

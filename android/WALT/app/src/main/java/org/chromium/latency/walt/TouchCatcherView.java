@@ -28,7 +28,7 @@ import android.view.View;
 public class TouchCatcherView extends View {
 
     private Paint linePaint = new Paint();
-    private ClockManager clockManager;
+    private WaltDevice waltDevice;
     private boolean isAnimated = false;
 
     private double animationAmplitude = 0.4;  // Fraction of view height
@@ -47,7 +47,7 @@ public class TouchCatcherView extends View {
 
     public TouchCatcherView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        clockManager = ClockManager.getInstance(context);
+        waltDevice = WaltDevice.getInstance(context);
         initialisePaint();
     }
 
@@ -86,7 +86,7 @@ public class TouchCatcherView extends View {
         if (!isAnimated) return;
 
         int h = getHeight();
-        double normPos = markerPosition(clockManager.micros(), animationPeriod_us);
+        double normPos = markerPosition(waltDevice.micros(), animationPeriod_us);
         int pos = (int) (h * (0.5 + animationAmplitude * normPos));
         // Log.i("AnimatedView", "Pos is " + pos);
         int w = getWidth();
