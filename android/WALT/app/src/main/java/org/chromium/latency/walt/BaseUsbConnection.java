@@ -49,8 +49,8 @@ public abstract class BaseUsbConnection {
         mBroadcastManager = LocalBroadcastManager.getInstance(context);
     }
 
-    public abstract void onConnect();
-    public abstract void onDisconnect();
+    public abstract void onAttach();
+    public abstract void onDetach();
     public abstract int getVid();
     public abstract int getPid();
 
@@ -125,7 +125,7 @@ public abstract class BaseUsbConnection {
     }
 
     public void disconnect() {
-        onDisconnect();
+        onDetach();
 
         mUsbConnection.close();
         mUsbConnection = null;
@@ -161,7 +161,7 @@ public abstract class BaseUsbConnection {
                 mContext.registerReceiver(disconnectReceiver,
                         new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
 
-                onConnect();
+                onAttach();
 
                 mBroadcastManager.sendBroadcast(new Intent(getConnectIntent()));
             } else {

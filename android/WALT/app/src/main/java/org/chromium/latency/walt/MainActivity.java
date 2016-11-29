@@ -158,6 +158,8 @@ public class MainActivity extends AppCompatActivity {
         logger.log("  " + Build.FINGERPRINT);
         logger.log("  Build.SDK_INT=" + Build.VERSION.SDK_INT);
         logger.log("  os.version=" + System.getProperty("os.version"));
+
+        logger.log(" Current time in seconds is:" + ClockManager.microTime() / 1e6);
     }
 
     @Override

@@ -99,8 +99,10 @@ public class ClockManager extends BaseUsbConnection {
                 (usbDevice.getVendorId() == TEENSY_VID));
     }
 
+
+    // Called when WALT is physically unplugged from USB
     @Override
-    public void onDisconnect() {
+    public void onDetach() {
         if (!isListenerStopped()) {
             stopListener();
         }
@@ -108,8 +110,10 @@ public class ClockManager extends BaseUsbConnection {
         mEndpointOut = null;
     }
 
+
+    // Called when WALT is physically plugged into USB
     @Override
-    public void onConnect() {
+    public void onAttach() {
         // Serial mode only
         // TODO: find the interface and endpoint indexes no matter what mode it is
         int ifIdx = 1;
