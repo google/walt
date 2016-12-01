@@ -39,7 +39,7 @@ class BootloaderConnection extends BaseUsbConnection {
     }
 
     @Override
-    public void onAttach() {
+    public void onConnect() {
         int ifIdx = 0;
 
         UsbInterface iface = mUsbDevice.getInterface(ifIdx);
@@ -52,7 +52,7 @@ class BootloaderConnection extends BaseUsbConnection {
     }
 
     @Override
-    public void onDetach() {}
+    public void onDisconnect() {}
 
     public void write(byte[] buf, int timeout) {
         write(buf, 0, buf.length, timeout);

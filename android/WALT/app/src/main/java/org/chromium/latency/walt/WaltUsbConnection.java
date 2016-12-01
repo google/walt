@@ -80,7 +80,7 @@ public class WaltUsbConnection extends BaseUsbConnection {
 
     // Called when WALT is physically unplugged from USB
     @Override
-    public void onDetach() {
+    public void onDisconnect() {
         mEndpointIn = null;
         mEndpointOut = null;
     }
@@ -88,7 +88,7 @@ public class WaltUsbConnection extends BaseUsbConnection {
 
     // Called when WALT is physically plugged into USB
     @Override
-    public void onAttach() {
+    public void onConnect() {
         // Serial mode only
         // TODO: find the interface and endpoint indexes no matter what mode it is
         int ifIdx = 1;
@@ -108,7 +108,7 @@ public class WaltUsbConnection extends BaseUsbConnection {
         mEndpointOut = iface.getEndpoint(epOutIdx);
 
         try {
-            // TODO: move to WaltDevice
+            // TODO: restore checkVersion somehow.
             // checkVersion();
             syncClock();
         } catch (IOException e) {
@@ -138,24 +138,6 @@ public class WaltUsbConnection extends BaseUsbConnection {
 
     public int blockingRead(byte[] buffer) {
         return mUsbConnection.bulkTransfer(mEndpointIn, buffer, buffer.length, USB_READ_TIMEOUT_MS);
-    }
-
-    // TODO: maybe move up to WaltDevice
-    public String readOne() throws IOException {
-        // TODO: restore listener
-//        if (!isListenerStopped()) {
-//            throw new IOException("Listener is running");
-//        }
-
-        byte[] buff = new byte[64];
-        int ret = blockingRead(buff);
-
-        if (ret < 0) {
-            throw new IOException("Timed out reading from WALT");
-        }
-        String s = new String(buff, 0, ret);
-        Log.i(TAG, "readOne() received byte: " + s);
-        return s;
     }
 
 

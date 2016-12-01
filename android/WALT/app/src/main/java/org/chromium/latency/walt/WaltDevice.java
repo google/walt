@@ -102,6 +102,8 @@ public class WaltDevice {
     }
 
     public void connect(UsbDevice usbDevice) {
+        // This happens when apps starts as a result of plugging WALT into USB. In this case we
+        // receive an intent with a usbDevice
         connection = WaltUsbConnection.getInstance(mContext);
         connection.connect(usbDevice);
     }
@@ -111,16 +113,26 @@ public class WaltDevice {
     }
 
 
-    private byte[] char2byte(char c) {
-        byte[] buff = new byte[1];
-        buff[0] = (byte) c;
-        return buff;
+    public String readOne() throws IOException {
+        if (!isListenerStopped()) {
+            throw new IOException("Listener is running");
+        }
+
+        byte[] buff = new byte[64];
+        int ret = connection.blockingRead(buff);
+
+        if (ret < 0) {
+            throw new IOException("Timed out reading from WALT");
+        }
+        String s = new String(buff, 0, ret);
+        Log.i(TAG, "readOne() received byte: " + s);
+        return s;
     }
 
 
     private String sendReceive(char c) throws IOException {
         connection.sendByte(c);
-        return connection.readOne();
+        return readOne();
     }
 
     String command(char cmd, char ack) throws IOException {
