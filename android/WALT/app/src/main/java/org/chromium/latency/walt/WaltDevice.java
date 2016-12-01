@@ -20,7 +20,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.hardware.usb.UsbDevice;
 import android.os.Handler;
-import android.os.SystemClock;
 import android.util.Log;
 
 import java.io.IOException;
@@ -28,7 +27,7 @@ import java.io.IOException;
 /**
  * A singleton used as an interface for the physical WALT device.
  */
-public class WaltDevice {
+public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
     private static final int TEENSY_VID = 0x16c0;
     // TODO: refactor to demystify PID. See BaseUsbConnection.isCompatibleUsbDevice()
@@ -65,7 +64,7 @@ public class WaltDevice {
 
     private Context mContext;
     protected SimpleLogger mLogger;
-    public WaltUsbConnection connection;
+    private WaltUsbConnection connection;
     public RemoteClockInfo clock;
 
     private static final Object mLock = new Object();
@@ -86,6 +85,15 @@ public class WaltDevice {
         mLogger = SimpleLogger.getInstance(context);
     }
 
+    public void onConnect() {
+        try {
+            checkVersion();
+            syncClock();
+        } catch (IOException e) {
+            mLogger.log("Unable to communicate with WALT: " + e.getMessage());
+        }
+
+    }
 
     // Called when disconnecting from WALT
     // TODO: restore this, not called from anywhere
@@ -98,6 +106,7 @@ public class WaltDevice {
     public void connect() {
         // TODO: try TCP connection first, if fails, try USB, maybe some settings controlled logic
         connection = WaltUsbConnection.getInstance(mContext);
+        connection.setConnectionStateListener(this);
         connection.connect();
     }
 
@@ -105,6 +114,7 @@ public class WaltDevice {
         // This happens when apps starts as a result of plugging WALT into USB. In this case we
         // receive an intent with a usbDevice
         connection = WaltUsbConnection.getInstance(mContext);
+        connection.setConnectionStateListener(this);
         connection.connect(usbDevice);
     }
 
@@ -215,6 +225,10 @@ public class WaltDevice {
         }
 
         return t;
+    }
+
+    public void registerConnectCallback(Runnable runnable) {
+        connection.registerConnectCallback(runnable);
     }
 
     static class TriggerMessage {
