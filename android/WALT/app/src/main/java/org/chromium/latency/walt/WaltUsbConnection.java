@@ -27,7 +27,7 @@ import java.io.IOException;
 /**
  * A singleton used as an interface for the physical WALT device.
  */
-public class WaltUsbConnection extends BaseUsbConnection {
+public class WaltUsbConnection extends BaseUsbConnection implements WaltConnection {
 
     private static final int TEENSY_VID = 0x16c0;
     // TODO: refactor to demystify PID. See BaseUsbConnection.isCompatibleUsbDevice()
@@ -39,7 +39,7 @@ public class WaltUsbConnection extends BaseUsbConnection {
     private UsbEndpoint mEndpointIn = null;
     private UsbEndpoint mEndpointOut = null;
 
-    public RemoteClockInfo remoteClock = new RemoteClockInfo();
+    private RemoteClockInfo remoteClock = new RemoteClockInfo();
 
     private static final Object mLock = new Object();
 
@@ -128,6 +128,7 @@ public class WaltUsbConnection extends BaseUsbConnection {
         return buff;
     }
 
+    @Override
     public void sendByte(char c) throws IOException {
         if (!isConnected()) {
             throw new IOException("Not connected to WALT");
@@ -136,12 +137,14 @@ public class WaltUsbConnection extends BaseUsbConnection {
         mUsbConnection.bulkTransfer(mEndpointOut, char2byte(c), 1, 100);
     }
 
+    @Override
     public int blockingRead(byte[] buffer) {
         return mUsbConnection.bulkTransfer(mEndpointIn, buffer, buffer.length, USB_READ_TIMEOUT_MS);
     }
 
 
-    public void syncClock() throws IOException {
+    @Override
+    public RemoteClockInfo syncClock() throws IOException {
         if (!isConnected()) {
             throw new IOException("Not connected to WALT");
         }
@@ -159,8 +162,10 @@ public class WaltUsbConnection extends BaseUsbConnection {
         }
         mLogger.log("Synced clocks, maxE=" + remoteClock.maxLag + "us");
         Log.i(TAG, remoteClock.toString());
+        return remoteClock;
     }
 
+    @Override
     public void updateLag() {
         if (! isConnected()) {
             mLogger.log("ERROR: Not connected, aborting checkDrift()");

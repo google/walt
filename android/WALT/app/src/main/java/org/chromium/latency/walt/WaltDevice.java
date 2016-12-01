@@ -175,8 +175,7 @@ public class WaltDevice {
     }
 
     public void syncClock() throws IOException {
-        connection.syncClock();
-        clock = connection.remoteClock;
+        clock = connection.syncClock();
     }
 
     public void checkDrift() {
@@ -185,7 +184,7 @@ public class WaltDevice {
             return;
         }
         connection.updateLag();
-        int drift = Math.abs(connection.remoteClock.getMeanLag());
+        int drift = Math.abs(clock.getMeanLag());
         String msg = String.format("Remote clock delayed between %d and %d us",
                 clock.minLag, clock.maxLag);
         // TODO: Convert the limit to user editable preference
