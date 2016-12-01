@@ -158,8 +158,6 @@ public class MainActivity extends AppCompatActivity {
         logger.log("  " + Build.FINGERPRINT);
         logger.log("  Build.SDK_INT=" + Build.VERSION.SDK_INT);
         logger.log("  os.version=" + System.getProperty("os.version"));
-
-        logger.log(" Current time in seconds is:" + WaltDevice.microTime() / 1e6);
     }
 
     @Override
@@ -265,10 +263,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClickPing(View view) {
-        long t1 = waltDevice.micros();
+        long t1 = waltDevice.clock.micros();
         try {
             waltDevice.command(WaltDevice.CMD_PING);
-            long dt = waltDevice.micros() - t1;
+            long dt = waltDevice.clock.micros() - t1;
             logger.log(String.format(Locale.US,
                     "Ping reply in %.1fms", dt / 1000.
             ));
@@ -298,10 +296,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClickCheckDrift(View view) {
-        waltDevice.updateBounds();
-        int minE = waltDevice.getMinE();
-        int maxE = waltDevice.getMaxE();
-        logger.log(String.format("Remote clock delayed between %d and %d us", minE, maxE));
+        waltDevice.checkDrift();
     }
 
     public void onClickProgram(View view) {

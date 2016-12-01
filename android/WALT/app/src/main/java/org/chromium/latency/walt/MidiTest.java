@@ -174,7 +174,7 @@ class MidiTest {
     private WaltDevice.TriggerHandler triggerHandler = new WaltDevice.TriggerHandler() {
         @Override
         public void onReceive(WaltDevice.TriggerMessage tmsg) {
-            last_tWalt = tmsg.t + waltDevice.baseTime;
+            last_tWalt = tmsg.t + waltDevice.clock.baseTime;
             double dt = (last_tWalt - last_tSys) / 1000.;
 
             logger.log(String.format(Locale.US, "Note detected: latency of %.3f ms", dt));
@@ -281,8 +281,8 @@ class MidiTest {
                            int count, long timestamp) throws IOException {
             if(count > 0 && data[offset] == (byte) 0x90) { // NoteOn message on channel 1
                 handler.removeCallbacks(finishMidiInRunnable);
-                last_tJava = waltDevice.micros();
-                last_tSys = timestamp / 1000 - waltDevice.baseTime;
+                last_tJava = waltDevice.clock.micros();
+                last_tSys = timestamp / 1000 - waltDevice.clock.baseTime;
 
                 double d1 = (last_tSys - last_tWalt) / 1000.;
                 double d2 = (last_tJava - last_tSys) / 1000.;

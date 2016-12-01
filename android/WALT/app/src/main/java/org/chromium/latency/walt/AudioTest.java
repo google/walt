@@ -262,7 +262,7 @@ class AudioTest {
                 logger.log("Error sending command AUDIO: " + e.getMessage());
                 return;
             }
-            long javaBeepTime = waltDevice.micros();
+            long javaBeepTime = waltDevice.clock.micros();
             mLastBeepTime = playTone();
             double dtJ2N = (mLastBeepTime - javaBeepTime)/1000.;
             deltasJ2N.add(dtJ2N);

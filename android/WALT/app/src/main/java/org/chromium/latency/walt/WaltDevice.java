@@ -19,8 +19,6 @@ package org.chromium.latency.walt;
 import android.content.Context;
 import android.content.res.Resources;
 import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbEndpoint;
-import android.hardware.usb.UsbInterface;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
@@ -30,7 +28,7 @@ import java.io.IOException;
 /**
  * A singleton used as an interface for the physical WALT device.
  */
-public class WaltDevice extends BaseUsbConnection {
+public class WaltDevice {
 
     private static final int TEENSY_VID = 0x16c0;
     // TODO: refactor to demystify PID. See BaseUsbConnection.isCompatibleUsbDevice()
@@ -40,9 +38,6 @@ public class WaltDevice extends BaseUsbConnection {
     private static final int DEFAULT_DRIFT_LIMIT_US = 1500;
     private static final String TAG = "WaltDevice";
     public static final String PROTOCOL_VERSION = "4";
-
-    private UsbEndpoint mEndpointIn = null;
-    private UsbEndpoint mEndpointOut = null;
 
     // Teensy side commands. Each command is a single char
     // Based on #defines section in walt.ino
@@ -68,9 +63,10 @@ public class WaltDevice extends BaseUsbConnection {
     static final char CMD_MIDI             = 'M'; // Start listening for a MIDI message
     static final char CMD_NOTE             = 'N'; // Generate a MIDI NoteOn message
 
-    public long baseTime = 0;
-
-    public long lastSync = 0;
+    private Context mContext;
+    protected SimpleLogger mLogger;
+    public WaltUsbConnection connection;
+    public RemoteClockInfo clock;
 
     private static final Object mLock = new Object();
     private static WaltDevice mInstance;
@@ -84,81 +80,34 @@ public class WaltDevice extends BaseUsbConnection {
         }
     }
 
-    @Override
-    public int getPid() {
-        return TEENSY_PID;
-    }
-
-    @Override
-    public int getVid() {
-        return TEENSY_VID;
-    }
-
-    @Override
-    protected boolean isCompatibleUsbDevice(UsbDevice usbDevice) {
-        // Allow any Teensy, but not in HalfKay bootloader mode
-        // Teensy PID depends on mode (e.g: Serail + MIDI) and also changed in TeensyDuino 1.31
-        return ((usbDevice.getProductId() != HALFKAY_PID) &&
-                (usbDevice.getVendorId() == TEENSY_VID));
+    private WaltDevice(Context context) {
+        mContext = context;
+        mTriggerListener = new TriggerListener();
+        mLogger = SimpleLogger.getInstance(context);
     }
 
 
-    // Called when WALT is physically unplugged from USB
-    @Override
-    public void onDetach() {
+    // Called when disconnecting from WALT
+    // TODO: restore this, not called from anywhere
+    public void onDisconnect() {
         if (!isListenerStopped()) {
             stopListener();
         }
-        mEndpointIn = null;
-        mEndpointOut = null;
     }
 
-
-    // Called when WALT is physically plugged into USB
-    @Override
-    public void onAttach() {
-        // Serial mode only
-        // TODO: find the interface and endpoint indexes no matter what mode it is
-        int ifIdx = 1;
-        int epInIdx = 1;
-        int epOutIdx = 0;
-
-        UsbInterface iface = mUsbDevice.getInterface(ifIdx);
-
-        if (mUsbConnection.claimInterface(iface, true)) {
-            mLogger.log("Interface claimed successfully\n");
-        } else {
-            mLogger.log("ERROR - can't claim interface\n");
-            return;
-        }
-
-        mEndpointIn = iface.getEndpoint(epInIdx);
-        mEndpointOut = iface.getEndpoint(epOutIdx);
-
-        try {
-            checkVersion();
-            syncClock();
-        } catch (IOException e) {
-            mLogger.log("Unable to communicate with WALT: " + e.getMessage());
-        }
+    public void connect() {
+        // TODO: try TCP connection first, if fails, try USB, maybe some settings controlled logic
+        connection = WaltUsbConnection.getInstance(mContext);
+        connection.connect();
     }
 
-    @Override
+    public void connect(UsbDevice usbDevice) {
+        connection = WaltUsbConnection.getInstance(mContext);
+        connection.connect(usbDevice);
+    }
+
     public boolean isConnected() {
-        return super.isConnected() && (mEndpointIn != null) && (mEndpointOut != null);
-    }
-
-    public static long microTime() {
-        return System.nanoTime() / 1000;
-    }
-
-    public long micros() {
-        return microTime() - baseTime;
-    }
-
-    private WaltDevice(Context context) {
-        super(context);
-        mTriggerListener = new TriggerListener();
+        return connection.isConnected();
     }
 
 
@@ -168,39 +117,15 @@ public class WaltDevice extends BaseUsbConnection {
         return buff;
     }
 
-    private void sendByte(char c) throws IOException {
-        if (!isConnected()) {
-            throw new IOException("Not connected to WALT");
-        }
-        // mLogger.log("Sending char " + c);
-        mUsbConnection.bulkTransfer(mEndpointOut, char2byte(c), 1, 100);
-    }
-
-    private String readOne() throws IOException {
-        if (!isListenerStopped()) {
-            throw new IOException("Listener is running");
-        }
-
-        byte[] buff = new byte[64];
-        int ret = mUsbConnection.bulkTransfer(mEndpointIn, buff, 64, USB_READ_TIMEOUT_MS);
-
-        if (ret < 0) {
-            throw new IOException("Timed out reading from WALT");
-        }
-        String s = new String(buff, 0, ret);
-        Log.i(TAG, "readOne() received byte: " + s);
-        return s;
-    }
-
 
     private String sendReceive(char c) throws IOException {
-        sendByte(c);
-        return readOne();
+        connection.sendByte(c);
+        return connection.readOne();
     }
 
     String command(char cmd, char ack) throws IOException {
         if (!isListenerStopped()) {
-            sendByte(cmd); // TODO: check response even if the listener is running
+            connection.sendByte(cmd); // TODO: check response even if the listener is running
             return "";
         }
         String response = sendReceive(cmd);
@@ -225,37 +150,6 @@ public class WaltDevice extends BaseUsbConnection {
         }
     }
 
-    public String readAll() throws IOException {
-        if (!isListenerStopped()) {
-            throw new IOException("Listener is running");
-        }
-
-        // Things that were sent deliberately as separate packets using
-        // Serial.send_now() on Teensy side will come out on separate
-        // invocations of bulkTransfer() but just a bunch of text
-        // can come out as a single text, at least up to 4K.
-        int USB_BUFFER_LENGTH = 1024 * 4;
-        byte[] buff = new byte[USB_BUFFER_LENGTH];
-        StringBuilder sb = new StringBuilder();
-        int i = 0;
-        int ret;
-        while (true) {
-            i++;
-            // long t_pre = microTime();
-            ret = mUsbConnection.bulkTransfer(mEndpointIn,
-                    buff, USB_BUFFER_LENGTH, USB_READ_TIMEOUT_MS);
-            // long dt = microTime() - t_pre;
-            // mLog(String.format("Iteration %d, ret=%d, dt=%d", i, ret, dt));
-            if (ret < 0) break;
-            String s = new String(buff, 0, ret);
-            // mLog("str=" + s);
-            sb.append(new String(buff, 0, ret));
-        }
-        String s = sb.toString();
-        Log.i(TAG, "readAll() received data: " + s);
-        return s;
-    }
-
     public void checkVersion() throws IOException {
         if (!isConnected()) throw new IOException("Not connected to WALT");
         if (!isListenerStopped()) throw new IOException("Listener is running");
@@ -269,28 +163,8 @@ public class WaltDevice extends BaseUsbConnection {
     }
 
     public void syncClock() throws IOException {
-        if (!isConnected()) {
-            throw new IOException("Not connected to WALT");
-        }
-
-        if (!isListenerStopped()) {
-            throw new IOException("Listener is running");
-        }
-
-        int maxE = 0;
-        try {
-            int fd = mUsbConnection.getFileDescriptor();
-            int ep_out = mEndpointOut.getAddress();
-            int ep_in = mEndpointIn.getAddress();
-
-            baseTime = syncClock(fd, ep_out, ep_in);
-            maxE = getMaxE();
-        } catch (Exception e) {
-            mLogger.log("Exception while syncing clocks: " + e.getStackTrace());
-        }
-
-        lastSync = SystemClock.uptimeMillis();
-        mLogger.log("Synced clocks, maxE=" + maxE + "us");
+        connection.syncClock();
+        clock = connection.remoteClock;
     }
 
     public void checkDrift() {
@@ -298,11 +172,10 @@ public class WaltDevice extends BaseUsbConnection {
             mLogger.log("ERROR: Not connected, aborting checkDrift()");
             return;
         }
-        updateBounds();
-        int minE = getMinE();
-        int maxE = getMaxE();
-        int drift = Math.abs(minE + maxE) / 2;
-        String msg = String.format("Remote clock delayed between %d and %d us", minE, maxE);
+        connection.updateLag();
+        int drift = Math.abs(connection.remoteClock.getMeanLag());
+        String msg = String.format("Remote clock delayed between %d and %d us",
+                clock.minLag, clock.maxLag);
         // TODO: Convert the limit to user editable preference
         if (drift > DEFAULT_DRIFT_LIMIT_US) {
             msg = "WARNING: High clock drift. " + msg;
@@ -311,7 +184,7 @@ public class WaltDevice extends BaseUsbConnection {
     }
 
     public long readLastShockTime_mock() {
-        return micros() - 15000;
+        return clock.micros() - 15000;
     }
 
     public long readLastShockTime() {
@@ -421,7 +294,7 @@ public class WaltDevice extends BaseUsbConnection {
         public void run() {
             state = ListenerState.RUNNING;
             while(isRunning()) {
-                int ret = mUsbConnection.bulkTransfer(mEndpointIn, buffer, BUFF_SIZE, USB_READ_TIMEOUT_MS);
+                int ret = connection.blockingRead(buffer);
                 if (ret > 0 && mTriggerHandler != null) {
                     String s = new String(buffer, 0, ret);
                     Log.i(TAG, "Listener received data: " + s);
@@ -469,21 +342,6 @@ public class WaltDevice extends BaseUsbConnection {
             mLogger.log("Error while stopping Listener: " + e.getMessage());
         }
         mLogger.log("Listener stopped");
-    }
-    //
-
-    // NDK / JNI stuff
-    // TODO: add guards to avoid calls to updateBounds and getter when listener is running.
-    private native long syncClock(int fd, int endpoint_out, int endpoint_in);
-
-    public native void updateBounds();
-
-    public native int getMinE();
-
-    public native int getMaxE();
-
-    static {
-        System.loadLibrary("sync_clock_jni");
     }
 
 }

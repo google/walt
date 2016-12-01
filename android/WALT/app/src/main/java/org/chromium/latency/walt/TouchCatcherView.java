@@ -86,7 +86,7 @@ public class TouchCatcherView extends View {
         if (!isAnimated) return;
 
         int h = getHeight();
-        double normPos = markerPosition(waltDevice.micros(), animationPeriod_us);
+        double normPos = markerPosition(waltDevice.clock.micros(), animationPeriod_us);
         int pos = (int) (h * (0.5 + animationAmplitude * normPos));
         // Log.i("AnimatedView", "Pos is " + pos);
         int w = getWidth();

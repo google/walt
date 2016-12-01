@@ -66,10 +66,10 @@ public class DragLatencyFragment extends Fragment
 
             int histLen = event.getHistorySize();
             for (int i = 0; i < histLen; i++){
-                UsMotionEvent eh = new UsMotionEvent(event, waltDevice.baseTime, i);
+                UsMotionEvent eh = new UsMotionEvent(event, waltDevice.clock.baseTime, i);
                 touchEventList.add(eh);
             }
-            UsMotionEvent e = new UsMotionEvent(event, waltDevice.baseTime);
+            UsMotionEvent e = new UsMotionEvent(event, waltDevice.clock.baseTime);
             touchEventList.add(e);
             moveCount += histLen + 1;
 

@@ -27,7 +27,7 @@
 struct clock_connection clk;
 
 jlong
-Java_org_chromium_latency_walt_WaltDevice_syncClock__III(
+Java_org_chromium_latency_walt_WaltUsbConnection_syncClock__III(
     JNIEnv* env,
     jobject thiz,
     jint fd,
@@ -46,17 +46,17 @@ Java_org_chromium_latency_walt_WaltDevice_syncClock__III(
 }
 
 void
-Java_org_chromium_latency_walt_WaltDevice_updateBounds() {
+Java_org_chromium_latency_walt_WaltUsbConnection_updateBounds() {
     update_bounds(&clk);
 }
 
 jint
-Java_org_chromium_latency_walt_WaltDevice_getMinE() {
+Java_org_chromium_latency_walt_WaltUsbConnection_getMinE() {
     return clk.minE;
 }
 
 
 jint
-Java_org_chromium_latency_walt_WaltDevice_getMaxE() {
+Java_org_chromium_latency_walt_WaltUsbConnection_getMaxE() {
     return clk.maxE;
 }

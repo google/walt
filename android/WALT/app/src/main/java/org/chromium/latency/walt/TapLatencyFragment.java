@@ -63,7 +63,7 @@ public class TapLatencyFragment extends Fragment
     private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            UsMotionEvent tapEvent = new UsMotionEvent(event, waltDevice.baseTime);
+            UsMotionEvent tapEvent = new UsMotionEvent(event, waltDevice.clock.baseTime);
             String action = tapEvent.getActionString();
 
             if(tapEvent.action != MotionEvent.ACTION_UP && tapEvent.action != MotionEvent.ACTION_DOWN) {

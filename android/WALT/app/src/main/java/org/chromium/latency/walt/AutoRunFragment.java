@@ -97,7 +97,7 @@ public class AutoRunFragment extends Fragment {
         final ResultHandler resultHandler = r;
         switch (args.getString("TestType", "")) {
             case "MidiIn": {
-                waltDevice.registerConnectCallback(new Runnable() {
+                waltDevice.connection.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
                         MidiTest midiTest = new MidiTest(getContext(), resultHandler);
@@ -108,7 +108,7 @@ public class AutoRunFragment extends Fragment {
                 break;
             }
             case "MidiOut": {
-                waltDevice.registerConnectCallback(new Runnable() {
+                waltDevice.connection.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
                         MidiTest midiTest = new MidiTest(getContext(), resultHandler);
@@ -119,7 +119,7 @@ public class AutoRunFragment extends Fragment {
                 break;
             }
             case "AudioIn": {
-                waltDevice.registerConnectCallback(new Runnable() {
+                waltDevice.connection.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
@@ -134,7 +134,7 @@ public class AutoRunFragment extends Fragment {
             }
             case "AudioOut": {
                 final int period = args.getInt("Period", -1);
-                waltDevice.registerConnectCallback(new Runnable() {
+                waltDevice.connection.registerConnectCallback(new Runnable() {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);

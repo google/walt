@@ -148,7 +148,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             int nextColor = mIsBoxWhite ? Color.WHITE : Color.BLACK;
             mInitiatedBlinks++;
             mBlackBox.setBackgroundColor(nextColor);
-            mLastFlipTime = waltDevice.micros(); // TODO: is this the right time to save?
+            mLastFlipTime = waltDevice.clock.micros(); // TODO: is this the right time to save?
 
 
             // Repost doBlink to some far away time to blink again even if nothing arrives from
@@ -263,7 +263,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
         mBlackBox.setText("");
 
-        long tStart = waltDevice.micros();
+        long tStart = waltDevice.clock.micros();
 
         try {
             waltDevice.command(WaltDevice.CMD_BRIGHTNESS_CURVE);
@@ -282,7 +282,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                long tBack = waltDevice.micros();
+                long tBack = waltDevice.clock.micros();
                 mBlackBox.setBackgroundColor(Color.BLACK);
                 logger.log("t_back: " + tBack);
 
