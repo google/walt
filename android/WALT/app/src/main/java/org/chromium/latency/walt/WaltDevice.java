@@ -64,7 +64,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
     private Context mContext;
     protected SimpleLogger mLogger;
-    private WaltUsbConnection connection;
+    private WaltConnection connection;
     public RemoteClockInfo clock;
 
     private static final Object mLock = new Object();
@@ -113,9 +113,10 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     public void connect(UsbDevice usbDevice) {
         // This happens when apps starts as a result of plugging WALT into USB. In this case we
         // receive an intent with a usbDevice
-        connection = WaltUsbConnection.getInstance(mContext);
+        WaltUsbConnection usbConnection = WaltUsbConnection.getInstance(mContext);
+        connection = usbConnection;
         connection.setConnectionStateListener(this);
-        connection.connect(usbDevice);
+        usbConnection.connect(usbDevice);
     }
 
     public boolean isConnected() {

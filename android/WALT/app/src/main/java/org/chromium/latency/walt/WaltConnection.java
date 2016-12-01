@@ -22,6 +22,8 @@ import java.io.IOException;
 
 public interface WaltConnection {
 
+    void connect();
+
     boolean isConnected();
 
     void sendByte(char c) throws IOException;
