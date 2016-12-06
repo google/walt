@@ -36,9 +36,6 @@ public interface WaltConnection {
 
     void setConnectionStateListener(ConnectionStateListener connectionStateListener);
 
-    // TODO: fold this into the state listener, if possible
-    void registerConnectCallback(Runnable runnable);
-
     public interface ConnectionStateListener {
         void onConnect();
         void onDisconnect();

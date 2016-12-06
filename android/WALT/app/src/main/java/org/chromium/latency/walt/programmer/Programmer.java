@@ -17,10 +17,12 @@
 package org.chromium.latency.walt.programmer;
 
 import android.content.Context;
+import android.os.Handler;
 import android.util.Log;
 
 import org.chromium.latency.walt.R;
 import org.chromium.latency.walt.SimpleLogger;
+import org.chromium.latency.walt.WaltConnection;
 
 import java.io.InputStream;
 import java.text.ParseException;
@@ -34,6 +36,7 @@ public class Programmer {
     private BootloaderConnection mConn;
 
     private Context mContext;
+    private Handler handler = new Handler();
 
     public Programmer(Context context) {
         mContext = context;
@@ -52,7 +55,15 @@ public class Programmer {
         mConn = BootloaderConnection.getInstance(mContext);
         // TODO: automatically reboot into the bootloader
         logger.log("\nRemember to press the button on the Teensy first\n");
-        mConn.registerConnectCallback(programRunnable);
+        mConn.setConnectionStateListener(new WaltConnection.ConnectionStateListener() {
+            @Override
+            public void onConnect() {
+                handler.post(programRunnable);
+            }
+
+            @Override
+            public void onDisconnect() {}
+        });
         if (!mConn.isConnected()) {
             mConn.connect();
         }

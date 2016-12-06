@@ -66,6 +66,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     protected SimpleLogger mLogger;
     private WaltConnection connection;
     public RemoteClockInfo clock;
+    private WaltConnection.ConnectionStateListener mConnectionStateListener;
 
     private static final Object mLock = new Object();
     private static WaltDevice mInstance;
@@ -93,6 +94,9 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
             mLogger.log("Unable to communicate with WALT: " + e.getMessage());
         }
 
+        if (mConnectionStateListener != null) {
+            mConnectionStateListener.onConnect();
+        }
     }
 
     // Called when disconnecting from WALT
@@ -100,6 +104,10 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     public void onDisconnect() {
         if (!isListenerStopped()) {
             stopListener();
+        }
+
+        if (mConnectionStateListener != null) {
+            mConnectionStateListener.onDisconnect();
         }
     }
 
@@ -226,10 +234,6 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         }
 
         return t;
-    }
-
-    public void registerConnectCallback(Runnable runnable) {
-        connection.registerConnectCallback(runnable);
     }
 
     static class TriggerMessage {
@@ -368,6 +372,13 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
             mLogger.log("Error while stopping Listener: " + e.getMessage());
         }
         mLogger.log("Listener stopped");
+    }
+
+    public void setConnectionStateListener(WaltConnection.ConnectionStateListener connectionStateListener) {
+        this.mConnectionStateListener = connectionStateListener;
+        if (isConnected()) {
+            mConnectionStateListener.onConnect();
+        }
     }
 
 }

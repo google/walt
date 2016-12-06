@@ -39,8 +39,6 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
     private UsbEndpoint mEndpointIn = null;
     private UsbEndpoint mEndpointOut = null;
 
-    private WaltConnection.ConnectionStateListener mConnectionStateListener;
-
     private RemoteClockInfo remoteClock = new RemoteClockInfo();
 
     private static final Object mLock = new Object();
@@ -84,9 +82,7 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
     public void onDisconnect() {
         mEndpointIn = null;
         mEndpointOut = null;
-        if (mConnectionStateListener != null) {
-            mConnectionStateListener.onDisconnect();
-        }
+        super.onDisconnect();
     }
 
 
@@ -111,9 +107,7 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
         mEndpointIn = iface.getEndpoint(epInIdx);
         mEndpointOut = iface.getEndpoint(epOutIdx);
 
-        if (mConnectionStateListener != null) {
-            mConnectionStateListener.onConnect();
-        }
+        super.onConnect();
     }
 
     @Override
@@ -190,9 +184,5 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
 
     static {
         System.loadLibrary("sync_clock_jni");
-    }
-
-    public void setConnectionStateListener(ConnectionStateListener connectionStateListener) {
-        this.mConnectionStateListener = connectionStateListener;
     }
 }

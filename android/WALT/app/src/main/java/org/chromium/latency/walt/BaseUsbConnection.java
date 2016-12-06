@@ -37,6 +37,7 @@ public abstract class BaseUsbConnection {
     protected Context mContext;
     private LocalBroadcastManager mBroadcastManager;
     private BroadcastReceiver mCurrentConnectReceiver;
+    private WaltConnection.ConnectionStateListener mConnectionStateListener;
 
     private UsbManager mUsbManager;
     protected UsbDevice mUsbDevice = null;
@@ -49,14 +50,24 @@ public abstract class BaseUsbConnection {
         mBroadcastManager = LocalBroadcastManager.getInstance(context);
     }
 
-    public abstract void onConnect();
-    public abstract void onDisconnect();
     public abstract int getVid();
     public abstract int getPid();
 
     // Used to distinguish between bootloader and normal mode that differ by PID
     // TODO: change intent strings to reduce dependence on PID
     protected abstract boolean isCompatibleUsbDevice(UsbDevice usbDevice);
+
+    public void onDisconnect() {
+        if (mConnectionStateListener != null) {
+            mConnectionStateListener.onDisconnect();
+        }
+    }
+
+    public void onConnect() {
+        if (mConnectionStateListener != null) {
+            mConnectionStateListener.onConnect();
+        }
+    }
 
 
     private String getConnectIntent() {
@@ -204,5 +215,9 @@ public abstract class BaseUsbConnection {
             mLogger.log(msg);
         }
         return usbDevice;
+    }
+
+    public void setConnectionStateListener(WaltConnection.ConnectionStateListener connectionStateListener) {
+        this.mConnectionStateListener = connectionStateListener;
     }
 }

@@ -49,10 +49,9 @@ class BootloaderConnection extends BaseUsbConnection {
         } else {
             mLogger.log("ERROR - can't claim interface\n");
         }
-    }
 
-    @Override
-    public void onDisconnect() {}
+        super.onConnect();
+    }
 
     public void write(byte[] buf, int timeout) {
         write(buf, 0, buf.length, timeout);
