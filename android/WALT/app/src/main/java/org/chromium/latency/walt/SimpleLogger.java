@@ -50,7 +50,7 @@ public class SimpleLogger {
         broadcastManager = LocalBroadcastManager.getInstance(context);
     }
 
-    public void log(String msg) {
+    public synchronized void log(String msg) {
         Log.i(TAG, msg);
         sb.append(msg);
         sb.append('\n');

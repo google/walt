@@ -116,19 +116,13 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
     }
 
 
-    private byte[] char2byte(char c) {
-        byte[] buff = new byte[1];
-        buff[0] = (byte) c;
-        return buff;
-    }
-
     @Override
     public void sendByte(char c) throws IOException {
         if (!isConnected()) {
             throw new IOException("Not connected to WALT");
         }
         // mLogger.log("Sending char " + c);
-        mUsbConnection.bulkTransfer(mEndpointOut, char2byte(c), 1, 100);
+        mUsbConnection.bulkTransfer(mEndpointOut, Utils.char2byte(c), 1, 100);
     }
 
     @Override

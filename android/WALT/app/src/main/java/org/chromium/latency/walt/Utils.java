@@ -151,4 +151,17 @@ public class Utils {
         return bestShift;
     }
 
+    static byte[] char2byte(char c) {
+        byte[] buff = new byte[1];
+        buff[0] = (byte) c;
+        return buff;
+    }
+
+    public enum ListenerState {
+        RUNNING,
+        STARTING,
+        STOPPED,
+        STOPPING
+    }
+
 }

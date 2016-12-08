@@ -88,7 +88,8 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
     public void onConnect() {
         try {
-            checkVersion();
+            // TODO: restore
+            // checkVersion();
             syncClock();
         } catch (IOException e) {
             mLogger.log("Unable to communicate with WALT: " + e.getMessage());
@@ -113,6 +114,15 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
     public void connect() {
         // TODO: try TCP connection first, if fails, try USB, maybe some settings controlled logic
+
+        connection = WaltTcpConnection.getInstance(mContext);
+        connection.setConnectionStateListener(this);
+        connection.connect();
+        if(1==1) {
+            return;
+        }
+
+        // USB connection
         connection = WaltUsbConnection.getInstance(mContext);
         connection.setConnectionStateListener(this);
         connection.connect();
@@ -270,13 +280,6 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     private TriggerListener mTriggerListener;
     private Thread mTriggerListenerThread;
 
-    public enum ListenerState {
-        RUNNING,
-        STARTING,
-        STOPPED,
-        STOPPING
-    }
-
     abstract static class TriggerHandler {
         private Handler handler;
 
@@ -317,12 +320,12 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
     private class TriggerListener implements Runnable {
         static final int BUFF_SIZE = 1024 * 4;
-        public ListenerState state = ListenerState.STOPPED;
+        public Utils.ListenerState state = Utils.ListenerState.STOPPED;
         private byte[] buffer = new byte[BUFF_SIZE];
 
         @Override
         public void run() {
-            state = ListenerState.RUNNING;
+            state = Utils.ListenerState.RUNNING;
             while(isRunning()) {
                 int ret = connection.blockingRead(buffer);
                 if (ret > 0 && mTriggerHandler != null) {
@@ -333,19 +336,19 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
                     }
                 }
             }
-            state = ListenerState.STOPPED;
+            state = Utils.ListenerState.STOPPED;
         }
 
         public synchronized boolean isRunning() {
-            return state == ListenerState.RUNNING;
+            return state == Utils.ListenerState.RUNNING;
         }
 
         public synchronized boolean isStopped() {
-            return state == ListenerState.STOPPED;
+            return state == Utils.ListenerState.STOPPED;
         }
 
         public synchronized void stop() {
-            state = ListenerState.STOPPING;
+            state = Utils.ListenerState.STOPPING;
         }
     };
 
@@ -359,7 +362,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         }
         mTriggerListenerThread = new Thread(mTriggerListener);
         mLogger.log("Starting Listener");
-        mTriggerListener.state = ListenerState.STARTING;
+        mTriggerListener.state = Utils.ListenerState.STARTING;
         mTriggerListenerThread.start();
     }
 
