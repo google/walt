@@ -113,17 +113,14 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     }
 
     public void connect() {
-        // TODO: try TCP connection first, if fails, try USB, maybe some settings controlled logic
-
-        connection = WaltTcpConnection.getInstance(mContext);
-        connection.setConnectionStateListener(this);
-        connection.connect();
-        if(1==1) {
-            return;
+        if (WaltTcpConnection.probe()) {
+            mLogger.log("Using TCP bridge for ChromeOS");
+            connection = WaltTcpConnection.getInstance(mContext);
+        } else {
+            // USB connection
+            mLogger.log("No TCP bridge detected, using direct USB connection");
+            connection = WaltUsbConnection.getInstance(mContext);
         }
-
-        // USB connection
-        connection = WaltUsbConnection.getInstance(mContext);
         connection.setConnectionStateListener(this);
         connection.connect();
     }

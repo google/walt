@@ -19,11 +19,13 @@ package org.chromium.latency.walt;
 import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 
@@ -116,7 +118,7 @@ public class WaltTcpConnection implements WaltConnection {
     }
 
     public void sendByte(char c) throws IOException {
-        mOutputStream.write(Utils.char2byte('p'));
+        mOutputStream.write(Utils.char2byte(c));
     }
 
     public synchronized int blockingRead(byte[] buff) {
@@ -168,5 +170,36 @@ public class WaltTcpConnection implements WaltConnection {
 
     public void setConnectionStateListener(ConnectionStateListener connectionStateListener) {
         mConnectionStateListener = connectionStateListener;
+    }
+
+    // A way to test of there is a TCP bridge to decide whether to use it.
+    // Some thread dancing to get around the Android strict policy for no network on main thread.
+    public static boolean probe() {
+        ProbeThread probeThread = new ProbeThread();
+        probeThread.start();
+        try {
+            probeThread.join();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return probeThread.isReachable;
+    }
+
+    private static class ProbeThread extends Thread {
+        public boolean isReachable = false;
+        private final String TAG = "ProbeThread";
+
+        @Override
+        public void run() {
+            Socket socket = new Socket();;
+            try {
+                InetSocketAddress remoteAddr = new InetSocketAddress(SERVER_IP, SERVER_PORT);
+                socket.connect(remoteAddr, 50 /* timeout in milliseconds */);
+                isReachable = true;
+                socket.close();
+            } catch (Exception e) {
+                Log.i(TAG, "Probing TCP connection failed: " + e.getMessage());
+            }
+        }
     }
 }
