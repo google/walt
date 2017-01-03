@@ -84,13 +84,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         // TODO: Add a stop button to interrupt the measurement
         deltas.clear();
 
-        try {
-            waltDevice.syncClock();
-        } catch (IOException e) {
-            logger.log("Error syncing clocks: " + e.getMessage());
-            return;
-        }
-
         mInitiatedBlinks = 0;
         mDetectedBlinks = 0;
 
@@ -108,10 +101,9 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 // Check for PWM
                 WaltDevice.TriggerMessage tmsg = waltDevice.readTriggerMessage(WaltDevice.CMD_SEND_LAST_SCREEN);
                 logger.log("Blink count was: "+ tmsg.count);
-                waltDevice.command(WaltDevice.CMD_AUTO_SCREEN_ON);
 
-                // Start the listener
-                waltDevice.syncClock();
+                waltDevice.syncClock(); // Note, sync also sends CMD_RESET (but not simpleSync).
+                waltDevice.command(WaltDevice.CMD_AUTO_SCREEN_ON);
                 waltDevice.startListener();
             } catch (IOException e) {
                 logger.log("Error: " + e.getMessage());
@@ -194,6 +186,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
         // Unregister trigger handler
         waltDevice.clearTriggerHandler();
+
+        waltDevice.sendAndFlush(WaltDevice.CMD_AUTO_SCREEN_OFF);
 
         waltDevice.checkDrift();
 

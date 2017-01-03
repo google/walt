@@ -24,16 +24,13 @@ import android.util.Log;
 
 import java.io.IOException;
 
+import static android.os.SystemClock.uptimeMillis;
+
 /**
  * A singleton used as an interface for the physical WALT device.
  */
 public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
-    private static final int TEENSY_VID = 0x16c0;
-    // TODO: refactor to demystify PID. See BaseUsbConnection.isCompatibleUsbDevice()
-    private static final int TEENSY_PID = 0;
-    private static final int HALFKAY_PID = 0x0478;
-    private static final int USB_READ_TIMEOUT_MS = 200;
     private static final int DEFAULT_DRIFT_LIMIT_US = 1500;
     private static final String TAG = "WaltDevice";
     public static final String PROTOCOL_VERSION = "4";
@@ -62,6 +59,9 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     static final char CMD_MIDI             = 'M'; // Start listening for a MIDI message
     static final char CMD_NOTE             = 'N'; // Generate a MIDI NoteOn message
 
+    private static final int BYTE_BUFFER_SIZE = 1024 * 4;
+    private byte[] mBuffer = new byte[BYTE_BUFFER_SIZE];
+
     private Context mContext;
     protected SimpleLogger mLogger;
     private WaltConnection connection;
@@ -89,7 +89,8 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     public void onConnect() {
         try {
             // TODO: restore
-            // checkVersion();
+            softReset();
+            checkVersion();
             syncClock();
         } catch (IOException e) {
             mLogger.log("Unable to communicate with WALT: " + e.getMessage());
@@ -161,6 +162,23 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         return readOne();
     }
 
+    public void sendAndFlush(char c) {
+
+        try {
+            connection.sendByte(c);
+            while(connection.blockingRead(mBuffer) > 0) {
+                // flushing all incoming data
+            }
+        } catch (Exception e) {
+            mLogger.log("Exception in sendAndFlush: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void softReset() {
+        sendAndFlush(CMD_RESET);
+    }
+
     String command(char cmd, char ack) throws IOException {
         if (!isListenerStopped()) {
             connection.sendByte(cmd); // TODO: check response even if the listener is running
@@ -201,7 +219,23 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     }
 
     public void syncClock() throws IOException {
+        if (connection instanceof WaltTcpConnection) {
+            // TODO: This is a workaround until we have a better sync implemented for TCP
+            simpleSyncClock();
+            return;
+        }
         clock = connection.syncClock();
+    }
+
+    // Simple way of syncing clocks. Used for diagnostics. Accuracy of several ms.
+    public void simpleSyncClock() throws IOException {
+        byte[] buffer = new byte[1024];
+        clock = new RemoteClockInfo();
+        clock.baseTime = RemoteClockInfo.microTime();
+        String reply = sendReceive(CMD_SYNC_ZERO);
+        mLogger.log("Simple sync reply: " + reply);
+        clock.maxLag = (int) clock.micros();
+        mLogger.log("Synced clocks, the simple way:\n" + clock);
     }
 
     public void checkDrift() {
@@ -368,7 +402,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         mTriggerListener.stop();
         try {
             mTriggerListenerThread.join();
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             mLogger.log("Error while stopping Listener: " + e.getMessage());
         }
         mLogger.log("Listener stopped");

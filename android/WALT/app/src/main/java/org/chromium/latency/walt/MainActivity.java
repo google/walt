@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Connect and sync clocks, but a bit later as it takes time
-        handler.post(new Runnable() {
+        handler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 if (usbDevice == null) {
@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                     waltDevice.connect(usbDevice);
                 }
             }
-        });
+        }, 1000);
 
         if (intent != null && AutoRunFragment.TEST_ACTION.equals(intent.getAction())) {
             getSupportFragmentManager().popBackStack("Automated Test",

@@ -19,6 +19,7 @@ package org.chromium.latency.walt;
 import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.util.Log;
 
 import java.io.IOException;
@@ -27,6 +28,10 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.Locale;
+
+import static android.os.SystemClock.uptimeMillis;
 
 
 public class WaltTcpConnection implements WaltConnection {
@@ -34,12 +39,14 @@ public class WaltTcpConnection implements WaltConnection {
     // The local ip on ARC++ to connect to underlying ChromeOS
     private static final String SERVER_IP = "192.168.254.1";
     private static final int SERVER_PORT = 50007;
+    private static final int TCP_READ_TIMEOUT_MS = 200;
 
     private final SimpleLogger mLogger;
     private HandlerThread networkThread;
     private Handler networkHandler;
     private Object mReadLock = new Object();
     private boolean messageReceived = false;
+    private Utils.ListenerState mConnectionState = Utils.ListenerState.STOPPED;
     private int lastRetVal;
     static final int BUFF_SIZE = 1024 * 4;
     private byte[] buffer = new byte[BUFF_SIZE];
@@ -75,6 +82,7 @@ public class WaltTcpConnection implements WaltConnection {
     }
 
     public void connect() {
+        mConnectionState = Utils.ListenerState.STARTING;
         networkThread = new HandlerThread("NetworkThread");
         networkThread.start();
         networkHandler = new Handler(networkThread.getLooper());
@@ -85,13 +93,15 @@ public class WaltTcpConnection implements WaltConnection {
                 try {
                     InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
                     socket = new Socket(serverAddr, SERVER_PORT);
+                    socket.setSoTimeout(TCP_READ_TIMEOUT_MS);
                     mOutputStream = socket.getOutputStream();
                     mInputStream = socket.getInputStream();
                     mLogger.log("TCP connection established");
-
+                    mConnectionState = Utils.ListenerState.RUNNING;
                 } catch (Exception e) {
                     e.printStackTrace();
                     mLogger.log("Can't connect to TCP bridge: " + e.getMessage());
+                    mConnectionState = Utils.ListenerState.STOPPED;
                     return;
                 }
 
@@ -107,14 +117,52 @@ public class WaltTcpConnection implements WaltConnection {
 
     }
 
+    /**
+     * With TCP bridge, the connection is super slow for the first few bytes. This is some arbitrary
+     * communication to get past this initial state.
+     */
+    private void connectionWarmup() {
+        try {
+            sendByte(WaltDevice.CMD_SYNC_SEND);
+        } catch (Exception e) {}
+
+        long startTime = uptimeMillis();
+
+        final int READ_COUNT = 30;
+        String allReplies = "";
+        for (int i = 0; i < READ_COUNT; i++) {
+            int retval = blockingRead(buffer);
+            String msg = String.format(Locale.US,
+                    "Connection warm up: ret=%d, T=%d",
+                    retval,
+                    uptimeMillis() - startTime
+            );
+            if (retval > 0) {
+                String reply = new String(buffer, 0, retval);
+                msg = msg + " Reply=" + reply;
+
+                // This is some hackish logic to break out once we got all the expected data.
+                // Otherwise this loop takes TCP_READ_TIMEOUT_MS * remaining iterations
+                // which is too long.
+                allReplies = allReplies + reply.trim().replace("\n", "");
+                if (allReplies.equals("123456789")) {
+                    i = READ_COUNT - 3;
+                }
+            }
+            mLogger.log(msg);
+        }
+
+    }
+
     public void onConnect() {
+        connectionWarmup();
         if (mConnectionStateListener != null) {
             mConnectionStateListener.onConnect();
         }
     }
 
     public synchronized boolean isConnected() {
-        return false;
+        return mConnectionState == Utils.ListenerState.RUNNING;
     }
 
     public void sendByte(char c) throws IOException {
@@ -128,14 +176,21 @@ public class WaltTcpConnection implements WaltConnection {
         networkHandler.post(new Runnable() {
             @Override
             public void run() {
+                lastRetVal = -1;
                 try {
                     synchronized (mReadLock) {
                         lastRetVal = mInputStream.read(buffer);
                         messageReceived = true;
                         mReadLock.notifyAll();
                     }
-                } catch (Exception e) {
+                } catch (SocketTimeoutException e) {
+                    messageReceived = true;
+                    lastRetVal = -2;
+                }
+                catch (Exception e) {
                     e.printStackTrace();
+                    messageReceived = true;
+                    lastRetVal = -1;
                     // TODO: better messaging / error handling here
                 }
             }
@@ -145,7 +200,7 @@ public class WaltTcpConnection implements WaltConnection {
         // This blocks on mReadLock which is taken by the blocking read operation
         try {
             synchronized (mReadLock) {
-                while (!messageReceived) mReadLock.wait();
+                while (!messageReceived) mReadLock.wait(TCP_READ_TIMEOUT_MS);
             }
         } catch (InterruptedException e) {
             return -1;
@@ -172,7 +227,7 @@ public class WaltTcpConnection implements WaltConnection {
         mConnectionStateListener = connectionStateListener;
     }
 
-    // A way to test of there is a TCP bridge to decide whether to use it.
+    // A way to test if there is a TCP bridge to decide whether to use it.
     // Some thread dancing to get around the Android strict policy for no network on main thread.
     public static boolean probe() {
         ProbeThread probeThread = new ProbeThread();
