@@ -89,7 +89,7 @@ struct trigger {
 };
 
 #define TRIGGER_COUNT 5
-struct trigger laser, screen, sound, midi, gshock, zero_trigger, copy_trigger;
+struct trigger laser, screen, sound, midi, gshock, copy_trigger;
 struct trigger * triggers[TRIGGER_COUNT] = {&laser, &screen, &sound, &midi, &gshock};
 
 #define CLOCK_SYNC_N 9
@@ -186,8 +186,9 @@ void init_vars() {
   noInterrupts();
   init_clock();
 
-  memset(&zero_trigger, 0, sizeof(struct trigger));
-  laser = zero_trigger;
+  for (int i = 0; i < TRIGGER_COUNT; i++) {
+    memset(triggers[i], 0, sizeof(struct trigger));
+  }
 
   laser.tag = 'L';
   screen.tag = 'S';
