@@ -29,7 +29,7 @@
 
 NSString * const WALTClientErrorDomain = @"WALTClientErrorDomain";
 
-static NSString * const kWALTVersion = @"v 3";
+static NSString * const kWALTVersion = @"v 4";
 
 static const MIDIChannel kWALTChannel = 1;
 static const MIDIByte kWALTSerialOverMIDIProgram = 1;
