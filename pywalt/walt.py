@@ -33,12 +33,15 @@ On some systems it requires running as root.
 """
 
 import argparse
+import contextlib
 import glob
 import os
 import re
+import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 import serial
@@ -217,7 +220,7 @@ def parse_args():
     parser.add_argument('-s', '--serial', default=serial,
                         help='WALT serial port')
     parser.add_argument('-t', '--type', default='drag',
-                        help='Test type: drag|tap|screen|sanity|curve')
+                        help='Test type: drag|tap|screen|sanity|curve|bridge')
     parser.add_argument('-l', '--logdir', default=temp_dir,
                         help='where to store logs')
     parser.add_argument('-n', default=40, type=int,
@@ -452,6 +455,107 @@ def run_walt_sanity_test(args):
             time.sleep(0.1)
 
 
+class TcpServer:
+    def __init__(self, walt, port=50007, host=''):
+        self.net = None
+        self.walt = walt
+        self.port = port
+        self.host = host
+        self.last_zero = 0.
+
+    def ser2net(self, data):
+        print('w>: ' + repr(data))
+        if len(data) > 0 and data[0] == Walt.CMD_SYNC_ZERO.lower():
+            t = time.time()
+            t0 = self.last_zero
+            data = 'z %d %d\n' % ((t - t0)*1e6, t0*1e6)
+            print('w-converted>: ' + repr(data))
+        return data
+
+    def net2ser(self, data):
+        print('w<: ' + repr(data))
+        if len(data) > 0 and data[0] == Walt.CMD_SYNC_ZERO:
+            self.last_zero = time.time()
+        return data
+
+    def connections_loop(self):
+        with contextlib.closing(socket.socket(
+                socket.AF_INET, socket.SOCK_STREAM)) as sock:
+            self.sock = sock
+            # SO_REUSEADDR is supposed to prevent the "Address already in use" error
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind((self.host, self.port))
+            sock.listen(1)
+            while True:
+                print('Listening on port %d' % self.port)
+                net, addr = sock.accept()
+                self.net = net
+                try:
+                    print('Connected by: ' + str(addr))
+                    self.net2ser_loop()
+                except socket.error as e:
+                    # IO errors with the socket, not sure what they are
+                    print('Error: %s' % e)
+                    break
+                finally:
+                    net.close()
+                    self.net = None
+
+    def net2ser_loop(self):
+        while True:
+            data = self.net.recv(1024)
+            if not data:
+                break  # got disconnected
+
+            data = self.net2ser(data)
+            self.walt.ser.write(data)
+
+    def ser2net_loop(self):
+        while True:
+            data = self.walt.readline()
+            if self.net:
+                data = self.ser2net(data)
+                self.net.sendall(data)
+
+    def serve(self):
+        t = self.ser2net_thread = threading.Thread(
+            target=self.ser2net_loop,
+            name='ser2net_thread'
+        )
+        t.daemon = True
+        t.start()
+        self.connections_loop()
+
+    def close(self):
+        try:
+            self.sock.close()
+        except:
+            pass
+
+        try:
+            self.walt.close()
+        except:
+            pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def __enter__(self):
+        return self
+
+
+def run_tcp_bridge(args):
+
+    print('Starting TCP bridge')
+
+    with Walt(args.serial) as walt:
+        with TcpServer(walt) as srv:
+            walt.sndrcv(Walt.CMD_RESET)
+            srv.serve()
+
+    print('TCP bridge down, exiting')
+
+
 if __name__ == '__main__':
     args = parse_args()
     if args.type == 'tap':
@@ -462,6 +566,7 @@ if __name__ == '__main__':
         run_walt_sanity_test(args)
     elif args.type == 'curve':
         run_screen_curve(args)
+    elif args.type == 'bridge':
+        run_tcp_bridge(args)
     else:
         run_drag_latency_test(args)
-

@@ -24,8 +24,6 @@ import android.util.Log;
 
 import java.io.IOException;
 
-import static android.os.SystemClock.uptimeMillis;
-
 /**
  * A singleton used as an interface for the physical WALT device.
  */
@@ -142,7 +140,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
     public String readOne() throws IOException {
         if (!isListenerStopped()) {
-            throw new IOException("Listener is running");
+            throw new IOException("Can't do blocking read while listener is running");
         }
 
         byte[] buff = new byte[64];
@@ -152,7 +150,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
             throw new IOException("Timed out reading from WALT");
         }
         String s = new String(buff, 0, ret);
-        Log.i(TAG, "readOne() received byte: " + s);
+        Log.i(TAG, "readOne() received data: " + s);
         return s;
     }
 
@@ -221,7 +219,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     public void syncClock() throws IOException {
         if (connection instanceof WaltTcpConnection) {
             // TODO: This is a workaround until we have a better sync implemented for TCP
-            simpleSyncClock();
+            bridgeSyncClock();
             return;
         }
         clock = connection.syncClock();
@@ -236,6 +234,29 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         mLogger.log("Simple sync reply: " + reply);
         clock.maxLag = (int) clock.micros();
         mLogger.log("Synced clocks, the simple way:\n" + clock);
+    }
+
+    // Sync clock via TCP bridge
+    public void bridgeSyncClock() throws IOException {
+        clock = new RemoteClockInfo();
+        String reply = sendReceive(CMD_SYNC_ZERO);
+        mLogger.log("Reply from bridge: " + reply);
+        String[] parts = reply.trim().split("\\s+");
+        // TODO: make sure 'z' == parts[0].charAt(0)
+        clock.maxLag = Integer.parseInt(parts[1]);
+        long wallBaseTime = Long.parseLong(parts[2]);
+        clock.baseTime = wallBaseTime - RemoteClockInfo.uptimeZero();
+
+        // TODO: verify that uptimeZero works well on more devices. Reflection might be slow on some
+        /* utpimeZero
+        long uBaseTime0 = RemoteClockInfo.uptimeZero();
+        for (int i = 0; i < 10; i++) {
+            long dev = uBaseTime0 - RemoteClockInfo.uptimeZero();
+            mLogger.log("BaseTime diff: " + dev);
+        }
+        */
+
+        mLogger.log("Synced clocks via bridge:\n" + clock);
     }
 
     public void checkDrift() {

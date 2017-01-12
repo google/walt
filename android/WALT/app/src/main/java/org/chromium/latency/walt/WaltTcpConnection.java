@@ -220,7 +220,7 @@ public class WaltTcpConnection implements WaltConnection {
     }
 
     public void updateLag() {
-
+        // TODO: needs implementation
     }
 
     public void setConnectionStateListener(ConnectionStateListener connectionStateListener) {
