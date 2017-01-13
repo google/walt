@@ -70,9 +70,11 @@ class Walt(object):
 
 
     """
-    # Teensy commands (always singe char). Defined in WALT.ino
-    # TODO(kamrik): link to WALT.ino once it's opensourced.
+
+    # Teensy commands, always singe char. Defined in WALT.ino
+    # github.com/google/walt/blob/master/arduino/walt/walt.ino
     CMD_RESET = 'F'
+    CMD_PING = 'P'
     CMD_SYNC_ZERO = 'Z'
     CMD_TIME_NOW = 'T'
     CMD_AUTO_LASER_ON = 'L'
@@ -456,7 +458,13 @@ def run_walt_sanity_test(args):
 
 
 class TcpServer:
+    """
+
+
+    """
     def __init__(self, walt, port=50007, host=''):
+        self.running = threading.Event()
+        self.paused = threading.Event()
         self.net = None
         self.walt = walt
         self.port = port
@@ -512,10 +520,13 @@ class TcpServer:
 
     def ser2net_loop(self):
         while True:
+            self.running.wait()
             data = self.walt.readline()
-            if self.net:
+            if self.net and self.running.is_set():
                 data = self.ser2net(data)
                 self.net.sendall(data)
+            if not self.running.is_set():
+                self.paused.set()
 
     def serve(self):
         t = self.ser2net_thread = threading.Thread(
@@ -524,7 +535,28 @@ class TcpServer:
         )
         t.daemon = True
         t.start()
+        self.paused.clear()
+        self.running.set()
         self.connections_loop()
+
+    def pause(self):
+        """ Pause serial -> net forwarding
+
+        The ser2net_thread stays running, but won't read any incoming data
+        from the serial port.
+        """
+
+        self.running.clear()
+        # Send a ping to break out of the blocking read on serial port and get
+        # blocked on running.wait() instead. The ping response is discarded.
+        self.walt.ser.write(Walt.CMD_PING)
+        # Wait until the ping response comes in and we are sure we are no longer
+        # blocked on ser.read()
+        self.paused.wait()
+
+    def resume(self):
+        self.running.set()
+        self.paused.clear()
 
     def close(self):
         try:
@@ -548,12 +580,13 @@ def run_tcp_bridge(args):
 
     print('Starting TCP bridge')
 
-    with Walt(args.serial) as walt:
-        with TcpServer(walt) as srv:
-            walt.sndrcv(Walt.CMD_RESET)
-            srv.serve()
-
-    print('TCP bridge down, exiting')
+    try:
+        with Walt(args.serial) as walt:
+            with TcpServer(walt) as srv:
+                walt.sndrcv(Walt.CMD_RESET)
+                srv.serve()
+    except KeyboardInterrupt:
+        print(' KeyboardInterrupt, exiting...')
 
 
 if __name__ == '__main__':
