@@ -122,13 +122,13 @@ class Walt(object):
         log('sndrcv(): round trip %.3fms, reply=%s' % (dt, reply.strip()))
         return dt, reply
 
-    def readShockTime(self):
+    def read_shock_time(self):
         dt, s = self.sndrcv(Walt.CMD_GSHOCK)
         t_us = int(s.strip())
         return t_us
 
 
-    def runCommStats(self, N=100):
+    def run_comm_stats(self, N=100):
         """
         Measure the USB serial round trip time.
         Send CMD_TIME_NOW to the Teensy N times measuring the round trip each time.
@@ -154,7 +154,7 @@ class Walt(object):
             print('ERROR: the median round trip is too high: %.2f' % median)
             sys.exit(2)
 
-    def zeroClock(self, max_delay_ms=1.0, retries=10):
+    def zero_clock(self, max_delay_ms=1.0, retries=10):
         """
         Tell the TeensyUSB to zero its clock (CMD_SYNC_ZERO).
         Returns the time when the command was sent.
@@ -166,7 +166,7 @@ class Walt(object):
 
         # Check that we get reasonable ping time with Teensy
         # this also 'warms up' the comms, first msg is often slower
-        self.runCommStats(N=10)
+        self.run_comm_stats(N=10)
 
         self.ser.flushInput()
 
@@ -181,7 +181,7 @@ class Walt(object):
         print('Error, failed to zero the clock after %d retries')
         return -1
 
-    def parseTrigger(self, trigger_line):
+    def parse_trigger(self, trigger_line):
         """ Parse a trigger line from WALT.
 
         Trigger events look like this: "G L 12902345 1 1"
@@ -266,7 +266,7 @@ def run_drag_latency_test(args):
     with Walt(args.serial) as walt:
         walt.sndrcv(Walt.CMD_RESET)
         tstart = time.time()
-        t_zero = walt.zeroClock()
+        t_zero = walt.zero_clock()
         if t_zero < 0:
             print('Error: Couldn\'t zero clock, exitting')
             sys.exit(1)
@@ -289,7 +289,7 @@ def run_drag_latency_test(args):
                 sys.stdout.write('.')
                 sys.stdout.flush()
 
-            t, val = walt.parseTrigger(trigger_line)
+            t, val = walt.parse_trigger(trigger_line)
             t += t_zero
             with open(laser_file_name, 'at') as flaser:
                 flaser.write('%.3f %d\n' % (t, val))
@@ -307,7 +307,7 @@ def run_screen_curve(args):
     with Walt(args.serial, timeout=1) as walt:
         walt.sndrcv(Walt.CMD_RESET)
 
-        t_zero = walt.zeroClock()
+        t_zero = walt.zero_clock()
         if t_zero < 0:
             print('Error: Couldn\'t zero clock, exitting')
             sys.exit(1)
@@ -340,7 +340,7 @@ def run_screen_latency_test(args):
     with Walt(args.serial, timeout=1) as walt:
         walt.sndrcv(Walt.CMD_RESET)
 
-        t_zero = walt.zeroClock()
+        t_zero = walt.zero_clock()
         if t_zero < 0:
             print('Error: Couldn\'t zero clock, exitting')
             sys.exit(1)
@@ -369,7 +369,7 @@ def run_screen_latency_test(args):
                 sys.stdout.write('.')
                 sys.stdout.flush()
 
-            t, val = walt.parseTrigger(trigger_line)
+            t, val = walt.parse_trigger(trigger_line)
             t += t_zero
             with open(sensor_file_name, 'at') as flaser:
                 flaser.write('%.3f %d\n' % (t, val))
@@ -390,7 +390,7 @@ def run_tap_latency_test(args):
     with Walt(args.serial) as walt:
         walt.sndrcv(Walt.CMD_RESET)
         tstart = time.time()
-        t_zero = walt.zeroClock()
+        t_zero = walt.zero_clock()
         if t_zero < 0:
             print('Error: Couldn\'t zero clock, exitting')
             sys.exit(1)
@@ -412,7 +412,7 @@ def run_tap_latency_test(args):
             taps_detected += 1
 
             t_tap_epoch, direction = tap_info
-            shock_time_us = walt.readShockTime()
+            shock_time_us = walt.read_shock_time()
             dt_tap_us = 1e6 * (t_tap_epoch - t_zero) - shock_time_us
 
             print ev_line
@@ -485,7 +485,7 @@ class TcpServer:
         print('w<: ' + repr(data))
         if len(data) > 0 and data[0] == Walt.CMD_SYNC_ZERO:
             self.pause()
-            t0 = self.walt.zeroClock() * 1e6
+            t0 = self.walt.zero_clock() * 1e6
             dt = self.walt.max_lag * 1e3
             data = 'z %d %d\n' % (dt, t0)
             print('|custom-reply>: ' + repr(data))
