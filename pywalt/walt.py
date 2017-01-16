@@ -90,6 +90,9 @@ class Walt(object):
     def __init__(self, serial_dev, timeout=None):
         self.serial_dev = serial_dev
         self.ser = serial.Serial(serial_dev, baudrate=115200, timeout=timeout)
+        self.base_time = None
+        self.max_lag = None
+        self.median_latency = None
 
     def __enter__(self):
         return self
@@ -144,6 +147,7 @@ class Walt(object):
 
         median = numpy.median(times)
         stats = (times.min(), median, times.max(), N)
+        self.median_latency = median
         log('USB comm round trip stats:')
         log('min=%.2fms, median=%.2fms, max=%.2fms N=%d' % stats)
         if (median > 2):
@@ -171,6 +175,8 @@ class Walt(object):
             dt, _ = self.sndrcv(Walt.CMD_SYNC_ZERO)
             if dt < max_delay_ms:
                 print('Clock zeroed at %.0f (rt %.3fms)' % (t0, dt))
+                self.base_time = t0
+                self.max_lag = dt
                 return t0
         print('Error, failed to zero the clock after %d retries')
         return -1
@@ -473,17 +479,19 @@ class TcpServer:
 
     def ser2net(self, data):
         print('w>: ' + repr(data))
-        if len(data) > 0 and data[0] == Walt.CMD_SYNC_ZERO.lower():
-            t = time.time()
-            t0 = self.last_zero
-            data = 'z %d %d\n' % ((t - t0)*1e6, t0*1e6)
-            print('w-converted>: ' + repr(data))
         return data
 
     def net2ser(self, data):
         print('w<: ' + repr(data))
         if len(data) > 0 and data[0] == Walt.CMD_SYNC_ZERO:
-            self.last_zero = time.time()
+            self.pause()
+            t0 = self.walt.zeroClock() * 1e6
+            dt = self.walt.max_lag * 1e3
+            data = 'z %d %d\n' % (dt, t0)
+            print('|custom-reply>: ' + repr(data))
+            self.net.sendall(data)
+            self.resume()
+            return None
         return data
 
     def connections_loop(self):
@@ -516,7 +524,8 @@ class TcpServer:
                 break  # got disconnected
 
             data = self.net2ser(data)
-            self.walt.ser.write(data)
+            if(data):
+                self.walt.ser.write(data)
 
     def ser2net_loop(self):
         while True:
@@ -553,10 +562,12 @@ class TcpServer:
         # Wait until the ping response comes in and we are sure we are no longer
         # blocked on ser.read()
         self.paused.wait()
+        print("Paused ser2net thread")
 
     def resume(self):
         self.running.set()
         self.paused.clear()
+        print("Resuming ser2net thread")
 
     def close(self):
         try:
