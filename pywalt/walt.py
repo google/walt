@@ -36,6 +36,7 @@ import argparse
 import contextlib
 import glob
 import os
+import random
 import re
 import socket
 import subprocess
@@ -52,8 +53,12 @@ import minimization
 import screen_stats
 
 
+# Time units
+MS = 1e-3  # MS = 0.001 seconds
+US = 1e-6  # US = 10^-6 seconds
+
 # Globals
-debug_mode = False
+debug_mode = True
 
 
 def log(msg):
@@ -76,6 +81,8 @@ class Walt(object):
     CMD_RESET = 'F'
     CMD_PING = 'P'
     CMD_SYNC_ZERO = 'Z'
+    CMD_SYNC_SEND = 'I'
+    CMD_SYNC_READOUT = 'R'
     CMD_TIME_NOW = 'T'
     CMD_AUTO_LASER_ON = 'L'
     CMD_AUTO_LASER_OFF = 'l'
@@ -91,6 +98,7 @@ class Walt(object):
         self.serial_dev = serial_dev
         self.ser = serial.Serial(serial_dev, baudrate=115200, timeout=timeout)
         self.base_time = None
+        self.min_lag = None
         self.max_lag = None
         self.median_latency = None
 
@@ -118,8 +126,8 @@ class Walt(object):
         self.ser.write(data)
         reply = self.ser.readline()
         t1 = time.time()
-        dt = (t1 - t0) * 1000
-        log('sndrcv(): round trip %.3fms, reply=%s' % (dt, reply.strip()))
+        dt = (t1 - t0)
+        log('sndrcv(): round trip %.3fms, reply=%s' % (dt / MS, reply.strip()))
         return dt, reply
 
     def read_shock_time(self):
@@ -143,22 +151,22 @@ class Walt(object):
         for i in range(N):
             dt, _ = self.sndrcv(Walt.CMD_TIME_NOW)
             times[i] = dt
-        t_tot = (time.time() - tstart)*1000
+        t_total = time.time() - tstart
 
         median = numpy.median(times)
-        stats = (times.min(), median, times.max(), N)
+        stats = (times.min() / MS, median / MS, times.max() / MS, N)
         self.median_latency = median
         log('USB comm round trip stats:')
         log('min=%.2fms, median=%.2fms, max=%.2fms N=%d' % stats)
         if (median > 2):
-            print('ERROR: the median round trip is too high: %.2f' % median)
+            print('ERROR: the median round trip is too high: %.2f ms' % (median / MS) )
             sys.exit(2)
 
-    def zero_clock(self, max_delay_ms=1.0, retries=10):
+    def zero_clock(self, max_delay=0.001, retries=10):
         """
         Tell the TeensyUSB to zero its clock (CMD_SYNC_ZERO).
         Returns the time when the command was sent.
-        Verify that the response arrived within max_delay_ms.
+        Verify that the response arrived within max_delay seconds.
 
         This is the simple zeroing used when the round trip is fast.
         It does not employ the same method as Android clock sync.
@@ -173,13 +181,73 @@ class Walt(object):
         for i in range(retries):
             t0 = time.time()
             dt, _ = self.sndrcv(Walt.CMD_SYNC_ZERO)
-            if dt < max_delay_ms:
-                print('Clock zeroed at %.0f (rt %.3fms)' % (t0, dt))
+            if dt < max_delay:
+                print('Clock zeroed at %.0f (rt %.3f ms)' % (t0, dt / MS))
                 self.base_time = t0
                 self.max_lag = dt
+                self.min_lag = 0
                 return t0
         print('Error, failed to zero the clock after %d retries')
         return -1
+
+    def read_remote_times(self):
+        """ Helper func, see doc string in estimate_lage()
+        Read out the timestamps taken recorded by the Teensy.
+        """
+        times = numpy.zeros(9)
+        for i in range(9):
+            dt, reply = self.sndrcv(Walt.CMD_SYNC_READOUT)
+            num, tstamp = reply.strip().split(':')
+            # TODO: verify that num is what we expect it to be
+            log('read_remote_times() CMD_SYNC_READOUT > w >  = %s' % reply)
+            t = float(tstamp) * US  # WALT sends timestamps in microseconds
+            times[i] = t
+        return times
+
+    def estimate_lag(self):
+        """ Estimate the difference between local and remote clocks
+
+        This is based on:
+        github.com/google/walt/blob/master/android/WALT/app/src/main/jni/README.md
+
+        self.base_time needs to be set using self.zero_clock() before running
+        this function.
+
+        The result is saved as self.min_lag and self.max_lag. Assume that the
+        remote clock lags behind the local by `lag` That is, at a given moment
+        local_time = remote_time + lag
+        where local_time = time.time() - self.base_time
+
+        Immediately after this function completes the lag is guaranteed to be
+        between min_lag and max_lag. But the lag change (drift) away with time.
+        """
+        self.ser.flushInput()
+
+        # remote -> local
+        times_local_received = numpy.zeros(9)
+        self.ser.write(Walt.CMD_SYNC_SEND)
+        for i in range(9):
+            reply = self.ser.readline()
+            times_local_received[i] = time.time() - self.base_time
+
+        times_remote_sent = self.read_remote_times()
+        max_lag = (times_local_received - times_remote_sent).min()
+
+        # local -> remote
+        times_local_sent = numpy.zeros(9)
+        for i in range(9):
+            s = '%d' % (i + 1)
+            # Sleep between the messages to combat buffering
+            t_sleep = US * random.randint(70, 700)
+            time.sleep(t_sleep)
+            times_local_sent[i] = time.time() - self.base_time
+            self.ser.write(s)
+
+        times_remote_received = self.read_remote_times()
+        min_lag = (times_local_sent - times_remote_received).max()
+
+        self.min_lag = min_lag
+        self.max_lag = max_lag
 
     def parse_trigger(self, trigger_line):
         """ Parse a trigger line from WALT.
@@ -483,15 +551,36 @@ class TcpServer:
 
     def net2ser(self, data):
         print('w<: ' + repr(data))
-        if len(data) > 0 and data[0] == Walt.CMD_SYNC_ZERO:
+        # Discard any empty data
+        if not data or len(data) == 0:
+            print('o<: discarded empty data')
+            return None
+
+        # Get a string version of the data for checking longer commands
+        s = data.decode('utf-8')
+        if s.startswith('bridge'):
+            log('bridge command: %s, pausing ser2net thread...' % s)
             self.pause()
-            t0 = self.walt.zero_clock() * 1e6
-            dt = self.walt.max_lag * 1e3
-            data = 'z %d %d\n' % (dt, t0)
-            print('|custom-reply>: ' + repr(data))
-            self.net.sendall(data)
+            is_sync = 'sync' in s
+            if is_sync:
+                self.walt.zero_clock()
+
+            self.walt.estimate_lag()
+            if is_sync:
+                # shift the base so that min_lag is 0
+                self.walt.base_time += self.walt.min_lag
+                self.walt.max_lag -= self.walt.min_lag
+                self.walt.min_lag = 0
+
+            t0 = self.walt.base_time * 1e6
+            min_lag = self.walt.min_lag * 1e6
+            max_lag = self.walt.max_lag * 1e6
+            reply = 'clock %d %d %d\n' % (t0, min_lag, max_lag)
+            print('|custom-reply>: ' + repr(reply))
+            self.net.sendall(reply)
             self.resume()
             return None
+
         return data
 
     def connections_loop(self):

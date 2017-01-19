@@ -264,6 +264,7 @@ void process_command(char cmd) {
     send_ack(CMD_PING_DELAYED);
   } else if (cmd >= '1' && cmd <= '9') {
     clock.sync_times[cmd - '1'] = time_us;
+    clock.last_sent = -1;
   } else if (cmd == CMD_SYNC_READOUT) {
     clock.last_sent++;
     int t = 0;

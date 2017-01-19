@@ -117,45 +117,7 @@ public class WaltTcpConnection implements WaltConnection {
 
     }
 
-    /**
-     * With TCP bridge, the connection is super slow for the first few bytes. This is some arbitrary
-     * communication to get past this initial state.
-     */
-    private void connectionWarmup() {
-        try {
-            sendByte(WaltDevice.CMD_SYNC_SEND);
-        } catch (Exception e) {}
-
-        long startTime = uptimeMillis();
-
-        final int READ_COUNT = 30;
-        String allReplies = "";
-        for (int i = 0; i < READ_COUNT; i++) {
-            int retval = blockingRead(buffer);
-            String msg = String.format(Locale.US,
-                    "Connection warm up: ret=%d, T=%d",
-                    retval,
-                    uptimeMillis() - startTime
-            );
-            if (retval > 0) {
-                String reply = new String(buffer, 0, retval);
-                msg = msg + " Reply=" + reply;
-
-                // This is some hackish logic to break out once we got all the expected data.
-                // Otherwise this loop takes TCP_READ_TIMEOUT_MS * remaining iterations
-                // which is too long.
-                allReplies = allReplies + reply.trim().replace("\n", "");
-                if (allReplies.equals("123456789")) {
-                    i = READ_COUNT - 3;
-                }
-            }
-            mLogger.log(msg);
-        }
-
-    }
-
     public void onConnect() {
-        connectionWarmup();
         if (mConnectionStateListener != null) {
             mConnectionStateListener.onConnect();
         }
@@ -167,6 +129,10 @@ public class WaltTcpConnection implements WaltConnection {
 
     public void sendByte(char c) throws IOException {
         mOutputStream.write(Utils.char2byte(c));
+    }
+
+    public void sendString(String s) throws IOException {
+        mOutputStream.write(s.getBytes("UTF-8"));
     }
 
     public synchronized int blockingRead(byte[] buff) {
@@ -214,13 +180,33 @@ public class WaltTcpConnection implements WaltConnection {
     }
 
 
+    private void updateClock(String cmd) throws IOException {
+        sendString(cmd);
+        int retval = blockingRead(buffer);
+        if (retval <= 0) {
+            throw new IOException("WaltTcpConnection, can't sync clocks");
+        }
+        String s = new String(buffer, 0, retval);
+        String[] parts = s.trim().split("\\s+");
+        // TODO: make sure reply starts with "clock"
+        long wallBaseTime = Long.parseLong(parts[1]);
+        remoteClock.baseTime = wallBaseTime - RemoteClockInfo.uptimeZero();
+        remoteClock.minLag = Integer.parseInt(parts[2]);
+        remoteClock.maxLag = Integer.parseInt(parts[3]);
+    }
+
     public RemoteClockInfo syncClock() throws IOException {
-        remoteClock.baseTime = RemoteClockInfo.microTime();
+        updateClock("bridge sync");
+        mLogger.log("Synced clocks via TCP bridge:\n" + remoteClock);
         return remoteClock;
     }
 
     public void updateLag() {
-        // TODO: needs implementation
+        try {
+            updateClock("bridge update");
+        } catch (IOException e) {
+            mLogger.log("Failed to update clock lag: " + e.getMessage());
+        }
     }
 
     public void setConnectionStateListener(ConnectionStateListener connectionStateListener) {
