@@ -8,6 +8,13 @@
         supported. Please program WALT to a firmware with protocol version %2$s. To do this
         from the app, choose "Reprogram" from the "Clock sync" menu.</string>
     <string name="audio_mode">Audio Testing Mode</string>
+    <string name="about_description">WALT is designed to measure the latency of physical sensors
+        and outputs on phones and computers. It can currently perform the following measurements:
+        tap latency, drag latency (scroll), screen draw latency, audio output/microphone
+        latencies, and MIDI input/output latencies.
+    </string>
+    <string name="disclaimer">DISCLAIMER: This is not an official Google product.</string>
+    <string name="more_info">A WALT device is required to run the latency tests. For more information, visit github.com/google/walt</string>
     <string-array name="audio_mode_array">
         <item>Continuous Latency</item>
         <item>Cold Latency</item>
