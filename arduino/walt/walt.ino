@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define VERSION                 "4"
+#define VERSION                 "5"
 
 // Commands
 // Digits 1 to 9 reserved for clock sync

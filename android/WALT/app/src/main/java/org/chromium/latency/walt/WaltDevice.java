@@ -31,7 +31,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
     private static final int DEFAULT_DRIFT_LIMIT_US = 1500;
     private static final String TAG = "WaltDevice";
-    public static final String PROTOCOL_VERSION = "4";
+    public static final String PROTOCOL_VERSION = "5";
 
     // Teensy side commands. Each command is a single char
     // Based on #defines section in walt.ino

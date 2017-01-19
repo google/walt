@@ -102,6 +102,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 WaltDevice.TriggerMessage tmsg = waltDevice.readTriggerMessage(WaltDevice.CMD_SEND_LAST_SCREEN);
                 logger.log("Blink count was: "+ tmsg.count);
 
+                waltDevice.softReset();
                 waltDevice.syncClock(); // Note, sync also sends CMD_RESET (but not simpleSync).
                 waltDevice.command(WaltDevice.CMD_AUTO_SCREEN_ON);
                 waltDevice.startListener();
