@@ -212,10 +212,7 @@ void improve_minE(struct clock_connection *clk) {
     if(sleep_time > kMaxSleepUs) sleep_time = kMaxSleepUs;
     if(sleep_time < kMinSleepUs) sleep_time = kMinSleepUs;
 
-    // Clear everyhing on the remote side, this doesn't zero remote clock.
-    send_cmd(clk, CMD_RESET);
     flush_incoming(clk);
-
     // Send digits to remote side
     int i;
     for (i = 0; i < 9; i++) {

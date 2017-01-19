@@ -16,6 +16,10 @@
 
 package org.chromium.latency.walt;
 
+import android.util.Log;
+
+import java.lang.reflect.Method;
+
 /**
  * Representation of our best knowledge of the remote clock.
  * All time variables here are stored in microseconds.
@@ -53,6 +57,53 @@ public class RemoteClockInfo {
 
     public static long microTime() {
         return System.nanoTime() / 1000;
+    }
+
+
+    /**
+     Find the wall time when uptime was zero = CLOCK_REALTIME - CLOCK_MONOTONIC
+
+     Needed for TCP bridge because Python prior to 3.3 has no direct access to CLOCK_MONOTONIC
+     so the bridge returns timestamps as wall time and we need to convert them to CLOCK_MONOTONIC.
+
+     See:
+     [1] https://docs.python.org/3/library/time.html#time.CLOCK_MONOTONIC
+     [2] http://stackoverflow.com/questions/14270300/what-is-the-difference-between-clock-monotonic-clock-monotonic-raw
+     [3] http://stackoverflow.com/questions/1205722/how-do-i-get-monotonic-time-durations-in-python
+
+     android.os.SystemClock.currentTimeMicros() is hidden by @hide which means it can't be called
+     directly - calling it via reflection.
+
+     See:
+     http://stackoverflow.com/questions/17035271/what-does-hide-mean-in-the-android-source-code
+     */
+    public static long uptimeZero() {
+        long t = -1;
+        long dt = Long.MAX_VALUE;
+        try {
+            Class cls = Class.forName("android.os.SystemClock");
+            Method myTimeGetter = cls.getMethod("currentTimeMicro");
+            t = (long) myTimeGetter.invoke(null);
+            dt = t - microTime();
+        } catch (Exception e) {
+            Log.i("WALT.uptimeZero", e.getMessage());
+        }
+
+        return dt;
+    }
+
+    public static long currentTimeMicro() {
+
+        long t = -1;
+        try {
+            Class cls = Class.forName("android.os.SystemClock");
+            Method myTimeGetter = cls.getMethod("currentTimeMicro");
+            t = (long) myTimeGetter.invoke(null);
+        } catch (Exception e) {
+            Log.i("WALT.currentTimeMicro", e.getMessage());
+        }
+
+        return t;
     }
 
     public int getMeanLag() {

@@ -27,7 +27,7 @@ import java.io.IOException;
 /**
  * A singleton used as an interface for the physical WALT device.
  */
-public class WaltUsbConnection extends BaseUsbConnection {
+public class WaltUsbConnection extends BaseUsbConnection implements WaltConnection {
 
     private static final int TEENSY_VID = 0x16c0;
     // TODO: refactor to demystify PID. See BaseUsbConnection.isCompatibleUsbDevice()
@@ -39,7 +39,7 @@ public class WaltUsbConnection extends BaseUsbConnection {
     private UsbEndpoint mEndpointIn = null;
     private UsbEndpoint mEndpointOut = null;
 
-    public RemoteClockInfo remoteClock = new RemoteClockInfo();
+    private RemoteClockInfo remoteClock = new RemoteClockInfo();
 
     private static final Object mLock = new Object();
 
@@ -48,7 +48,6 @@ public class WaltUsbConnection extends BaseUsbConnection {
     private WaltUsbConnection(Context context) {
         super(context);
     }
-
 
     public static WaltUsbConnection getInstance(Context context) {
         synchronized (mLock) {
@@ -80,15 +79,16 @@ public class WaltUsbConnection extends BaseUsbConnection {
 
     // Called when WALT is physically unplugged from USB
     @Override
-    public void onDetach() {
+    public void onDisconnect() {
         mEndpointIn = null;
         mEndpointOut = null;
+        super.onDisconnect();
     }
 
 
     // Called when WALT is physically plugged into USB
     @Override
-    public void onAttach() {
+    public void onConnect() {
         // Serial mode only
         // TODO: find the interface and endpoint indexes no matter what mode it is
         int ifIdx = 1;
@@ -107,13 +107,7 @@ public class WaltUsbConnection extends BaseUsbConnection {
         mEndpointIn = iface.getEndpoint(epInIdx);
         mEndpointOut = iface.getEndpoint(epOutIdx);
 
-        try {
-            // TODO: move to WaltDevice
-            // checkVersion();
-            syncClock();
-        } catch (IOException e) {
-            mLogger.log("Unable to communicate with WALT: " + e.getMessage());
-        }
+        super.onConnect();
     }
 
     @Override
@@ -122,44 +116,23 @@ public class WaltUsbConnection extends BaseUsbConnection {
     }
 
 
-    private byte[] char2byte(char c) {
-        byte[] buff = new byte[1];
-        buff[0] = (byte) c;
-        return buff;
-    }
-
+    @Override
     public void sendByte(char c) throws IOException {
         if (!isConnected()) {
             throw new IOException("Not connected to WALT");
         }
         // mLogger.log("Sending char " + c);
-        mUsbConnection.bulkTransfer(mEndpointOut, char2byte(c), 1, 100);
+        mUsbConnection.bulkTransfer(mEndpointOut, Utils.char2byte(c), 1, 100);
     }
 
+    @Override
     public int blockingRead(byte[] buffer) {
         return mUsbConnection.bulkTransfer(mEndpointIn, buffer, buffer.length, USB_READ_TIMEOUT_MS);
     }
 
-    // TODO: maybe move up to WaltDevice
-    public String readOne() throws IOException {
-        // TODO: restore listener
-//        if (!isListenerStopped()) {
-//            throw new IOException("Listener is running");
-//        }
 
-        byte[] buff = new byte[64];
-        int ret = blockingRead(buff);
-
-        if (ret < 0) {
-            throw new IOException("Timed out reading from WALT");
-        }
-        String s = new String(buff, 0, ret);
-        Log.i(TAG, "readOne() received byte: " + s);
-        return s;
-    }
-
-
-    public void syncClock() throws IOException {
+    @Override
+    public RemoteClockInfo syncClock() throws IOException {
         if (!isConnected()) {
             throw new IOException("Not connected to WALT");
         }
@@ -177,8 +150,10 @@ public class WaltUsbConnection extends BaseUsbConnection {
         }
         mLogger.log("Synced clocks, maxE=" + remoteClock.maxLag + "us");
         Log.i(TAG, remoteClock.toString());
+        return remoteClock;
     }
 
+    @Override
     public void updateLag() {
         if (! isConnected()) {
             mLogger.log("ERROR: Not connected, aborting checkDrift()");
@@ -204,5 +179,4 @@ public class WaltUsbConnection extends BaseUsbConnection {
     static {
         System.loadLibrary("sync_clock_jni");
     }
-
 }

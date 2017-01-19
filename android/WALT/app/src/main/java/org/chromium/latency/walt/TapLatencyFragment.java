@@ -174,6 +174,7 @@ public class TapLatencyFragment extends Fragment
     void restartMeasurement() {
         logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
         try {
+            waltDevice.softReset();
             waltDevice.syncClock();
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());

@@ -20,6 +20,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.text.method.ScrollingMovementMethod;
@@ -39,6 +40,7 @@ public class AutoRunFragment extends Fragment {
 
     private WaltDevice waltDevice;
     private AudioTest toTearDown; // TODO: figure out a better way to destroy the engine
+    Handler handler = new Handler();
 
     private class AudioResultHandler implements ResultHandler {
         private FileWriter fileWriter;
@@ -95,31 +97,32 @@ public class AutoRunFragment extends Fragment {
         }
         final String mode = args.getString("Mode", "");
         final ResultHandler resultHandler = r;
+        Runnable testRunnable = null;
         switch (args.getString("TestType", "")) {
             case "MidiIn": {
-                waltDevice.connection.registerConnectCallback(new Runnable() {
+                testRunnable = new Runnable() {
                     @Override
                     public void run() {
                         MidiTest midiTest = new MidiTest(getContext(), resultHandler);
                         midiTest.setInputRepetitions(reps);
                         midiTest.testMidiIn();
                     }
-                });
+                };
                 break;
             }
             case "MidiOut": {
-                waltDevice.connection.registerConnectCallback(new Runnable() {
+                testRunnable = new Runnable() {
                     @Override
                     public void run() {
                         MidiTest midiTest = new MidiTest(getContext(), resultHandler);
                         midiTest.setOutputRepetitions(reps);
                         midiTest.testMidiOut();
                     }
-                });
+                };
                 break;
             }
             case "AudioIn": {
-                waltDevice.connection.registerConnectCallback(new Runnable() {
+                testRunnable = new Runnable() {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
@@ -129,12 +132,12 @@ public class AutoRunFragment extends Fragment {
                         audioTest.beginRecordingTest();
                         toTearDown = audioTest;
                     }
-                });
+                };
                 break;
             }
             case "AudioOut": {
                 final int period = args.getInt("Period", -1);
-                waltDevice.connection.registerConnectCallback(new Runnable() {
+                testRunnable = new Runnable() {
                     @Override
                     public void run() {
                         AudioTest audioTest = new AudioTest(getContext(), resultHandler);
@@ -150,10 +153,23 @@ public class AutoRunFragment extends Fragment {
                         audioTest.startMeasurement();
                         toTearDown = audioTest;
                     }
-                });
+                };
                 break;
             }
         }
+
+        // Not sure we need the handler.post() here, but just in case.
+        final Runnable finalTestRunnable = testRunnable;
+        waltDevice.setConnectionStateListener(new WaltConnection.ConnectionStateListener() {
+            @Override
+            public void onConnect() {
+                handler.post(finalTestRunnable);
+            }
+
+            @Override
+            public void onDisconnect() {}
+        });
+
     }
 
     interface ResultHandler {
