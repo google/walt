@@ -36,6 +36,7 @@ A test device and cables:
  * Connect WALT to the Android headset using the 3.5mm male to male TRRS cable
  * Connect WALT to the Android USB port using the cables above. (see photo at top of doc)
  * You may be prompted to grant the WALT app permission to use the USB, tap "OK"
+ * All 3 LEDs will light up when WALT receives power (see photo below), they will be turned off once the app synchronizes clocks with WALT.
 
 
 ## Programming the WALT firmware
@@ -137,7 +138,7 @@ until the first frames of that buffer were detected by WALT device via the headp
 
  * Tap screen response
  * Set screen brightness to maximum. On phones using PWM for screen backlight brightness control, yo man need to turn adaptive brightness off (settings -> Display -> Adaptive Brightness)
- * Position WALT with the bottom light sensor looking at the screen
+ * Position WALT with the screen sensor looking at the screen (the light sensor recessed into the large plastic surface).
  * Click start  ▶
  * The screen will blink some 20 times. The orange LED on the Teensy will also blink every time the bottom light sensor detects a change.
  * Results are displayed in the log window
