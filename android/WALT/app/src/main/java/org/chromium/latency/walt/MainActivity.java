@@ -255,6 +255,11 @@ public class MainActivity extends AppCompatActivity {
         switchScreen(logFragment, "Log");
     }
 
+    public void onClickOpenAbout(View view) {
+        AboutFragment aboutFragment = new AboutFragment();
+        switchScreen(aboutFragment, "About");
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Handlers for diagnostics menu clicks
     ////////////////////////////////////////////////////////////////////////////////////////////////
