@@ -4,6 +4,8 @@
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/ColorPrimary</item>
         <item name="colorPrimaryDark">@color/ColorPrimaryDark</item>
+        <item name="colorAccent">@color/ColorAccent</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
         <!-- the homeAsUpIndicator doesn't work with either png or xml icons -->
         <!--<item name="android:homeAsUpIndicator">@drawable/ic_chevron_left_black_24dp</item> -->
 

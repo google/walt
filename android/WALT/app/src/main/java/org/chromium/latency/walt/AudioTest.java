@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import static org.chromium.latency.walt.Utils.getIntPreference;
+
 class AudioTest {
 
     static {
@@ -58,12 +60,12 @@ class AudioTest {
     private int frameRateInt;
 
     private int mInitiatedBeeps, mDetectedBeeps;
-    private int mPlaybackRepetitions = 10;
+    private int mPlaybackRepetitions;
     private static final int playbackSyncAfterRepetitions = 20;
 
     // Audio out
     private int mRequestedBeeps;
-    private int mRecordingRepetitions = 5;
+    private int mRecordingRepetitions;
     private static int recorderSyncAfterRepetitions = 10;
 
     private ArrayList<Double> deltas = new ArrayList<>();
@@ -87,6 +89,8 @@ class AudioTest {
     public static native long getTePlay();
 
     AudioTest(Context context) {
+        mPlaybackRepetitions = getIntPreference(context, R.string.preference_audio_out_reps, 10);
+        mRecordingRepetitions = getIntPreference(context, R.string.preference_audio_in_reps, 5);
         waltDevice = WaltDevice.getInstance(context);
         logger = SimpleLogger.getInstance(context);
 

@@ -42,13 +42,13 @@ public class TapLatencyFragment extends Fragment
     TextView mLogTextView;
     TextView mTapCatcher;
     int moveCount = 0;
-    int allDownConunt = 0;
-    int allUpConunt = 0;
+    int allDownCount = 0;
+    int allUpCount = 0;
     int okDownCount = 0;
     int okUpCount = 0;
 
 
-    ArrayList<UsMotionEvent> eventList = new ArrayList<UsMotionEvent>();
+    ArrayList<UsMotionEvent> eventList = new ArrayList<>();
     HashMap<Integer, Integer> tapCounts = new HashMap<>();
 
 
@@ -81,12 +81,12 @@ public class TapLatencyFragment extends Fragment
             eventList.add(tapEvent);
 
             if (tapEvent.action == MotionEvent.ACTION_DOWN) {
-                allDownConunt++;
+                allDownCount++;
                 if (tapEvent.isOk) {
                     okDownCount++;
                 }
             } else if (tapEvent.action == MotionEvent.ACTION_UP) {
-                allUpConunt++;
+                allUpCount++;
                 if (tapEvent.isOk) {
                     okUpCount++;
                 }
@@ -162,9 +162,9 @@ public class TapLatencyFragment extends Fragment
         String tpl = "N ↓%d (%d)  ↑%d (%d)";
         tv.setText(String.format(tpl,
                 okDownCount,
-                allDownConunt,
+                allDownCount,
                 okUpCount,
-                allUpConunt
+                allUpCount
                 ));
 
         TextView tvMove = (TextView) activity.findViewById(R.id.txt_move_count);
@@ -184,8 +184,8 @@ public class TapLatencyFragment extends Fragment
         eventList.clear();
 
         moveCount = 0;
-        allDownConunt = 0;
-        allUpConunt = 0;
+        allDownCount = 0;
+        allUpCount = 0;
         okDownCount = 0;
         okUpCount = 0;
 
@@ -198,9 +198,9 @@ public class TapLatencyFragment extends Fragment
         logger.log(String.format(
                 "Counts: ACTION_DOWN %d (bad %d), ACTION_UP %d (bad %d), ACTION_MOVE %d",
                 okDownCount,
-                allDownConunt - okDownCount,
+                allDownCount - okDownCount,
                 okUpCount,
-                allUpConunt - okUpCount,
+                allUpCount - okUpCount,
                 moveCount
         ));
 

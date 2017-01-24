@@ -17,9 +17,11 @@
 package org.chromium.latency.walt;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
@@ -29,6 +31,8 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
+import static org.chromium.latency.walt.Utils.getIntPreference;
 
 /**
  * Measurement of screen response time when switching between black and white.
@@ -42,7 +46,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private WaltDevice waltDevice;
     private Handler handler = new Handler();
     TextView mBlackBox;
-    int timesToBlink = 20; // TODO: load this from settings
+    private int timesToBlink;
     int mInitiatedBlinks = 0;
     int mDetectedBlinks = 0;
     boolean mIsBoxWhite = false;
@@ -59,6 +63,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        timesToBlink = getIntPreference(getContext(), R.string.preference_screen_blinks, 20);
         activity = getActivity();
         waltDevice = WaltDevice.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());

@@ -32,7 +32,7 @@
         <activity
             android:name="org.chromium.latency.walt.CrashLogActivity"
             android:label="@string/title_activity_crash_log"
-            android:theme="@style/AppTheme"></activity>
+            android:theme="@style/AppTheme" />
     </application>
 
 </manifest>

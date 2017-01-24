@@ -138,6 +138,18 @@ public class MainActivity extends AppCompatActivity {
         // App bar
         toolbar = (Toolbar) findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
+        getSupportFragmentManager().addOnBackStackChangedListener(new FragmentManager.OnBackStackChangedListener() {
+            @Override
+            public void onBackStackChanged() {
+                int stackTopIndex = getSupportFragmentManager().getBackStackEntryCount() - 1;
+                if (stackTopIndex >= 0) {
+                    toolbar.setTitle(getSupportFragmentManager().getBackStackEntryAt(stackTopIndex).getName());
+                } else {
+                    toolbar.setTitle(R.string.app_name);
+                    getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+                }
+            }
+        });
 
         waltDevice = WaltDevice.getInstance(this);
 
@@ -178,9 +190,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean onSupportNavigateUp() {
         // Go back when the back or up button on toolbar is clicked
         getSupportFragmentManager().popBackStack();
-        // Remove the back arrow from the toolbar because now we are at the top
-        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        toolbar.setTitle(R.string.app_name);
         return true;
     }
 
@@ -190,7 +199,6 @@ public class MainActivity extends AppCompatActivity {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
 
-        int id = item.getItemId();
         Log.i(TAG, "Toolbar button: " + item.getTitle());
 
         switch (item.getItemId()) {
@@ -258,6 +266,11 @@ public class MainActivity extends AppCompatActivity {
     public void onClickOpenAbout(View view) {
         AboutFragment aboutFragment = new AboutFragment();
         switchScreen(aboutFragment, "About");
+    }
+
+    public void onClickOpenSettings(View view) {
+        SettingsFragment settingsFragment = new SettingsFragment();
+        switchScreen(settingsFragment, "Settings");
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////

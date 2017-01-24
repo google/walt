@@ -166,7 +166,7 @@
             <!-- MIDI -->
             <LinearLayout
                 android:id="@+id/action_midi"
-                android:visibility="invisible"
+                android:visibility="gone"
                 style="@style/MenuItemStyle"
                 android:onClick="onClickMIDI">
 
@@ -223,7 +223,7 @@
             <!-- Settings -->
             <LinearLayout
                 style="@style/MenuItemStyle"
-                android:onClick="onClickOpenLog">
+                android:onClick="onClickOpenSettings">
 
                 <ImageView
                     style="@style/MenuIconStyle"

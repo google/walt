@@ -21,6 +21,7 @@ import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.preference.DialogPreference;
+import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceDialogFragmentCompat;
 import android.util.AttributeSet;
 import android.view.View;
@@ -35,9 +36,12 @@ public class NumberPickerPreference extends DialogPreference {
     private static final int DEFAULT_maxValue = 0;
     private static final int DEFAULT_minValue = 0;
 
+    private final String defaultSummary;
+
     public NumberPickerPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
 
+        defaultSummary = getSummary().toString();
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.NumberPickerPreference);
 
         try {
@@ -52,6 +56,7 @@ public class NumberPickerPreference extends DialogPreference {
         setNegativeButtonText(android.R.string.cancel);
 
         setDialogIcon(null);
+
     }
 
     public int getValue() {
@@ -61,6 +66,7 @@ public class NumberPickerPreference extends DialogPreference {
     public void setValue(int value) {
         currentValue = value;
         persistInt(currentValue);
+        setSummary(String.format(defaultSummary, getValue()));
     }
 
     @Override
