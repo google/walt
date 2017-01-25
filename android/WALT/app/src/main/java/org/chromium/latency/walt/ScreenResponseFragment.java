@@ -17,13 +17,12 @@
 package org.chromium.latency.walt;
 
 import android.app.Activity;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.method.ScrollingMovementMethod;
+import android.view.Choreographer;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +30,7 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import static org.chromium.latency.walt.Utils.getIntPreference;
 
@@ -50,7 +50,9 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     int mInitiatedBlinks = 0;
     int mDetectedBlinks = 0;
     boolean mIsBoxWhite = false;
-    long mLastFlipTime;
+    long lastFrameStartTime;
+    long lastFrameCallbackTime;
+    long lastSetBackgroundTime;
     ArrayList<Double> deltas = new ArrayList<>();
     private static final int color_gray = Color.argb(0xFF, 0xBB, 0xBB, 0xBB);
     private StringBuilder brightnessCurveData = new StringBuilder();
@@ -146,7 +148,18 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             int nextColor = mIsBoxWhite ? Color.WHITE : Color.BLACK;
             mInitiatedBlinks++;
             mBlackBox.setBackgroundColor(nextColor);
-            mLastFlipTime = waltDevice.clock.micros(); // TODO: is this the right time to save?
+            lastSetBackgroundTime = waltDevice.clock.micros(); // TODO: is this the right time to save?
+
+            // Set up a callback to run on next frame render to collect the timestamp
+            Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
+                @Override
+                public void doFrame(long frameTimeNanos) {
+                    // frameTimeNanos is he time in nanoseconds when the frame started being
+                    // rendered, in the nanoTime() timebase.
+                    lastFrameStartTime = frameTimeNanos / 1000 - waltDevice.clock.baseTime;
+                    lastFrameCallbackTime = System.nanoTime() / 1000 - waltDevice.clock.baseTime;
+                }
+            });
 
 
             // Repost doBlink to some far away time to blink again even if nothing arrives from
@@ -176,8 +189,17 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 }
             }
 
-            double dt = (tmsg.t - mLastFlipTime) / 1000.;
+
+            double dt = (tmsg.t - lastFrameStartTime) / 1000.;
             deltas.add(dt);
+
+            logger.log(String.format(Locale.US,
+                    "Times [ms]: setBG:%.3f callback:%.3f physical:%.3f black2white:%d",
+                    (lastSetBackgroundTime - lastFrameStartTime) / 1000.0 ,
+                    (lastFrameCallbackTime - lastFrameStartTime) / 1000.0,
+                    dt,
+                    mIsBoxWhite? 1: 0
+            ));
 
             // Schedule another blink soon-ish
             handler.postDelayed(doBlinkRunnable, 50); // TODO: randomize the delay
@@ -199,7 +221,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
         // Show deltas and the median
         logger.log("deltas: " + deltas.toString());
-        logger.log(String.format(
+        logger.log(String.format(Locale.US,
                 "Median latency %.1f ms",
                 Utils.median(deltas)
         ));
