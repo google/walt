@@ -301,6 +301,8 @@ def parse_args():
                         help='where to store logs')
     parser.add_argument('-n', default=40, type=int,
                         help='Number of laser toggles to read')
+    parser.add_argument('-p', '--port', default=50007, type=int,
+                        help='Port to listen on for the TCP bridge')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='talk more')
     args = parser.parse_args()
@@ -679,10 +681,12 @@ class TcpServer:
 def run_tcp_bridge(args):
 
     print('Starting TCP bridge')
+    print('You may need to run the following to allow traffic from the android container:')
+    print('iptables -A INPUT -p tcp --dport %d -j ACCEPT' % args.port)
 
     try:
         with Walt(args.serial) as walt:
-            with TcpServer(walt) as srv:
+            with TcpServer(walt, port=args.port) as srv:
                 walt.sndrcv(Walt.CMD_RESET)
                 srv.serve()
     except KeyboardInterrupt:
