@@ -16,7 +16,6 @@
 
 package org.chromium.latency.walt;
 
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -29,11 +28,9 @@ import android.view.ViewGroup;
  */
 public class FrontPageFragment extends Fragment {
 
-
     public FrontPageFragment() {
         // Required empty public constructor
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -42,11 +39,10 @@ public class FrontPageFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_front_page, container, false);
 
         if (container.getContext().getPackageManager().
-                hasSystemFeature(PackageManager.FEATURE_MIDI)) {
+                hasSystemFeature("android.software.midi")) {
             view.findViewById(R.id.action_midi).setVisibility(View.VISIBLE);
         }
         return view;
     }
-
 
 }

@@ -1,40 +1,70 @@
-<PreferenceScreen
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:walt="http://schemas.android.com/apk/res/org.chromium.latency.walt">
 
-    <PreferenceCategory
-        android:title="Common">
-
-        <SwitchPreferenceCompat
-            android:key="pref_verbose_log"
-            android:title="Verbose logging"
-            android:summary="(not implemented)"/>
-
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        android:title="Audio output">
+    <android.support.v7.preference.PreferenceScreen
+        android:key="pref_screen_response_screen"
+        android:persistent="false"
+        android:title="Screen Response">
 
         <org.chromium.latency.walt.NumberPickerPreference
-            android:key="pref_audio_out_reps"
-            android:title="Audio out reps"
-            android:summary="(not implemented)"
-            android:dialogTitle="Number of reps for audio out latency"/>
+            android:defaultValue="20"
+            android:dialogTitle="Number of blinks for screen latency measurement"
+            android:key="@string/preference_screen_blinks"
+            android:summary="%s blinks per test"
+            android:title="Screen latency test length"
+            walt:maxValue="1000"
+            walt:minValue="1" />
 
-    </PreferenceCategory>
+    </android.support.v7.preference.PreferenceScreen>
 
-    <PreferenceCategory
-        android:title="Screen response">
+    <android.support.v7.preference.PreferenceScreen
+        android:key="pref_audio_screen"
+        android:persistent="false"
+        android:title="Audio">
 
         <org.chromium.latency.walt.NumberPickerPreference
-            android:key="pref_screen_reps"
-            android:title="Screen blink reps"
-            android:defaultValue="18"
-            walt:minValue="1"
-            walt:maxValue="22"
-            android:summary="Number of reps for screen latency"
-            android:dialogTitle="Number of reps for screen latency measurement"/>
+            android:defaultValue="5"
+            android:dialogTitle="Number of repetitions for audio input latency"
+            android:key="@string/preference_audio_in_reps"
+            android:summary="%s repetitions per test"
+            android:title="Audio input test length"
+            walt:maxValue="1000"
+            walt:minValue="1" />
 
-    </PreferenceCategory>
+        <org.chromium.latency.walt.NumberPickerPreference
+            android:defaultValue="10"
+            android:dialogTitle="Number of repetitions for audio output latency"
+            android:key="@string/preference_audio_out_reps"
+            android:summary="%s repetitions per test"
+            android:title="Audio output test length"
+            walt:maxValue="1000"
+            walt:minValue="1" />
 
-</PreferenceScreen>
+    </android.support.v7.preference.PreferenceScreen>
+
+    <android.support.v7.preference.PreferenceScreen
+        android:key="pref_midi_screen"
+        android:persistent="false"
+        android:title="MIDI">
+
+        <org.chromium.latency.walt.NumberPickerPreference
+            android:defaultValue="100"
+            android:dialogTitle="Number of repetitions for MIDI input measurement"
+            android:key="@string/preference_midi_in_reps"
+            android:summary="%s repetitions per test"
+            android:title="MIDI input test length"
+            walt:maxValue="1000"
+            walt:minValue="1" />
+
+        <org.chromium.latency.walt.NumberPickerPreference
+            android:defaultValue="10"
+            android:dialogTitle="Number of repetitions for MIDI output measurement"
+            android:key="@string/preference_midi_out_reps"
+            android:summary="%s repetitions per test"
+            android:title="MIDI output test length"
+            walt:maxValue="1000"
+            walt:minValue="1" />
+
+    </android.support.v7.preference.PreferenceScreen>
+
+</android.support.v7.preference.PreferenceScreen>

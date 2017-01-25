@@ -15,6 +15,11 @@
     </string>
     <string name="disclaimer">DISCLAIMER: This is not an official Google product.</string>
     <string name="more_info">A WALT device is required to run the latency tests. For more information, visit github.com/google/walt</string>
+    <string name="preference_screen_blinks" translatable="false">pref_screen_blinks</string>
+    <string name="preference_audio_in_reps" translatable="false">pref_audio_in_reps</string>
+    <string name="preference_audio_out_reps" translatable="false">pref_audio_out_reps</string>
+    <string name="preference_midi_in_reps" translatable="false">pref_midi_in_reps</string>
+    <string name="preference_midi_out_reps" translatable="false">pref_midi_out_reps</string>
     <string-array name="audio_mode_array">
         <item>Continuous Latency</item>
         <item>Cold Latency</item>

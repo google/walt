@@ -16,6 +16,11 @@
 
 package org.chromium.latency.walt;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
+import android.support.annotation.StringRes;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.InputMismatchException;
@@ -155,6 +160,11 @@ public class Utils {
         byte[] buff = new byte[1];
         buff[0] = (byte) c;
         return buff;
+    }
+
+    static int getIntPreference(Context context, @StringRes int keyId, int defaultValue) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return preferences.getInt(context.getString(keyId), defaultValue);
     }
 
     public enum ListenerState {

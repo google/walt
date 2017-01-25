@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import static org.chromium.latency.walt.Utils.getIntPreference;
+
 @TargetApi(23)
 class MidiTest {
 
@@ -56,7 +58,8 @@ class MidiTest {
 
     private int mInputSyncAfterRepetitions = 100;
     private int mOutputSyncAfterRepetitions = 20; // TODO: implement periodic clock sync for output
-    private int mInputRepetitions = 100, mOutputRepetitions = 10;
+    private int mInputRepetitions;
+    private int mOutputRepetitions;
     private int mRepetitionsDone;
     private ArrayList<Double> deltasToSys = new ArrayList<>();
     private ArrayList<Double> deltasTotal = new ArrayList<>();
@@ -65,6 +68,8 @@ class MidiTest {
     private static final int timeout = 1000;
 
     MidiTest(Context context) {
+        mInputRepetitions = getIntPreference(context, R.string.preference_midi_in_reps, 100);
+        mOutputRepetitions = getIntPreference(context, R.string.preference_midi_out_reps, 10);
         waltDevice = WaltDevice.getInstance(context);
         logger = SimpleLogger.getInstance(context);
         mMidiManager = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);

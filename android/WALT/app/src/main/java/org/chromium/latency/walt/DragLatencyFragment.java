@@ -40,8 +40,8 @@ public class DragLatencyFragment extends Fragment
     TextView mLogTextView;
     TouchCatcherView mTouchCatcher;
     int moveCount = 0;
-    int allDownConunt = 0;
-    int allUpConunt = 0;
+    int allDownCount = 0;
+    int allUpCount = 0;
     int okDownCount = 0;
     int okUpCount = 0;
 
@@ -162,8 +162,8 @@ public class DragLatencyFragment extends Fragment
         touchEventList.clear();
 
         moveCount = 0;
-        allDownConunt = 0;
-        allUpConunt = 0;
+        allDownCount = 0;
+        allUpCount = 0;
         okDownCount = 0;
         okUpCount = 0;
 
