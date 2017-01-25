@@ -45,11 +45,11 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private SimpleLogger logger;
     private WaltDevice waltDevice;
     private Handler handler = new Handler();
-    TextView mBlackBox;
+    TextView blackBox;
     private int timesToBlink;
-    int mInitiatedBlinks = 0;
-    int mDetectedBlinks = 0;
-    boolean mIsBoxWhite = false;
+    int initiatedBlinks = 0;
+    int detectedBlinks = 0;
+    boolean isBoxWhite = false;
     long lastFrameStartTime;
     long lastFrameCallbackTime;
     long lastSetBackgroundTime;
@@ -77,7 +77,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     public void onResume() {
         super.onResume();
         // restartMeasurement();
-        mBlackBox = (TextView) activity.findViewById(R.id.txt_black_box_screen);
+        blackBox = (TextView) activity.findViewById(R.id.txt_black_box_screen);
 
 
         // Register this fragment class as the listener for some button clicks
@@ -91,12 +91,12 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         // TODO: Add a stop button to interrupt the measurement
         deltas.clear();
 
-        mInitiatedBlinks = 0;
-        mDetectedBlinks = 0;
+        initiatedBlinks = 0;
+        detectedBlinks = 0;
 
-        mBlackBox.setText("");
-        mBlackBox.setBackgroundColor(Color.WHITE);
-        mIsBoxWhite = true;
+        blackBox.setText("");
+        blackBox.setBackgroundColor(Color.WHITE);
+        isBoxWhite = true;
 
         handler.postDelayed(startBlinking, 300);
     }
@@ -128,26 +128,26 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     Runnable doBlinkRunnable = new Runnable() {
         @Override
         public void run() {
-            logger.log("======\ndoBlink.run(), mInitiatedBlinks = " + mInitiatedBlinks + " mDetectedBlinks = " + mDetectedBlinks);
+            logger.log("======\ndoBlink.run(), initiatedBlinks = " + initiatedBlinks + " detectedBlinks = " + detectedBlinks);
             // Check if we saw some transitions without blinking, this would usually mean
             // the screen has PWM enabled, warn and ask the user to turn it off.
-            if (mInitiatedBlinks == 0 && mDetectedBlinks > 1) {
+            if (initiatedBlinks == 0 && detectedBlinks > 1) {
                 logger.log("Unexpected blinks detected, probably PWM, turn it off");
                 // TODO: show a dialog here instructing to turn off PWM and finish this properly
                 return;
             }
 
-            if (mInitiatedBlinks >= timesToBlink) {
+            if (initiatedBlinks >= timesToBlink) {
                 finishAndShowStats();
                 return;
             }
 
             // * 2 flip the screen, save time as last flip time (last flip direction?)
 
-            mIsBoxWhite = !mIsBoxWhite;
-            int nextColor = mIsBoxWhite ? Color.WHITE : Color.BLACK;
-            mInitiatedBlinks++;
-            mBlackBox.setBackgroundColor(nextColor);
+            isBoxWhite = !isBoxWhite;
+            int nextColor = isBoxWhite ? Color.WHITE : Color.BLACK;
+            initiatedBlinks++;
+            blackBox.setBackgroundColor(nextColor);
             lastSetBackgroundTime = waltDevice.clock.micros(); // TODO: is this the right time to save?
 
             // Set up a callback to run on next frame render to collect the timestamp
@@ -175,11 +175,11 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             // Remove the far away doBlink callback
             handler.removeCallbacks(doBlinkRunnable);
 
-            mDetectedBlinks++;
-            logger.log("blink counts " + mInitiatedBlinks + " " + mDetectedBlinks);
-            if (mInitiatedBlinks == 0) {
-                if (mDetectedBlinks < 5) {
-                    logger.log("got incoming but mInitiatedBlinks = 0");
+            detectedBlinks++;
+            logger.log("blink counts " + initiatedBlinks + " " + detectedBlinks);
+            if (initiatedBlinks == 0) {
+                if (detectedBlinks < 5) {
+                    logger.log("got incoming but initiatedBlinks = 0");
                     return;
                 } else {
                     logger.log("Looks like PWM is used for this screen, turn auto brightness off and set it to max brightness");
@@ -198,7 +198,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                     (lastSetBackgroundTime - lastFrameStartTime) / 1000.0 ,
                     (lastFrameCallbackTime - lastFrameStartTime) / 1000.0,
                     dt,
-                    mIsBoxWhite? 1: 0
+                    isBoxWhite ? 1: 0
             ));
 
             // Schedule another blink soon-ish
@@ -226,16 +226,16 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 Utils.median(deltas)
         ));
 
-        mBlackBox.setText(logger.getLogText());
-        mBlackBox.setMovementMethod(new ScrollingMovementMethod());
-        mBlackBox.setBackgroundColor(color_gray);
+        blackBox.setText(logger.getLogText());
+        blackBox.setMovementMethod(new ScrollingMovementMethod());
+        blackBox.setBackgroundColor(color_gray);
     }
 
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.button_restart_screen_response) {
             // TODO: change to "Stop measurement?"
-            mBlackBox.setBackgroundColor(Color.BLACK);
+            blackBox.setBackgroundColor(Color.BLACK);
             return;
         }
 
@@ -283,7 +283,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
         waltDevice.setTriggerHandler(brightnessTriggerHandler);
 
-        mBlackBox.setText("");
+        blackBox.setText("");
 
         long tStart = waltDevice.clock.micros();
 
@@ -294,7 +294,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             return;
         }
 
-        mBlackBox.setBackgroundColor(Color.WHITE);
+        blackBox.setBackgroundColor(Color.WHITE);
 
         logger.log("=== Screen brightness curve: ===\nt_start: " + tStart);
 
@@ -305,7 +305,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             @Override
             public void run() {
                 long tBack = waltDevice.clock.micros();
-                mBlackBox.setBackgroundColor(Color.BLACK);
+                blackBox.setBackgroundColor(Color.BLACK);
                 logger.log("t_back: " + tBack);
 
             }
@@ -323,9 +323,9 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             logger.log(brightnessCurveData.toString());
             logger.log("=== End of screen brightness data ===");
 
-            mBlackBox.setText(logger.getLogText());
-            mBlackBox.setMovementMethod(new ScrollingMovementMethod());
-            mBlackBox.setBackgroundColor(color_gray);
+            blackBox.setText(logger.getLogText());
+            blackBox.setMovementMethod(new ScrollingMovementMethod());
+            blackBox.setBackgroundColor(color_gray);
         }
     };
 }
