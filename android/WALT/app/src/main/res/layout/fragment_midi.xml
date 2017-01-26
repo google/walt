@@ -19,6 +19,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
+                android:tint="@color/button_tint"
                 android:src="@drawable/ic_input_black_24dp" />
 
             <ImageButton
@@ -26,6 +27,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
+                android:tint="@color/button_tint"
                 android:src="@drawable/ic_output_black_24dp" />
         </RelativeLayout>
 

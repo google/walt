@@ -18,19 +18,21 @@
                 android:id="@+id/button_restart_drag"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:tint="@color/button_tint"
                 android:src="@drawable/ic_refresh_black_24dp" />
 
             <ImageButton
                 android:id="@+id/button_start_drag"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:tint="@color/button_tint"
                 android:src="@drawable/ic_play_arrow_black_24dp" />
 
             <ImageButton
                 android:id="@+id/button_finish_drag"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
+                android:tint="@color/button_tint"
                 android:src="@drawable/ic_check_black_24dp" />
         </LinearLayout>
 

@@ -17,7 +17,6 @@
 package org.chromium.latency.walt;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -37,12 +36,14 @@ import android.widget.TextView;
  * A simple {@link Fragment} subclass.
  */
 public class AudioFragment extends Fragment implements View.OnClickListener,
-        AdapterView.OnItemSelectedListener {
+        AdapterView.OnItemSelectedListener, BaseTest.TestStateListener {
 
-    private Activity activity;
     private SimpleLogger logger;
-    private TextView mTextView;
-    private AudioTest mAudioTest;
+    private TextView textView;
+    private AudioTest audioTest;
+    private View startPlaybackButton;
+    private View startRecordingButton;
+    private Spinner modeSpinner;
 
     private static final int PERMISSION_REQUEST_RECORD_AUDIO = 1;
 
@@ -55,20 +56,23 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        activity = getActivity();
         logger = SimpleLogger.getInstance(getContext());
 
-        mAudioTest = new AudioTest(activity);
+        audioTest = new AudioTest(getActivity());
+        audioTest.setTestStateListener(this);
 
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_audio, container, false);
+        textView = (TextView) view.findViewById(R.id.txt_box_audio);
+        startPlaybackButton = view.findViewById(R.id.button_start_audio_play);
+        startRecordingButton = view.findViewById(R.id.button_start_audio_rec);
 
         // Configure the audio mode spinner
-        Spinner mode = (Spinner) view.findViewById(R.id.spinner_audio_mode);
-        ArrayAdapter<CharSequence> mode_adapter = ArrayAdapter.createFromResource(activity,
+        modeSpinner = (Spinner) view.findViewById(R.id.spinner_audio_mode);
+        ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(getContext(),
                 R.array.audio_mode_array, android.R.layout.simple_spinner_item);
-        mode_adapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
-        mode.setAdapter(mode_adapter);
+        modeAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
+        modeSpinner.setAdapter(modeAdapter);
 
         return view;
     }
@@ -76,18 +80,15 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
     @Override
     public void onResume() {
         super.onResume();
-        // restartMeasurement();
-        mTextView = (TextView) activity.findViewById(R.id.txt_box_audio);
 
         // Register this fragment class as the listener for some button clicks
-        activity.findViewById(R.id.button_start_audio_play).setOnClickListener(this);
-        activity.findViewById(R.id.button_start_audio_rec).setOnClickListener(this);
+        startPlaybackButton.setOnClickListener(this);
+        startRecordingButton.setOnClickListener(this);
 
-        Spinner spinner_audio_mode = (Spinner) activity.findViewById(R.id.spinner_audio_mode);
-        spinner_audio_mode.setOnItemSelectedListener(this);
+        modeSpinner.setOnItemSelectedListener(this);
 
         // mLogTextView.setMovementMethod(new ScrollingMovementMethod());
-        mTextView.setText(logger.getLogText());
+        textView.setText(logger.getLogText());
         logger.registerReceiver(mLogReceiver);
 
     }
@@ -101,7 +102,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mAudioTest.teardown();
+        audioTest.teardown();
     }
 
     @Override
@@ -111,7 +112,8 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
                 attemptRecordingTest();
                 break;
             case R.id.button_start_audio_play:
-                mAudioTest.startMeasurement();
+                disableButtons();
+                audioTest.startMeasurement();
                 break;
         }
     }
@@ -121,12 +123,12 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         if (parent.getId() == R.id.spinner_audio_mode) {
             switch (position) {
                 case 0:
-                    mAudioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
-                    mAudioTest.setPeriod(AudioTest.CONTINUOUS_TEST_PERIOD);
+                    audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
+                    audioTest.setPeriod(AudioTest.CONTINUOUS_TEST_PERIOD);
                     break;
                 case 1:
-                    mAudioTest.setAudioMode(AudioTest.AudioMode.COLD);
-                    mAudioTest.setPeriod(AudioTest.COLD_TEST_PERIOD);
+                    audioTest.setAudioMode(AudioTest.AudioMode.COLD);
+                    audioTest.setPeriod(AudioTest.COLD_TEST_PERIOD);
                     break;
             }
         }
@@ -135,7 +137,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
         if (parent.getId() == R.id.spinner_audio_mode) {
-            mAudioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS); // set the default
+            audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS); // set the default
         }
     }
 
@@ -143,7 +145,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("message");
-            mTextView.append(msg + "\n");
+            textView.append(msg + "\n");
         }
     };
 
@@ -152,7 +154,8 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         int currentPermission = ContextCompat.checkSelfPermission(this.getContext(),
                 Manifest.permission.RECORD_AUDIO);
         if (currentPermission == PackageManager.PERMISSION_GRANTED) {
-            mAudioTest.beginRecordingTest();
+            disableButtons();
+            audioTest.beginRecordingTest();
         } else {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},
                     PERMISSION_REQUEST_RECORD_AUDIO);
@@ -164,11 +167,23 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         switch (requestCode) {
             case PERMISSION_REQUEST_RECORD_AUDIO:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    mAudioTest.beginRecordingTest();
+                    disableButtons();
+                    audioTest.beginRecordingTest();
                 } else {
                     logger.log("Could not get permission to record audio");
                 }
                 return;
         }
+    }
+
+    private void disableButtons() {
+        startRecordingButton.setEnabled(false);
+        startPlaybackButton.setEnabled(false);
+    }
+
+    @Override
+    public void onTestStopped() {
+        startRecordingButton.setEnabled(true);
+        startPlaybackButton.setEnabled(true);
     }
 }

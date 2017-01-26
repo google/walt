@@ -16,7 +16,6 @@
 
 package org.chromium.latency.walt;
 
-import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -41,11 +40,13 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     private static final int curveTimeout = 1000;  // milliseconds
     private static final int curveBlinkTime = 250;  // milliseconds
-    private Activity activity;
     private SimpleLogger logger;
     private WaltDevice waltDevice;
     private Handler handler = new Handler();
-    TextView blackBox;
+    private TextView blackBox;
+    private View resetScreenButton;
+    private View startButton;
+    private View brightnessCurveButton;
     private int timesToBlink;
     int initiatedBlinks = 0;
     int detectedBlinks = 0;
@@ -63,31 +64,31 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         // Required empty public constructor
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         timesToBlink = getIntPreference(getContext(), R.string.preference_screen_blinks, 20);
-        activity = getActivity();
         waltDevice = WaltDevice.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
+
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_screen_response, container, false);
+        final View view = inflater.inflate(R.layout.fragment_screen_response, container, false);
+        resetScreenButton = view.findViewById(R.id.button_restart_screen_response);
+        startButton = view.findViewById(R.id.button_start_screen_response);
+        brightnessCurveButton = view.findViewById(R.id.button_brightness_curve);
+        blackBox = (TextView) view.findViewById(R.id.txt_black_box_screen);
+        resetScreenButton.setEnabled(false);
+        return view;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // restartMeasurement();
-        blackBox = (TextView) activity.findViewById(R.id.txt_black_box_screen);
-
-
         // Register this fragment class as the listener for some button clicks
-        activity.findViewById(R.id.button_restart_screen_response).setOnClickListener(this);
-        activity.findViewById(R.id.button_start_screen_response).setOnClickListener(this);
-        activity.findViewById(R.id.button_brightness_curve).setOnClickListener(this);
+        startButton.setOnClickListener(this);
+        resetScreenButton.setOnClickListener(this);
+        brightnessCurveButton.setOnClickListener(this);
     }
-
 
     void startMeasurement() {
         // TODO: Add a stop button to interrupt the measurement
@@ -111,7 +112,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             try {
                 // Check for PWM
                 WaltDevice.TriggerMessage tmsg = waltDevice.readTriggerMessage(WaltDevice.CMD_SEND_LAST_SCREEN);
-                logger.log("Blink count was: "+ tmsg.count);
+                logger.log("Blink count was: " + tmsg.count);
 
                 waltDevice.softReset();
                 waltDevice.syncClock(); // Note, sync also sends CMD_RESET (but not simpleSync).
@@ -138,6 +139,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             if (initiatedBlinks == 0 && detectedBlinks > 1) {
                 logger.log("Unexpected blinks detected, probably PWM, turn it off");
                 // TODO: show a dialog here instructing to turn off PWM and finish this properly
+                enableButtons();
                 return;
             }
 
@@ -205,10 +207,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             // Other times can be important, logging them to allow more detailed analysis
             logger.log(String.format(Locale.US,
                     "Times [ms]: setBG:%.3f callback:%.3f physical:%.3f black2white:%d",
-                    (lastSetBackgroundTime - lastFrameStartTime) / 1000.0 ,
+                    (lastSetBackgroundTime - lastFrameStartTime) / 1000.0,
                     (lastFrameCallbackTime - lastFrameStartTime) / 1000.0,
                     dt,
-                    isBoxWhite ? 1: 0
+                    isBoxWhite ? 1 : 0
             ));
 
             // Schedule another blink soon-ish
@@ -252,6 +254,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         blackBox.setText(logger.getLogText());
         blackBox.setMovementMethod(new ScrollingMovementMethod());
         blackBox.setBackgroundColor(color_gray);
+        enableButtons();
     }
 
     @Override
@@ -264,16 +267,17 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
         if (v.getId() == R.id.button_start_screen_response) {
             logger.log("Starting screen response measurement");
+            disableButtons();
             startMeasurement();
             return;
         }
 
         if (v.getId() == R.id.button_brightness_curve) {
             logger.log("Starting screen brightness curve measurement");
+            disableButtons();
             startBrightnessCurve();
             return;
         }
-
     }
 
     private WaltDevice.TriggerHandler brightnessTriggerHandler = new WaltDevice.TriggerHandler() {
@@ -301,6 +305,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             waltDevice.startListener();
         } catch (IOException e) {
             logger.log("Error starting test: " + e.getMessage());
+            enableButtons();
             return;
         }
 
@@ -314,6 +319,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             waltDevice.command(WaltDevice.CMD_BRIGHTNESS_CURVE);
         } catch (IOException e) {
             logger.log("Error sending command CMD_BRIGHTNESS_CURVE: " + e.getMessage());
+            enableButtons();
             return;
         }
 
@@ -333,7 +339,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
             }
         }, curveBlinkTime);
-
     }
 
     Runnable finishBrightnessCurve = new Runnable() {
@@ -349,6 +354,19 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             blackBox.setText(logger.getLogText());
             blackBox.setMovementMethod(new ScrollingMovementMethod());
             blackBox.setBackgroundColor(color_gray);
+            enableButtons();
         }
     };
+
+    void disableButtons() {
+        resetScreenButton.setEnabled(false);
+        startButton.setEnabled(false);
+        brightnessCurveButton.setEnabled(false);
+    }
+
+    void enableButtons() {
+        resetScreenButton.setEnabled(true);
+        startButton.setEnabled(true);
+        brightnessCurveButton.setEnabled(true);
+    }
 }
