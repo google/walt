@@ -26,7 +26,7 @@ import java.util.Locale;
 
 import static org.chromium.latency.walt.Utils.getIntPreference;
 
-class AudioTest {
+class AudioTest extends BaseTest {
 
     static {
         System.loadLibrary("sync_clock_jni");
@@ -37,11 +37,7 @@ class AudioTest {
 
     enum AudioMode {COLD, CONTINUOUS}
 
-    private SimpleLogger logger;
-    private WaltDevice waltDevice;
     private Handler handler = new Handler();
-
-    private AutoRunFragment.ResultHandler resultHandler;
 
     // Sound params
     private final double duration = 0.3; // seconds
@@ -50,8 +46,8 @@ class AudioTest {
     private final byte generatedSnd[] = new byte[2 * numSamples];
     private final double freqOfTone = 880; // hz
 
-    private AudioMode mMode;
-    private int mPeriod = 500; // time between runs in ms
+    private AudioMode audioMode;
+    private int period = 500; // time between runs in ms
 
     // Audio in
     private long last_tb = 0;
@@ -59,20 +55,20 @@ class AudioTest {
     private int framesToRecord;
     private int frameRateInt;
 
-    private int mInitiatedBeeps, mDetectedBeeps;
-    private int mPlaybackRepetitions;
+    private int initiatedBeeps, detectedBeeps;
+    private int playbackRepetitions;
     private static final int playbackSyncAfterRepetitions = 20;
 
     // Audio out
-    private int mRequestedBeeps;
-    private int mRecordingRepetitions;
+    private int requestedBeeps;
+    private int recordingRepetitions;
     private static int recorderSyncAfterRepetitions = 10;
 
     private ArrayList<Double> deltas = new ArrayList<>();
     private ArrayList<Double> deltas2 = new ArrayList<>();
     private ArrayList<Double> deltasJ2N = new ArrayList<>();
 
-    long mLastBeepTime;
+    long lastBeepTime;
 
     public static native long playTone();
     public static native void startWarmTest();
@@ -89,10 +85,9 @@ class AudioTest {
     public static native long getTePlay();
 
     AudioTest(Context context) {
-        mPlaybackRepetitions = getIntPreference(context, R.string.preference_audio_out_reps, 10);
-        mRecordingRepetitions = getIntPreference(context, R.string.preference_audio_in_reps, 5);
-        waltDevice = WaltDevice.getInstance(context);
-        logger = SimpleLogger.getInstance(context);
+        super(context);
+        playbackRepetitions = getIntPreference(context, R.string.preference_audio_out_reps, 10);
+        recordingRepetitions = getIntPreference(context, R.string.preference_audio_in_reps, 5);
 
         //Check for optimal output sample rate and buffer size
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -117,19 +112,19 @@ class AudioTest {
     }
 
     void setPlaybackRepetitions(int beepCount) {
-        mPlaybackRepetitions = beepCount;
+        playbackRepetitions = beepCount;
     }
 
     void setRecordingRepetitions(int beepCount) {
-        mRecordingRepetitions = beepCount;
+        recordingRepetitions = beepCount;
     }
 
     void setPeriod(int period) {
-        mPeriod = period;
+        this.period = period;
     }
 
     void setAudioMode(AudioMode mode) {
-        mMode = mode;
+        audioMode = mode;
     }
 
     void teardown() {
@@ -144,17 +139,17 @@ class AudioTest {
         createAudioRecorder(frameRateInt, framesToRecord);
         logger.log("Audio recorder created; starting test");
 
-        mRequestedBeeps = 0;
+        requestedBeeps = 0;
         doRecordingTestRepetition();
     }
 
     private void doRecordingTestRepetition() {
-        if (mRequestedBeeps > mRecordingRepetitions) {
+        if (requestedBeeps > recordingRepetitions) {
             finishRecordingTest();
             return;
         }
 
-        if (mRequestedBeeps % recorderSyncAfterRepetitions == 0) {
+        if (requestedBeeps % recorderSyncAfterRepetitions == 0) {
             try {
                 waltDevice.syncClock();
             } catch (IOException e) {
@@ -164,9 +159,9 @@ class AudioTest {
             }
         }
 
-        mRequestedBeeps++;
+        requestedBeeps++;
         startRecording();
-        switch (mMode) {
+        switch (audioMode) {
             case CONTINUOUS:
                 handler.postDelayed(requestBeepRunnable, msToRecord / 2);
                 break;
@@ -178,7 +173,7 @@ class AudioTest {
     }
 
     void startMeasurement() {
-        if (mMode == AudioMode.CONTINUOUS) {
+        if (audioMode == AudioMode.CONTINUOUS) {
             startWarmTest();
         }
         try {
@@ -186,6 +181,7 @@ class AudioTest {
             waltDevice.startListener();
         } catch (IOException e) {
             logger.log("Error starting test: " + e.getMessage());
+            if (testStateListener != null) testStateListener.onTestStopped();
             return;
         }
         deltas.clear();
@@ -194,8 +190,8 @@ class AudioTest {
 
         logger.log("Starting playback test");
 
-        mInitiatedBeeps = 0;
-        mDetectedBeeps = 0;
+        initiatedBeeps = 0;
+        detectedBeeps = 0;
 
         waltDevice.setTriggerHandler(triggerHandler);
 
@@ -209,9 +205,9 @@ class AudioTest {
             // remove the far away doBeep callback(s)
             handler.removeCallbacks(doBeepRunnable);
 
-            mDetectedBeeps++;
+            detectedBeeps++;
             long te = getTePlay();
-            double dt = (tmsg.t - mLastBeepTime) / 1000.;
+            double dt = (tmsg.t - lastBeepTime) / 1000.;
 
             double dt2 = (tmsg.t - te) / 1000.;
             deltas.add(dt);
@@ -219,12 +215,12 @@ class AudioTest {
 
             logger.log(String.format(Locale.US,
                     "beep detected, total latency = %.2f, normal latency = %.2f, "
-                            + "mInitiatedBeeps = %d, mDetectedBeeps = %d",
-                    dt, dt2, mInitiatedBeeps, mDetectedBeeps
+                            + "initiatedBeeps = %d, detectedBeeps = %d",
+                    dt, dt2, initiatedBeeps, detectedBeeps
             ));
 
             // Schedule another beep soon-ish
-            handler.postDelayed(doBeepRunnable, mPeriod); // TODO: randomize the delay
+            handler.postDelayed(doBeepRunnable, period); // TODO: randomize the delay
         }
     };
 
@@ -234,21 +230,21 @@ class AudioTest {
             // activity.handler.removeCallbacks(doBlinkRunnable);
             logger.log("\nBeeping...");
             // Check if we saw some transitions without beeping, might be noise audio cable.
-            if (mInitiatedBeeps == 0 && mDetectedBeeps > 1) {
+            if (initiatedBeeps == 0 && detectedBeeps > 1) {
                 logger.log("Unexpected beeps detected, noisy cable?");
                 return;
             }
 
-            if (mInitiatedBeeps >= mPlaybackRepetitions) {
+            if (initiatedBeeps >= playbackRepetitions) {
                 finishPlaybackTest();
                 return;
             }
 
 
-            // deltas[mInitiatedBeeps] = 0;
-            mInitiatedBeeps++;
+            // deltas[initiatedBeeps] = 0;
+            initiatedBeeps++;
 
-            if (mInitiatedBeeps % playbackSyncAfterRepetitions == 0) {
+            if (initiatedBeeps % playbackSyncAfterRepetitions == 0) {
                 try {
                     waltDevice.stopListener();
                     waltDevice.syncClock();
@@ -267,15 +263,15 @@ class AudioTest {
                 return;
             }
             long javaBeepTime = waltDevice.clock.micros();
-            mLastBeepTime = playTone();
-            double dtJ2N = (mLastBeepTime - javaBeepTime)/1000.;
+            lastBeepTime = playTone();
+            double dtJ2N = (lastBeepTime - javaBeepTime)/1000.;
             deltasJ2N.add(dtJ2N);
             logger.log(String.format(Locale.US, "Beeped, dtJ2N = %.3f ms", dtJ2N));
 
 
             // Repost doBeep to some far away time to blink again even if nothing arrives from
             // Teensy. This callback will almost always get cancelled by onIncomingTimestamp()
-            handler.postDelayed(doBeepRunnable, mPeriod * 3); // TODO: config and or randomize the delay,
+            handler.postDelayed(doBeepRunnable, period * 3); // TODO: config and or randomize the delay,
 
         }
     };
@@ -360,6 +356,7 @@ class AudioTest {
         if (resultHandler != null) {
             resultHandler.onResult(deltas, deltas2);
         }
+        if (testStateListener != null) testStateListener.onTestStopped();
     }
 
     private void finishRecordingTest() {
@@ -374,5 +371,6 @@ class AudioTest {
         if (resultHandler != null) {
             resultHandler.onResult(deltas);
         }
+        if (testStateListener != null) testStateListener.onTestStopped();
     }
 }

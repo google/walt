@@ -31,14 +31,16 @@ import android.widget.TextView;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class DragLatencyFragment extends Fragment
-    implements View.OnClickListener {
+public class DragLatencyFragment extends Fragment implements View.OnClickListener {
 
     private Activity activity;
     private SimpleLogger logger;
     private WaltDevice waltDevice;
-    TextView mLogTextView;
-    TouchCatcherView mTouchCatcher;
+    private TextView logTextView;
+    private TouchCatcherView touchCatcher;
+    private View startButton;
+    private View restartButton;
+    private View finishButton;
     int moveCount = 0;
     int allDownCount = 0;
     int allUpCount = 0;
@@ -61,9 +63,6 @@ public class DragLatencyFragment extends Fragment
     private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-
-            int action = event.getAction();
-
             int histLen = event.getHistorySize();
             for (int i = 0; i < histLen; i++){
                 UsMotionEvent eh = new UsMotionEvent(event, waltDevice.clock.baseTime, i);
@@ -89,24 +88,30 @@ public class DragLatencyFragment extends Fragment
         activity = getActivity();
         logger = SimpleLogger.getInstance(getContext());
         waltDevice = WaltDevice.getInstance(getContext());
+
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_drag_latency, container, false);
+        final View view = inflater.inflate(R.layout.fragment_drag_latency, container, false);
+        logTextView = (TextView) view.findViewById(R.id.txt_log_drag_latency);
+        startButton = view.findViewById(R.id.button_start_drag);
+        restartButton = view.findViewById(R.id.button_restart_drag);
+        finishButton = view.findViewById(R.id.button_finish_drag);
+        touchCatcher = (TouchCatcherView) view.findViewById(R.id.tap_catcher);
+        restartButton.setEnabled(false);
+        finishButton.setEnabled(false);
+        return view;
     }
 
     @Override
     public void onResume() {
         super.onResume();
 
-        mLogTextView = (TextView) activity.findViewById(R.id.txt_log_drag_latency);
-        mLogTextView.setText(logger.getLogText());
+        logTextView.setText(logger.getLogText());
         logger.registerReceiver(mLogReceiver);
 
         // Register this fragment class as the listener for some button clicks
-        activity.findViewById(R.id.button_restart_drag).setOnClickListener(this);
-        activity.findViewById(R.id.button_start_drag).setOnClickListener(this);
-        activity.findViewById(R.id.button_finish_drag).setOnClickListener(this);
-
-        mTouchCatcher = (TouchCatcherView) activity.findViewById(R.id.tap_catcher);
+        startButton.setOnClickListener(this);
+        restartButton.setOnClickListener(this);
+        finishButton.setOnClickListener(this);
     }
 
     @Override
@@ -116,7 +121,7 @@ public class DragLatencyFragment extends Fragment
     }
 
     public void appendLogText(String msg) {
-        mLogTextView.append(msg + "\n");
+        logTextView.append(msg + "\n");
     }
 
 
@@ -128,16 +133,17 @@ public class DragLatencyFragment extends Fragment
         tvMove.setText(String.format("⇄ %d", moveCount));
     }
 
-
-    void startMeasurement() {
+    /**
+     * @return true if measurement was successfully started
+     */
+    boolean startMeasurement() {
         logger.log("Starting drag latency test");
         try {
             waltDevice.syncClock();
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
-            return;
+            return false;
         }
-        mTouchCatcher.setOnTouchListener(mTouchListener);
         // Register a callback for triggers
         waltDevice.setTriggerHandler(triggerHandler);
         try {
@@ -145,19 +151,23 @@ public class DragLatencyFragment extends Fragment
             waltDevice.startListener();
         } catch (IOException e) {
             logger.log("Error: " + e.getMessage());
+            waltDevice.clearTriggerHandler();
+            return false;
         }
-        mTouchCatcher.startAnimation();
+        touchCatcher.setOnTouchListener(mTouchListener);
+        touchCatcher.startAnimation();
+        return true;
     }
 
     void restartMeasurement() {
-        logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
+        logger.log("\n## Restarting drag latency test. Re-sync clocks ...");
         try {
             waltDevice.syncClock();
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
         }
 
-        mTouchCatcher.startAnimation();
+        touchCatcher.startAnimation();
 
         touchEventList.clear();
 
@@ -172,14 +182,14 @@ public class DragLatencyFragment extends Fragment
 
 
     void finishAndShowStats() {
-        mTouchCatcher.stopAnimation();
+        touchCatcher.stopAnimation();
         waltDevice.stopListener();
         try {
             waltDevice.command(WaltDevice.CMD_AUTO_LASER_OFF);
         } catch (IOException e) {
             logger.log("Error: " + e.getMessage());
         }
-        mTouchCatcher.setOnTouchListener(null);
+        touchCatcher.setOnTouchListener(null);
         waltDevice.clearTriggerHandler();
 
         waltDevice.checkDrift();
@@ -281,22 +291,31 @@ public class DragLatencyFragment extends Fragment
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.button_restart_drag) {
+            restartButton.setEnabled(false);
             restartMeasurement();
+            restartButton.setEnabled(true);
             return;
         }
 
         if (v.getId() == R.id.button_start_drag) {
-
-            startMeasurement();
+            startButton.setEnabled(false);
+            boolean startSuccess = startMeasurement();
+            if (startSuccess) {
+                finishButton.setEnabled(true);
+                restartButton.setEnabled(true);
+            } else {
+                startButton.setEnabled(true);
+            }
             return;
         }
 
         if (v.getId() == R.id.button_finish_drag) {
-
+            finishButton.setEnabled(false);
+            restartButton.setEnabled(false);
             finishAndShowStats();
+            startButton.setEnabled(true);
             return;
         }
-
     }
 
     private WaltDevice.TriggerHandler triggerHandler = new WaltDevice.TriggerHandler() {

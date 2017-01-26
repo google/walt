@@ -33,34 +33,30 @@ import java.util.Locale;
 import static org.chromium.latency.walt.Utils.getIntPreference;
 
 @TargetApi(23)
-class MidiTest {
+class MidiTest extends BaseTest {
 
-    private SimpleLogger logger;
-    private WaltDevice waltDevice;
     private Handler handler = new Handler();
-
-    private AutoRunFragment.ResultHandler resultHandler;
 
     private static final String TEENSY_MIDI_NAME = "Teensyduino Teensy MIDI";
     private static final byte[] noteMsg = {(byte) 0x90, (byte) 99, (byte) 0};
 
-    private MidiManager mMidiManager;
-    private MidiDevice mMidiDevice;
+    private MidiManager midiManager;
+    private MidiDevice midiDevice;
     // Output and Input here are with respect to the MIDI device, not the Android device.
-    private MidiOutputPort mOutputPort;
-    private MidiInputPort mInputPort;
+    private MidiOutputPort midiOutputPort;
+    private MidiInputPort midiInputPort;
 
-    private boolean mConnecting = false;
+    private boolean isConnecting = false;
 
     private long last_tWalt = 0;
     private long last_tSys = 0;
     private long last_tJava = 0;
 
-    private int mInputSyncAfterRepetitions = 100;
-    private int mOutputSyncAfterRepetitions = 20; // TODO: implement periodic clock sync for output
-    private int mInputRepetitions;
-    private int mOutputRepetitions;
-    private int mRepetitionsDone;
+    private int inputSyncAfterRepetitions = 100;
+    private int outputSyncAfterRepetitions = 20; // TODO: implement periodic clock sync for output
+    private int inputRepetitions;
+    private int outputRepetitions;
+    private int repetitionsDone;
     private ArrayList<Double> deltasToSys = new ArrayList<>();
     private ArrayList<Double> deltasTotal = new ArrayList<>();
 
@@ -68,11 +64,10 @@ class MidiTest {
     private static final int timeout = 1000;
 
     MidiTest(Context context) {
-        mInputRepetitions = getIntPreference(context, R.string.preference_midi_in_reps, 100);
-        mOutputRepetitions = getIntPreference(context, R.string.preference_midi_out_reps, 10);
-        waltDevice = WaltDevice.getInstance(context);
-        logger = SimpleLogger.getInstance(context);
-        mMidiManager = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);
+        super(context);
+        inputRepetitions = getIntPreference(context, R.string.preference_midi_in_reps, 100);
+        outputRepetitions = getIntPreference(context, R.string.preference_midi_out_reps, 10);
+        midiManager = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);
         findMidiDevice();
     }
 
@@ -82,16 +77,16 @@ class MidiTest {
     }
 
     void setInputRepetitions(int repetitions) {
-        mInputRepetitions = repetitions;
+        inputRepetitions = repetitions;
     }
 
     void setOutputRepetitions(int repetitions) {
-        mOutputRepetitions = repetitions;
+        outputRepetitions = repetitions;
     }
 
     void testMidiOut() {
-        if (mMidiDevice == null) {
-            if (mConnecting) {
+        if (midiDevice == null) {
+            if (isConnecting) {
                 logger.log("Still connecting...");
                 handler.post(new Runnable() {
                     @Override
@@ -101,6 +96,7 @@ class MidiTest {
                 });
             } else {
                 logger.log("MIDI device is not open!");
+                if (testStateListener != null) testStateListener.onTestStopped();
             }
             return;
         }
@@ -108,14 +104,15 @@ class MidiTest {
             setupMidiOut();
         } catch (IOException e) {
             logger.log("Error setting up test: " + e.getMessage());
+            if (testStateListener != null) testStateListener.onTestStopped();
             return;
         }
-        handler.postDelayed(cancelMidiOutRunnable, noteDelay * mInputRepetitions + timeout);
+        handler.postDelayed(cancelMidiOutRunnable, noteDelay * inputRepetitions + timeout);
     }
 
     void testMidiIn() {
-        if (mMidiDevice == null) {
-            if (mConnecting) {
+        if (midiDevice == null) {
+            if (isConnecting) {
                 logger.log("Still connecting...");
                 handler.post(new Runnable() {
                     @Override
@@ -125,6 +122,7 @@ class MidiTest {
                 });
             } else {
                 logger.log("MIDI device is not open!");
+                if (testStateListener != null) testStateListener.onTestStopped();
             }
             return;
         }
@@ -132,16 +130,17 @@ class MidiTest {
             setupMidiIn();
         } catch (IOException e) {
             logger.log("Error setting up test: " + e.getMessage());
+            if (testStateListener != null) testStateListener.onTestStopped();
             return;
         }
         handler.postDelayed(requestNoteRunnable, noteDelay);
     }
 
     private void setupMidiOut() throws IOException {
-        mRepetitionsDone = 0;
+        repetitionsDone = 0;
         deltasTotal.clear();
 
-        mInputPort = mMidiDevice.openInputPort(0);
+        midiInputPort = midiDevice.openInputPort(0);
 
         waltDevice.syncClock();
         waltDevice.command(WaltDevice.CMD_MIDI);
@@ -152,23 +151,23 @@ class MidiTest {
     }
 
     private void findMidiDevice() {
-        MidiDeviceInfo[] infos = mMidiManager.getDevices();
+        MidiDeviceInfo[] infos = midiManager.getDevices();
         for(MidiDeviceInfo info : infos) {
             String name = info.getProperties().getString(MidiDeviceInfo.PROPERTY_NAME);
             logger.log("Found MIDI device named " + name);
             if(TEENSY_MIDI_NAME.equals(name)) {
                 logger.log("^^^ using this device ^^^");
-                mConnecting = true;
-                mMidiManager.openDevice(info, new MidiManager.OnDeviceOpenedListener() {
+                isConnecting = true;
+                midiManager.openDevice(info, new MidiManager.OnDeviceOpenedListener() {
                     @Override
                     public void onDeviceOpened(MidiDevice device) {
                         if (device == null) {
                             logger.log("Error, unable to open MIDI device");
                         } else {
                             logger.log("Opened MIDI device successfully!");
-                            mMidiDevice = device;
+                            midiDevice = device;
                         }
-                        mConnecting = false;
+                        isConnecting = false;
                     }
                 }, null);
                 break;
@@ -185,9 +184,9 @@ class MidiTest {
             logger.log(String.format(Locale.US, "Note detected: latency of %.3f ms", dt));
 
             last_tSys += noteDelay * 1000;
-            mRepetitionsDone++;
+            repetitionsDone++;
 
-            if (mRepetitionsDone < mOutputRepetitions) {
+            if (repetitionsDone < outputRepetitions) {
                 try {
                     waltDevice.command(WaltDevice.CMD_MIDI);
                 } catch (IOException e) {
@@ -200,15 +199,15 @@ class MidiTest {
     };
 
     private void scheduleNotes() {
-        if(mInputPort == null) {
-            logger.log("mInputPort is not open");
+        if(midiInputPort == null) {
+            logger.log("midiInputPort is not open");
             return;
         }
         long t = System.nanoTime() + ((long) noteDelay) * 1000000L;
         try {
             // TODO: only schedule some, then sync clock
-            for (int i = 0; i < mOutputRepetitions; i++) {
-                mInputPort.send(noteMsg, 0, noteMsg.length, t + ((long) noteDelay) * 1000000L * i);
+            for (int i = 0; i < outputRepetitions; i++) {
+                midiInputPort.send(noteMsg, 0, noteMsg.length, t + ((long) noteDelay) * 1000000L * i);
             }
         } catch(IOException e) {
             logger.log("Unable to schedule note: " + e.getMessage());
@@ -224,6 +223,7 @@ class MidiTest {
         if (resultHandler != null) {
             resultHandler.onResult(deltasTotal);
         }
+        if (testStateListener != null) testStateListener.onTestStopped();
         teardownMidiOut();
     }
 
@@ -231,13 +231,14 @@ class MidiTest {
         @Override
         public void run() {
             logger.log("Timed out waiting for notes to be detected by WALT");
+            if (testStateListener != null) testStateListener.onTestStopped();
             teardownMidiOut();
         }
     };
 
     private void teardownMidiOut() {
         try {
-            mInputPort.close();
+            midiInputPort.close();
         } catch(IOException e) {
             logger.log("Error, failed to close input port: " + e.getMessage());
         }
@@ -256,6 +257,7 @@ class MidiTest {
                 s = waltDevice.command(WaltDevice.CMD_NOTE);
             } catch (IOException e) {
                 logger.log("Error sending NOTE command: " + e.getMessage());
+                if (testStateListener != null) testStateListener.onTestStopped();
                 return;
             }
             last_tWalt = Integer.parseInt(s);
@@ -277,6 +279,7 @@ class MidiTest {
             if (resultHandler != null) {
                 resultHandler.onResult(deltasToSys, deltasTotal);
             }
+            if (testStateListener != null) testStateListener.onTestStopped();
             teardownMidiIn();
         }
     };
@@ -299,8 +302,8 @@ class MidiTest {
                 deltasToSys.add(d1);
                 deltasTotal.add(dt);
 
-                mRepetitionsDone++;
-                if (mRepetitionsDone % mInputSyncAfterRepetitions == 0) {
+                repetitionsDone++;
+                if (repetitionsDone % inputSyncAfterRepetitions == 0) {
                     try {
                         waltDevice.syncClock();
                     } catch (IOException e) {
@@ -309,7 +312,7 @@ class MidiTest {
                         return;
                     }
                 }
-                if (mRepetitionsDone < mInputRepetitions) {
+                if (repetitionsDone < inputRepetitions) {
                     handler.post(requestNoteRunnable);
                 } else {
                     handler.post(finishMidiInRunnable);
@@ -322,9 +325,9 @@ class MidiTest {
     }
 
     private void setupMidiIn() throws IOException {
-        mRepetitionsDone = 0;
-        mOutputPort = mMidiDevice.openOutputPort(0);
-        mOutputPort.connect(new WaltReceiver());
+        repetitionsDone = 0;
+        midiOutputPort = midiDevice.openOutputPort(0);
+        midiOutputPort.connect(new WaltReceiver());
         waltDevice.syncClock();
     }
 
@@ -332,7 +335,7 @@ class MidiTest {
         handler.removeCallbacks(requestNoteRunnable);
         handler.removeCallbacks(finishMidiInRunnable);
         try {
-            mOutputPort.close();
+            midiOutputPort.close();
         } catch (IOException e) {
             logger.log("Error, failed to close output port: " + e.getMessage());
         }

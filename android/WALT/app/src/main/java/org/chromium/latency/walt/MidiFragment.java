@@ -16,7 +16,6 @@
 
 package org.chromium.latency.walt;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -27,12 +26,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-public class MidiFragment extends Fragment implements View.OnClickListener {
+public class MidiFragment extends Fragment
+        implements View.OnClickListener, BaseTest.TestStateListener {
 
-    private Activity activity;
     private SimpleLogger logger;
-    private TextView mTextView;
-    private MidiTest mMidiTest;
+    private TextView textView;
+    private View startMidiInButton;
+    private View startMidiOutButton;
+    private MidiTest midiTest;
 
     public MidiFragment() {
         // Required empty public constructor
@@ -41,27 +42,27 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
-        activity = getActivity();
         logger = SimpleLogger.getInstance(getContext());
+        midiTest = new MidiTest(getActivity());
+        midiTest.setTestStateListener(this);
 
-        mMidiTest = new MidiTest(activity);
-
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_midi, container, false);
+        final View view = inflater.inflate(R.layout.fragment_midi, container, false);
+        textView = (TextView) view.findViewById(R.id.txt_box_midi);
+        startMidiInButton = view.findViewById(R.id.button_start_midi_in);
+        startMidiOutButton = view.findViewById(R.id.button_start_midi_out);
+        return view;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        mTextView = (TextView) activity.findViewById(R.id.txt_box_midi);
 
         // Register this fragment class as the listener for some button clicks
-        activity.findViewById(R.id.button_start_midi_in).setOnClickListener(this);
-        activity.findViewById(R.id.button_start_midi_out).setOnClickListener(this);
+        startMidiInButton.setOnClickListener(this);
+        startMidiOutButton.setOnClickListener(this);
 
         // mLogTextView.setMovementMethod(new ScrollingMovementMethod());
-        mTextView.setText(logger.getLogText());
+        textView.setText(logger.getLogText());
         logger.registerReceiver(mLogReceiver);
     }
 
@@ -75,19 +76,32 @@ public class MidiFragment extends Fragment implements View.OnClickListener {
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.button_start_midi_in:
-                mMidiTest.testMidiIn();
+                disableButtons();
+                midiTest.testMidiIn();
                 break;
             case R.id.button_start_midi_out:
-                mMidiTest.testMidiOut();
+                disableButtons();
+                midiTest.testMidiOut();
                 break;
         }
+    }
+
+    private void disableButtons() {
+        startMidiInButton.setEnabled(false);
+        startMidiOutButton.setEnabled(false);
     }
 
     private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("message");
-            mTextView.append(msg + "\n");
+            textView.append(msg + "\n");
         }
     };
+
+    @Override
+    public void onTestStopped() {
+        startMidiInButton.setEnabled(true);
+        startMidiOutButton.setEnabled(true);
+    }
 }
