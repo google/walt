@@ -53,6 +53,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     long lastFrameStartTime;
     long lastFrameCallbackTime;
     long lastSetBackgroundTime;
+    ArrayList<Double> deltas_w2b = new ArrayList<>();
+    ArrayList<Double> deltas_b2w = new ArrayList<>();
     ArrayList<Double> deltas = new ArrayList<>();
     private static final int color_gray = Color.argb(0xFF, 0xBB, 0xBB, 0xBB);
     private StringBuilder brightnessCurveData = new StringBuilder();
@@ -90,6 +92,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     void startMeasurement() {
         // TODO: Add a stop button to interrupt the measurement
         deltas.clear();
+        deltas_b2w.clear();
+        deltas_w2b.clear();
 
         initiatedBlinks = 0;
         detectedBlinks = 0;
@@ -192,7 +196,13 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
             double dt = (tmsg.t - lastFrameStartTime) / 1000.;
             deltas.add(dt);
+            if (isBoxWhite) {  // Current color is the color we transitioned to
+                deltas_b2w.add(dt);
+            } else {
+                deltas_w2b.add(dt);
+            }
 
+            // Other times can be important, logging them to allow more detailed analysis
             logger.log(String.format(Locale.US,
                     "Times [ms]: setBG:%.3f callback:%.3f physical:%.3f black2white:%d",
                     (lastSetBackgroundTime - lastFrameStartTime) / 1000.0 ,
@@ -202,7 +212,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             ));
 
             // Schedule another blink soon-ish
-            handler.postDelayed(doBlinkRunnable, 50); // TODO: randomize the delay
+            handler.postDelayed(doBlinkRunnable, 50); // TODO: randomize the delay and allow config
 
         }
     };
@@ -220,10 +230,23 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         waltDevice.checkDrift();
 
         // Show deltas and the median
-        logger.log("deltas: " + deltas.toString());
+        /* // Debug printouts
+        logger.log("deltas = array(" + deltas.toString() + ")");
+        logger.log("deltas_w2b = array(" + deltas_w2b.toString() + ")");
+        logger.log("deltas_b2w = array(" + deltas_b2w.toString() + ")");
+        */
+
+        double median_b2w = Utils.median(deltas_b2w);
+        double median_w2b = Utils.median(deltas_w2b);
         logger.log(String.format(Locale.US,
-                "Median latency %.1f ms",
-                Utils.median(deltas)
+                "\nMedian screen response latencies (N=%d):\n" +
+                        "Black to white: %.1f ms (N=%d)\n" +
+                        "White to black: %.1f ms (N=%d)\n" +
+                        "Average: %.1f ms",
+                deltas.size(),
+                median_b2w, deltas_b2w.size(),
+                median_w2b, deltas_w2b.size(),
+                (median_b2w + median_w2b) / 2
         ));
 
         blackBox.setText(logger.getLogText());
