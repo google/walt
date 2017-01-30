@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -165,11 +166,14 @@ public class MainActivity extends AppCompatActivity {
         // Add basic version and device info to the log
         logger.log(String.format("WALT v%s  (versionCode=%d)",
                 BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE));
-        logger.log("WALT protocol version " + waltDevice.PROTOCOL_VERSION);
+        logger.log("WALT protocol version " + WaltDevice.PROTOCOL_VERSION);
         logger.log("DEVICE INFO:");
         logger.log("  " + Build.FINGERPRINT);
         logger.log("  Build.SDK_INT=" + Build.VERSION.SDK_INT);
         logger.log("  os.version=" + System.getProperty("os.version"));
+
+        // Set volume buttons to control media volume
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
     }
 
     @Override
