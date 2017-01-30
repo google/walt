@@ -25,6 +25,7 @@ import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,6 +66,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_audio, container, false);
         textView = (TextView) view.findViewById(R.id.txt_box_audio);
+        textView.setMovementMethod(new ScrollingMovementMethod());
         startPlaybackButton = view.findViewById(R.id.button_start_audio_play);
         startRecordingButton = view.findViewById(R.id.button_start_audio_rec);
 
