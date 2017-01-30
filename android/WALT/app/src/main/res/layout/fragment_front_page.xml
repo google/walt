@@ -1,275 +1,249 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
     tools:context="org.chromium.latency.walt.FrontPageFragment">
+    <!-- The whole list of options -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-    <ScrollView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
-        <!-- The whole list of options -->
+        <!-- Diagnostics -->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            style="@style/MenuItemStyle"
+            android:onClick="onClickClockSync">
 
-            <!-- Diagnostics -->
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_search_black_24dp" />
+
             <LinearLayout
-                style="@style/MenuItemStyle"
-                android:onClick="onClickClockSync">
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
 
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_schedule_black_24dp" />
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="Diagnostics" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="Clock sync" />
-
-                    <TextView
-                        style="@style/MenuTextBottom"
-                        android:text="TBD: Connection/sync status" />
+                <TextView
+                    style="@style/MenuTextBottom"
+                    android:text="TBD: Connection/sync status"
+                    android:visibility="gone" />
 
 
-                </LinearLayout>
             </LinearLayout>
-            <!-- End of Diagnostics -->
-
-            <View style="@style/MenuDivider" />
-
-            <!-- Tap latency -->
-            <LinearLayout
-                style="@style/MenuItemStyle"
-                android:onClick="onClickTapLatency">
-
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_radio_button_checked_black_24dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="Tap latency" />
-
-                    <TextView
-                        style="@style/MenuTextBottom"
-                        android:text="Click to measure" />
-
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- End of Tap latency -->
-
-            <View style="@style/MenuDivider" />
-
-            <!-- Drag latency -->
-            <LinearLayout
-                style="@style/MenuItemStyle"
-                android:onClick="onClickDragLatency">
-
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_swap_vert_black_24dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="Drag latency" />
-
-                    <TextView
-                        style="@style/MenuTextBottom"
-                        android:text="Click to measure" />
-
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- End drag latency -->
-
-            <View style="@style/MenuDivider" />
-
-            <!-- Screen response -->
-            <LinearLayout
-                style="@style/MenuItemStyle"
-                android:onClick="onClickScreenResponse">
-
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_brightness_medium_black_24dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="Screen response" />
-
-                    <TextView
-                        style="@style/MenuTextBottom"
-                        android:text="Click to measure" />
-
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- End of Screen response  -->
-
-            <View style="@style/MenuDivider" />
-
-            <!-- Audio -->
-            <LinearLayout
-                style="@style/MenuItemStyle"
-                android:onClick="onClickAudio">
-
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_volume_up_black_24dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="Audio latency" />
-
-                    <TextView
-                        style="@style/MenuTextBottom"
-                        android:text="Click to measure" />
-
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- End of Audio  -->
-
-            <View style="@style/MenuDivider" />
-
-            <!-- MIDI -->
-            <LinearLayout
-                android:id="@+id/action_midi"
-                android:visibility="gone"
-                style="@style/MenuItemStyle"
-                android:onClick="onClickMIDI">
-
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_music_note_black_24dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="MIDI latency" />
-
-                    <TextView
-                        style="@style/MenuTextBottom"
-                        android:text="Click to measure" />
-
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- End of MIDI  -->
-
-            <View style="@style/MenuDivider" />
-
-            <!-- Log -->
-            <LinearLayout
-                style="@style/MenuItemStyle"
-                android:onClick="onClickOpenLog">
-
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_receipt_black_24dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="View log" />
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- End of Log -->
-
-            <View style="@style/MenuDivider" />
-
-            <!-- Settings -->
-            <LinearLayout
-                style="@style/MenuItemStyle"
-                android:onClick="onClickOpenSettings">
-
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_settings_black_24dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="Settings" />
-
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- End of Settings -->
-
-            <View style="@style/MenuDivider" />
-
-            <!-- About / Help -->
-            <LinearLayout
-                style="@style/MenuItemStyle"
-                android:onClick="onClickOpenAbout">
-
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_help_outline_black_24dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="About" />
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- End of About -->
-
-
         </LinearLayout>
-    </ScrollView>
-</FrameLayout>
+        <!-- End of Diagnostics -->
+
+        <View style="@style/MenuDivider" />
+
+        <!-- Tap latency -->
+        <LinearLayout
+            style="@style/MenuItemStyle"
+            android:onClick="onClickTapLatency">
+
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_radio_button_checked_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="Tap latency" />
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End of Tap latency -->
+
+        <View style="@style/MenuDivider" />
+
+        <!-- Drag latency -->
+        <LinearLayout
+            style="@style/MenuItemStyle"
+            android:onClick="onClickDragLatency">
+
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_swap_vert_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="Drag latency" />
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End drag latency -->
+
+        <View style="@style/MenuDivider" />
+
+        <!-- Screen response -->
+        <LinearLayout
+            style="@style/MenuItemStyle"
+            android:onClick="onClickScreenResponse">
+
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_brightness_medium_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="Screen response" />
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End of Screen response  -->
+
+        <View style="@style/MenuDivider" />
+
+        <!-- Audio -->
+        <LinearLayout
+            style="@style/MenuItemStyle"
+            android:onClick="onClickAudio">
+
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_volume_up_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="Audio latency" />
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End of Audio  -->
+
+        <View
+            android:id="@+id/midi_divider"
+            style="@style/MenuDivider"
+            android:visibility="gone" />
+
+        <!-- MIDI -->
+        <LinearLayout
+            android:id="@+id/action_midi"
+            style="@style/MenuItemStyle"
+            android:onClick="onClickMIDI"
+            android:visibility="gone">
+
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_music_note_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="MIDI latency" />
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End of MIDI  -->
+
+        <View style="@style/MenuDivider" />
+
+        <!-- Log -->
+        <LinearLayout
+            style="@style/MenuItemStyle"
+            android:onClick="onClickOpenLog">
+
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_receipt_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="View log" />
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End of Log -->
+
+        <View style="@style/MenuDivider" />
+
+        <!-- Settings -->
+        <LinearLayout
+            style="@style/MenuItemStyle"
+            android:onClick="onClickOpenSettings">
+
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_settings_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="Settings" />
+
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End of Settings -->
+
+        <View style="@style/MenuDivider" />
+
+        <!-- About / Help -->
+        <LinearLayout
+            style="@style/MenuItemStyle"
+            android:onClick="onClickOpenAbout">
+
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_help_outline_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="About" />
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End of About -->
+
+
+    </LinearLayout>
+</ScrollView>

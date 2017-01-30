@@ -41,6 +41,7 @@ public class FrontPageFragment extends Fragment {
         if (container.getContext().getPackageManager().
                 hasSystemFeature("android.software.midi")) {
             view.findViewById(R.id.action_midi).setVisibility(View.VISIBLE);
+            view.findViewById(R.id.midi_divider).setVisibility(View.VISIBLE);
         }
         return view;
     }

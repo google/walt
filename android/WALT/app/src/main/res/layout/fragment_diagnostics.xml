@@ -95,11 +95,6 @@
                         style="@style/MenuTextTop"
                         android:text="Re-sync clocks" />
 
-                    <TextView
-                        style="@style/MenuTextBottom"
-                        android:text="..." />
-
-
                 </LinearLayout>
             </LinearLayout>
             <!-- End of ReSync -->
@@ -164,37 +159,7 @@
             </LinearLayout>
             <!-- Program -->
 
-            <View style="@style/MenuDivider" />
-
-            <!-- Start/stop listener -->
-            <LinearLayout
-                style="@style/MenuItemStyle"
-                android:onClick="onClickStartListener">
-
-                <ImageView
-                    style="@style/MenuIconStyle"
-                    android:src="@drawable/ic_swap_horiz_black_24dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/MenuTextTop"
-                        android:text="Start/stop listener" />
-
-                    <TextView
-                        style="@style/MenuTextBottom"
-                        android:text="..." />
-
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- End of Start/stop listener -->
-
-            <View style="@style/MenuDivider" />
+            <!--<View style="@style/MenuDivider" />-->
 
             <!-- Send T TODO: replace with send any char, it says nothing on the log, broadcast? -->
             <!--
@@ -225,9 +190,6 @@
             </LinearLayout>
             -->
             <!-- End of Send T -->
-
-
-            <View style="@style/MenuDivider" />
         </LinearLayout>
     </ScrollView>
 
