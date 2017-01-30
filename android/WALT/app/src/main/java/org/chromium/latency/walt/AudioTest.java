@@ -53,7 +53,8 @@ class AudioTest extends BaseTest {
     private long last_tb = 0;
     private int msToRecord = 1000;
     private int framesToRecord;
-    private int frameRateInt;
+    private int frameRate;
+    private int framesPerBuffer;
 
     private int initiatedBeeps, detectedBeeps;
     private int playbackRepetitions;
@@ -64,8 +65,9 @@ class AudioTest extends BaseTest {
     private int recordingRepetitions;
     private static int recorderSyncAfterRepetitions = 10;
 
-    private ArrayList<Double> deltas = new ArrayList<>();
-    private ArrayList<Double> deltas2 = new ArrayList<>();
+    private ArrayList<Double> deltas_mic = new ArrayList<>();
+    private ArrayList<Double> deltas_play2queue = new ArrayList<>();
+    private ArrayList<Double> deltas_queue2wire = new ArrayList<>();
     private ArrayList<Double> deltasJ2N = new ArrayList<>();
 
     long lastBeepTime;
@@ -91,18 +93,18 @@ class AudioTest extends BaseTest {
 
         //Check for optimal output sample rate and buffer size
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        String frameRate = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
-        String framesPerBuffer = am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
-        logger.log("Optimal frame rate is: " + frameRate);
-        logger.log("Optimal frames per buffer is: " + framesPerBuffer);
+        String frameRateStr = am.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+        String framesPerBufferStr = am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
+        logger.log("Optimal frame rate is: " + frameRateStr);
+        logger.log("Optimal frames per buffer is: " + framesPerBufferStr);
 
         //Convert to ints
-        frameRateInt = Integer.parseInt(frameRate);
-        int framesPerBufferInt = Integer.parseInt(framesPerBuffer);
+        frameRate = Integer.parseInt(frameRateStr);
+        framesPerBuffer = Integer.parseInt(framesPerBufferStr);
 
         //Create the audio engine
         createEngine();
-        createBufferQueueAudioPlayer(frameRateInt, framesPerBufferInt);
+        createBufferQueueAudioPlayer(frameRate, framesPerBuffer);
         logger.log("Audio engine created");
     }
 
@@ -132,11 +134,11 @@ class AudioTest extends BaseTest {
         logger.log("Audio engine destroyed");
     }
 
-    void beginRecordingTest() {
-        deltas.clear();
+    void beginRecordingMeasurement() {
+        deltas_mic.clear();
 
-        framesToRecord = (int) (0.001 * msToRecord * frameRateInt);
-        createAudioRecorder(frameRateInt, framesToRecord);
+        framesToRecord = (int) (0.001 * msToRecord * frameRate);
+        createAudioRecorder(frameRate, framesToRecord);
         logger.log("Audio recorder created; starting test");
 
         requestedBeeps = 0;
@@ -145,7 +147,7 @@ class AudioTest extends BaseTest {
 
     private void doRecordingTestRepetition() {
         if (requestedBeeps > recordingRepetitions) {
-            finishRecordingTest();
+            finishRecordingMeasurement();
             return;
         }
 
@@ -154,7 +156,7 @@ class AudioTest extends BaseTest {
                 waltDevice.syncClock();
             } catch (IOException e) {
                 logger.log("Error syncing clocks: " + e.getMessage());
-                finishRecordingTest();
+                finishRecordingMeasurement();
                 return;
             }
         }
@@ -172,7 +174,7 @@ class AudioTest extends BaseTest {
         handler.postDelayed(stopBeepRunnable, msToRecord);
     }
 
-    void startMeasurement() {
+    void beginPlaybackMeasurement() {
         if (audioMode == AudioMode.CONTINUOUS) {
             startWarmTest();
         }
@@ -184,8 +186,8 @@ class AudioTest extends BaseTest {
             if (testStateListener != null) testStateListener.onTestStopped();
             return;
         }
-        deltas.clear();
-        deltas2.clear();
+        deltas_play2queue.clear();
+        deltas_queue2wire.clear();
         deltasJ2N.clear();
 
         logger.log("Starting playback test");
@@ -193,42 +195,45 @@ class AudioTest extends BaseTest {
         initiatedBeeps = 0;
         detectedBeeps = 0;
 
-        waltDevice.setTriggerHandler(triggerHandler);
+        waltDevice.setTriggerHandler(playbackTriggerHandler);
 
-        handler.postDelayed(doBeepRunnable, 300);
+        handler.postDelayed(playBeepRunnable, 300);
 
     }
 
-    private WaltDevice.TriggerHandler triggerHandler = new WaltDevice.TriggerHandler() {
+    private WaltDevice.TriggerHandler playbackTriggerHandler = new WaltDevice.TriggerHandler() {
         @Override
         public void onReceive(WaltDevice.TriggerMessage tmsg) {
-            // remove the far away doBeep callback(s)
-            handler.removeCallbacks(doBeepRunnable);
+            // remove the far away playBeep callback(s)
+            handler.removeCallbacks(playBeepRunnable);
 
             detectedBeeps++;
-            long te = getTePlay();
-            double dt = (tmsg.t - lastBeepTime) / 1000.;
+            long enqueueTime = getTePlay();
+            double dt_play2queue = (enqueueTime - lastBeepTime) / 1000.;
+            deltas_play2queue.add(dt_play2queue);
 
-            double dt2 = (tmsg.t - te) / 1000.;
-            deltas.add(dt);
-            deltas2.add(dt2);
+            double dt_queue2wire = (tmsg.t - enqueueTime) / 1000.;
+            deltas_queue2wire.add(dt_queue2wire);
 
             logger.log(String.format(Locale.US,
-                    "beep detected, total latency = %.2f, normal latency = %.2f, "
-                            + "initiatedBeeps = %d, detectedBeeps = %d",
-                    dt, dt2, initiatedBeeps, detectedBeeps
+                    "Beep detected, initiatedBeeps=%d, detectedBeeps=%d\n" +
+                            "dt native playTone to Enqueue = %.2f ms\n" +
+                            "dt Enqueue to wire  = %.2f ms\n",
+                    initiatedBeeps, detectedBeeps,
+                    dt_play2queue,
+                    dt_queue2wire
             ));
 
             // Schedule another beep soon-ish
-            handler.postDelayed(doBeepRunnable, period); // TODO: randomize the delay
+            handler.postDelayed(playBeepRunnable, period); // TODO: randomize the delay
         }
     };
 
-    private Runnable doBeepRunnable = new Runnable() {
+    private Runnable playBeepRunnable = new Runnable() {
         @Override
         public void run() {
-            // activity.handler.removeCallbacks(doBlinkRunnable);
-            logger.log("\nBeeping...");
+            // debug: logger.log("\nPlaying tone...");
+
             // Check if we saw some transitions without beeping, might be noise audio cable.
             if (initiatedBeeps == 0 && detectedBeeps > 1) {
                 logger.log("Unexpected beeps detected, noisy cable?");
@@ -236,12 +241,10 @@ class AudioTest extends BaseTest {
             }
 
             if (initiatedBeeps >= playbackRepetitions) {
-                finishPlaybackTest();
+                finishPlaybackMeasurement();
                 return;
             }
 
-
-            // deltas[initiatedBeeps] = 0;
             initiatedBeeps++;
 
             if (initiatedBeeps % playbackSyncAfterRepetitions == 0) {
@@ -251,7 +254,7 @@ class AudioTest extends BaseTest {
                     waltDevice.startListener();
                 } catch (IOException e) {
                     logger.log("Error re-syncing clock: " + e.getMessage());
-                    finishPlaybackTest();
+                    finishPlaybackMeasurement();
                     return;
                 }
             }
@@ -266,12 +269,15 @@ class AudioTest extends BaseTest {
             lastBeepTime = playTone();
             double dtJ2N = (lastBeepTime - javaBeepTime)/1000.;
             deltasJ2N.add(dtJ2N);
-            logger.log(String.format(Locale.US, "Beeped, dtJ2N = %.3f ms", dtJ2N));
+            logger.log(String.format(Locale.US,
+                    "Called playTone(), dt Java to native = %.3f ms",
+                    dtJ2N
+            ));
 
 
             // Repost doBeep to some far away time to blink again even if nothing arrives from
             // Teensy. This callback will almost always get cancelled by onIncomingTimestamp()
-            handler.postDelayed(doBeepRunnable, period * 3); // TODO: config and or randomize the delay,
+            handler.postDelayed(playBeepRunnable, period * 3); // TODO: config and or randomize the delay,
 
         }
     };
@@ -308,12 +314,12 @@ class AudioTest extends BaseTest {
     private Runnable processRecordingRunnable = new Runnable() {
         @Override
         public void run() {
-            long te = getTeRec();
-            long tc = getTcRec();
-            long tb= last_tb;
+            long te = getTeRec();  // When a buffer was enqueued for recording
+            long tc = getTcRec();  // When callback receiving a recorded buffer fired
+            long tb = last_tb;  // When WALT started a beep (according to WALT clock)
             short[] wave = getRecordedWave();
             int thresh = 20000;
-            int noisyAtFrame = 0;
+            int noisyAtFrame = 0;  // First frame when some noise starts
             while (noisyAtFrame < wave.length && wave[noisyAtFrame] < thresh)
                 noisyAtFrame++;
             if (noisyAtFrame == wave.length) {
@@ -322,10 +328,21 @@ class AudioTest extends BaseTest {
                 return;
             }
 
-            double duration_us = wave.length * 1e6 / frameRateInt;
-            double delta_us = (wave.length - noisyAtFrame) * 1e6 / frameRateInt;
-            double latencyCb_ms = (tc - tb - delta_us) / 1000.;
-            double latencyEnqueue_ms = (tb - te - (duration_us - delta_us)) / 1000.;
+            // Length of recorded buffer
+            double duration_us = wave.length * 1e6 / frameRate;
+
+            // Duration in microseconds of the initial silent part of the buffer, and the remaining
+            // part after the beep started.
+            double silent_us =  noisyAtFrame * 1e6 / frameRate;
+            double remaining_us = duration_us - silent_us;
+
+            // Time from the last frame in the buffer until the callback receiving the buffer fired
+            double latencyCb_ms = (tc - tb - remaining_us) / 1000.;
+
+            // Time from the moment a buffer was enqueued for recording until the first frame in
+            // the buffer was recorded
+            double latencyEnqueue_ms = (tb - te - silent_us) / 1000.;
+
             logger.log(String.format(Locale.US,
                     "Processed: L_cb = %.3f ms, L_eq = %.3f ms, noisy frame = %d",
                     latencyCb_ms,
@@ -333,43 +350,57 @@ class AudioTest extends BaseTest {
                     noisyAtFrame
             ));
 
-            deltas.add(latencyCb_ms);
+            deltas_mic.add(latencyCb_ms);
             doRecordingTestRepetition();
         }
     };
 
-    private void finishPlaybackTest() {
+    private void finishPlaybackMeasurement() {
         stopTests();
         waltDevice.stopListener();
         waltDevice.clearTriggerHandler();
         waltDevice.checkDrift();
 
-        logger.log("deltas: " + deltas.toString());
+        // Debug: logger.log("deltas_play2queue = array(" + deltas_play2queue.toString() +")");
         logger.log(String.format(Locale.US,
-                "Median Java to native latency %.3f ms\nMedian total audio latency %.1f ms"
-                        + "\nMedian callback to output time %.1f ms",
+                "\n%s audio playback results:\n" +
+                        "Detected %d beeps out of %d initiated\n" +
+                        "Median Java to native time is %.3f ms\n" +
+                        "Median native playTone to Enqueue time is %.1f ms\n" +
+                        "Buffer length is %d frames at %d Hz = %.2f ms\n" +
+                        "-------------------------------\n" +
+                        "Median time from Enqueue to wire is %.1f ms\n" +
+                        "-------------------------------\n",
+                audioMode == AudioMode.COLD? "Cold" : "Continuous",
+                detectedBeeps, initiatedBeeps,
                 Utils.median(deltasJ2N),
-                Utils.median(deltas),
-                Utils.median(deltas2)
+                Utils.median(deltas_play2queue),
+                framesPerBuffer, frameRate, 1000.0 / frameRate * framesPerBuffer,
+                Utils.median(deltas_queue2wire)
         ));
 
         if (resultHandler != null) {
-            resultHandler.onResult(deltas, deltas2);
+            resultHandler.onResult(deltas_play2queue, deltas_queue2wire);
         }
         if (testStateListener != null) testStateListener.onTestStopped();
     }
 
-    private void finishRecordingTest() {
+    private void finishRecordingMeasurement() {
         waltDevice.checkDrift();
 
-        logger.log("deltas: " + deltas.toString());
+        // Debug: logger.log("deltas_mic: " + deltas_mic.toString());
+
         logger.log(String.format(Locale.US,
-                "Median audio recording latency %.1f ms",
-                Utils.median(deltas)
+                "-------------------------------\n" +
+                        "Audio recording/microphone results:\n" +
+                        "Median callback latency - " +
+                        "time from sampling the last frame to recorder callback is %.1f ms\n" +
+                        "-------------------------------\n",
+                Utils.median(deltas_mic)
         ));
 
         if (resultHandler != null) {
-            resultHandler.onResult(deltas);
+            resultHandler.onResult(deltas_mic);
         }
         if (testStateListener != null) testStateListener.onTestStopped();
     }

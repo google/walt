@@ -113,8 +113,9 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
     assert(NULL == context);
 
     if (buffersRemaining > 0) { // continue playing tone
-        if(buffersRemaining == BUFFERS_TO_PLAY) {
+        if(buffersRemaining == BUFFERS_TO_PLAY && warmedUp) {
             // Enqueue the first non-silent buffer, save the timestamp
+            // For cold test Enqueue happens in playTone rather than here.
             te_play = micros(&clk);
         }
         buffersRemaining--;
@@ -150,6 +151,7 @@ jlong Java_org_chromium_latency_walt_AudioTest_playTone(JNIEnv* env, jclass claz
         (void)result;
 
         // Enqueue first buffer
+        te_play = micros(&clk);
         result = (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue, beepBuffer,
                                                  bufferSizeInBytes);
         assert(SL_RESULT_SUCCESS == result);
@@ -158,6 +160,10 @@ jlong Java_org_chromium_latency_walt_AudioTest_playTone(JNIEnv* env, jclass claz
         result = (*bqPlayerPlay)->SetPlayState(bqPlayerPlay, SL_PLAYSTATE_PLAYING);
         assert(SL_RESULT_SUCCESS == result);
         (void) result;
+
+        int dt_state = micros(&clk) - t_start;
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "playTone() changed state to playing dt=%d us", dt_state);
+        // TODO: this block takes lots of time (~13ms on Nexus 7) research this and decide how to measure.
     }
 
     __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Playing tone");
@@ -476,7 +482,7 @@ void Java_org_chromium_latency_walt_AudioTest_startRecording(JNIEnv* env, jclass
 
     // enqueue an empty buffer to be filled by the recorder
     // (for streaming recording, we would enqueue at least 2 empty buffers to start things off)
-    te_rec = micros(&clk);
+    te_rec = micros(&clk);  // TODO: investigate if it's better to time after SetRecordState
     tc_rec = 0;
     result = (*recorderBufferQueue)->Enqueue(recorderBufferQueue, recorderBuffer,
             recorder_frames * sizeof(short));

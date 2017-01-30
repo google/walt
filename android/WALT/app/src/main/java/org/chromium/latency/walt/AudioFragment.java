@@ -120,7 +120,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
                 // Set media volume to max
                 AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
                 am.setStreamVolume(AudioManager.STREAM_MUSIC, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
-                audioTest.startMeasurement();
+                audioTest.beginPlaybackMeasurement();
                 break;
         }
     }
@@ -162,7 +162,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
                 Manifest.permission.RECORD_AUDIO);
         if (currentPermission == PackageManager.PERMISSION_GRANTED) {
             disableButtons();
-            audioTest.beginRecordingTest();
+            audioTest.beginRecordingMeasurement();
         } else {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},
                     PERMISSION_REQUEST_RECORD_AUDIO);
@@ -175,7 +175,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
             case PERMISSION_REQUEST_RECORD_AUDIO:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     disableButtons();
-                    audioTest.beginRecordingTest();
+                    audioTest.beginRecordingMeasurement();
                 } else {
                     logger.log("Could not get permission to record audio");
                 }

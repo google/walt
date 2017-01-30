@@ -129,7 +129,7 @@ public class AutoRunFragment extends Fragment {
                         audioTest.setRecordingRepetitions(reps);
                         audioTest.setAudioMode(MODE_COLD.equals(mode) ?
                                 AudioTest.AudioMode.COLD : AudioTest.AudioMode.CONTINUOUS);
-                        audioTest.beginRecordingTest();
+                        audioTest.beginRecordingMeasurement();
                         toTearDown = audioTest;
                     }
                 };
@@ -150,7 +150,7 @@ public class AutoRunFragment extends Fragment {
                             audioTest.setPeriod(MODE_COLD.equals(mode) ?
                                     AudioTest.COLD_TEST_PERIOD : AudioTest.CONTINUOUS_TEST_PERIOD);
                         }
-                        audioTest.startMeasurement();
+                        audioTest.beginPlaybackMeasurement();
                         toTearDown = audioTest;
                     }
                 };
