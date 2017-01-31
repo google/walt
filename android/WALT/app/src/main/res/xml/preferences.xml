@@ -15,6 +15,11 @@
             walt:maxValue="1000"
             walt:minValue="1" />
 
+        <SwitchPreference
+            android:key="@string/preference_auto_increase_brightness"
+            android:title="Automatically increase brightness for test"
+            android:defaultValue="true" />
+
     </android.support.v7.preference.PreferenceScreen>
 
     <android.support.v7.preference.PreferenceScreen

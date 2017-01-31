@@ -9,23 +9,20 @@
         android:orderInCategory="180"
         android:title="Upload"
         android:icon="@drawable/ic_file_upload_black_24dp"
-        app:showAsAction="ifRoom"
-        ></item>
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/action_share"
         android:orderInCategory="190"
         android:title="Share"
         android:icon="@drawable/ic_share_black_24dp"
-        app:showAsAction="ifRoom"
-        ></item>
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/action_help"
         android:orderInCategory="200"
         android:title="Help"
         android:icon="@drawable/ic_help_outline_black_24dp"
-        app:showAsAction="ifRoom"
-        ></item>
+        app:showAsAction="ifRoom" />
 
 </menu>

@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:textAppearance="?android:attr/textAppearanceMedium"/>
-    <NumberPicker
+    <org.chromium.latency.walt.CustomNumberPicker
         android:id="@+id/numpicker_pref"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

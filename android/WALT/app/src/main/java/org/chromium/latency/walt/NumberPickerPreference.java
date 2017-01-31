@@ -21,11 +21,9 @@ import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.preference.DialogPreference;
-import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceDialogFragmentCompat;
 import android.util.AttributeSet;
 import android.view.View;
-import android.widget.NumberPicker;
 
 public class NumberPickerPreference extends DialogPreference {
     private int currentValue;
@@ -82,7 +80,7 @@ public class NumberPickerPreference extends DialogPreference {
     public static class NumberPickerPreferenceDialogFragmentCompat
             extends PreferenceDialogFragmentCompat {
         private static final String SAVE_STATE_VALUE = "NumberPickerPreferenceDialogFragment.value";
-        private NumberPicker picker;
+        private CustomNumberPicker picker;
         private int currentValue = 1;
 
         public NumberPickerPreferenceDialogFragmentCompat() {
@@ -117,7 +115,7 @@ public class NumberPickerPreference extends DialogPreference {
         @Override
         protected void onBindDialogView(View view) {
             super.onBindDialogView(view);
-            picker = (NumberPicker) view.findViewById(R.id.numpicker_pref);
+            picker = (CustomNumberPicker) view.findViewById(R.id.numpicker_pref);
             picker.setMaxValue(getNumberPickerPreference().maxValue);
             picker.setMinValue(getNumberPickerPreference().minValue);
             picker.setValue(currentValue);

@@ -30,7 +30,7 @@ import java.util.InputMismatchException;
  */
 public class Utils {
     public static double median(ArrayList<Double> arrList) {
-        ArrayList<Double> lst = new ArrayList<Double>(arrList);
+        ArrayList<Double> lst = new ArrayList<>(arrList);
         Collections.sort(lst);
         int len = lst.size();
         if (len == 0) {
@@ -165,6 +165,11 @@ public class Utils {
     static int getIntPreference(Context context, @StringRes int keyId, int defaultValue) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         return preferences.getInt(context.getString(keyId), defaultValue);
+    }
+
+    static boolean getBooleanPreference(Context context, @StringRes int keyId, boolean defaultValue) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return preferences.getBoolean(context.getString(keyId), defaultValue);
     }
 
     public enum ListenerState {
