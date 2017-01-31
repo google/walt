@@ -16,7 +16,6 @@
 
 package org.chromium.latency.walt;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -33,11 +32,12 @@ import java.util.ArrayList;
 
 public class DragLatencyFragment extends Fragment implements View.OnClickListener {
 
-    private Activity activity;
     private SimpleLogger logger;
     private WaltDevice waltDevice;
     private TextView logTextView;
     private TouchCatcherView touchCatcher;
+    private TextView crossCountsView;
+    private TextView dragCountsView;
     private View startButton;
     private View restartButton;
     private View finishButton;
@@ -81,11 +81,9 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         // Required empty public constructor
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        activity = getActivity();
         logger = SimpleLogger.getInstance(getContext());
         waltDevice = WaltDevice.getInstance(getContext());
 
@@ -96,6 +94,8 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         restartButton = view.findViewById(R.id.button_restart_drag);
         finishButton = view.findViewById(R.id.button_finish_drag);
         touchCatcher = (TouchCatcherView) view.findViewById(R.id.tap_catcher);
+        crossCountsView = (TextView) view.findViewById(R.id.txt_cross_counts);
+        dragCountsView = (TextView) view.findViewById(R.id.txt_drag_counts);
         restartButton.setEnabled(false);
         finishButton.setEnabled(false);
         return view;
@@ -124,13 +124,9 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         logTextView.append(msg + "\n");
     }
 
-
     void updateCountsDisplay() {
-        TextView tv = (TextView) activity.findViewById(R.id.txt_cross_counts);
-        tv.setText(String.format("⤯ %d", laserEventList.size()));
-
-        TextView tvMove = (TextView) activity.findViewById(R.id.txt_drag_counts);
-        tvMove.setText(String.format("⇄ %d", moveCount));
+        crossCountsView.setText(String.format("↕ %d", laserEventList.size()));
+        dragCountsView.setText(String.format("⇄ %d", moveCount));
     }
 
     /**
@@ -179,7 +175,6 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
 
         updateCountsDisplay();
     }
-
 
     void finishAndShowStats() {
         touchCatcher.stopAnimation();
@@ -234,7 +229,6 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         logger.log("=====< END OF TOUCH EVENTS =====");
     }
 
-
     void reshapeAndCalculate() {
         double[] ft, lt; // All time arrays are in _milliseconds_
         double[] fy;
@@ -283,7 +277,6 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
 
         calculateDragLatency(ft,fy, lt, ldir);
     }
-
 
     /**
      * Handler for all the button clicks on this screen.

@@ -45,13 +45,10 @@ class MidiTest extends BaseTest {
     // Output and Input here are with respect to the MIDI device, not the Android device.
     private MidiOutputPort midiOutputPort;
     private MidiInputPort midiInputPort;
-
     private boolean isConnecting = false;
-
     private long last_tWalt = 0;
     private long last_tSys = 0;
     private long last_tJava = 0;
-
     private int inputSyncAfterRepetitions = 100;
     private int outputSyncAfterRepetitions = 20; // TODO: implement periodic clock sync for output
     private int inputRepetitions;
@@ -271,6 +268,7 @@ class MidiTest extends BaseTest {
             waltDevice.checkDrift();
 
             logger.log("deltas: " + deltasToSys.toString());
+            logger.log("MIDI Input Test Results:");
             logger.log(String.format(Locale.US,
                     "Median MIDI subsystem latency %.1f ms\nMedian total latency %.1f ms",
                     Utils.median(deltasToSys), Utils.median(deltasTotal)

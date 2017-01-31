@@ -184,7 +184,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-
     public void toast(String msg) {
         logger.log(msg);
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();

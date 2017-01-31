@@ -26,7 +26,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -68,7 +67,6 @@ public class TapLatencyFragment extends Fragment
 
             if(tapEvent.action != MotionEvent.ACTION_UP && tapEvent.action != MotionEvent.ACTION_DOWN) {
                 moveCount++;
-                logger.log("Ignoring " + action + " " + moveCount);
                 updateCountsDisplay();
                 return true;
             }
@@ -122,8 +120,8 @@ public class TapLatencyFragment extends Fragment
         logger.registerReceiver(mLogReceiver);
 
         // Register this fregment class as the listener for some button clicks
-        ((ImageButton)activity.findViewById(R.id.button_restart_tap)).setOnClickListener(this);
-        ((ImageButton)activity.findViewById(R.id.button_finish_tap)).setOnClickListener(this);
+        activity.findViewById(R.id.button_restart_tap).setOnClickListener(this);
+        activity.findViewById(R.id.button_finish_tap).setOnClickListener(this);
 
         mTapCatcher = (TextView) activity.findViewById(R.id.tap_catcher);
         mTapCatcher.setOnTouchListener(mTouchListener);
