@@ -146,7 +146,7 @@ class AudioTest extends BaseTest {
     }
 
     private void doRecordingTestRepetition() {
-        if (requestedBeeps > recordingRepetitions) {
+        if (requestedBeeps >= recordingRepetitions) {
             finishRecordingMeasurement();
             return;
         }
@@ -391,11 +391,13 @@ class AudioTest extends BaseTest {
         // Debug: logger.log("deltas_mic: " + deltas_mic.toString());
 
         logger.log(String.format(Locale.US,
-                "-------------------------------\n" +
-                        "Audio recording/microphone results:\n" +
+                "\nAudio recording/microphone results:\n" +
+                        "Recorded %d beeps.\n" +
+                        "-------------------------------\n" +
                         "Median callback latency - " +
                         "time from sampling the last frame to recorder callback is %.1f ms\n" +
                         "-------------------------------\n",
+                deltas_mic.size(),
                 Utils.median(deltas_mic)
         ));
 
