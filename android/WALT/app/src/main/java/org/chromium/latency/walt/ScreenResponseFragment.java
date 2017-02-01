@@ -25,12 +25,14 @@ import android.view.Choreographer;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import static org.chromium.latency.walt.Utils.getBooleanPreference;
 import static org.chromium.latency.walt.Utils.getIntPreference;
 
 /**
@@ -78,6 +80,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         brightnessCurveButton = view.findViewById(R.id.button_brightness_curve);
         blackBox = (TextView) view.findViewById(R.id.txt_black_box_screen);
         resetScreenButton.setEnabled(false);
+
+        if (getBooleanPreference(getContext(), R.string.preference_auto_increase_brightness, true)) {
+            increaseScreenBrightness();
+        }
         return view;
     }
 
@@ -368,5 +374,11 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         resetScreenButton.setEnabled(true);
         startButton.setEnabled(true);
         brightnessCurveButton.setEnabled(true);
+    }
+
+    private void increaseScreenBrightness() {
+        final WindowManager.LayoutParams layoutParams = getActivity().getWindow().getAttributes();
+        layoutParams.screenBrightness = 1f;
+        getActivity().getWindow().setAttributes(layoutParams);
     }
 }

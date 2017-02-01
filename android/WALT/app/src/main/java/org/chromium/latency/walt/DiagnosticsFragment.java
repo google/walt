@@ -17,7 +17,6 @@
 package org.chromium.latency.walt;
 
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -35,9 +34,8 @@ import android.widget.TextView;
  */
 public class DiagnosticsFragment extends Fragment {
 
-    private Activity activity;
     private SimpleLogger logger;
-    TextView mTextView;
+    private TextView logTextView;
 
 
     private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
@@ -58,18 +56,16 @@ public class DiagnosticsFragment extends Fragment {
                              Bundle savedInstanceState) {
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_diagnostics, container, false);
+        final View view = inflater.inflate(R.layout.fragment_diagnostics, container, false);
+        logTextView = (TextView) view.findViewById(R.id.txt_log_diag);
+        return view;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        activity = getActivity();
-
-        mTextView = (TextView) activity.findViewById(R.id.txt_log_diag);
-        mTextView.setMovementMethod(new ScrollingMovementMethod());
-        mTextView.setText(logger.getLogText());
-
+        logTextView.setMovementMethod(new ScrollingMovementMethod());
+        logTextView.setText(logger.getLogText());
         logger.registerReceiver(mLogReceiver);
     }
 
@@ -81,6 +77,6 @@ public class DiagnosticsFragment extends Fragment {
 
 
     public void appendLogText(String msg) {
-        mTextView.append(msg + "\n");
+        logTextView.append(msg + "\n");
     }
 }

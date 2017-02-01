@@ -19,7 +19,6 @@ package org.chromium.latency.walt;
 import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.SystemClock;
 import android.util.Log;
 
 import java.io.IOException;
@@ -29,9 +28,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.Locale;
-
-import static android.os.SystemClock.uptimeMillis;
 
 
 public class WaltTcpConnection implements WaltConnection {
@@ -44,7 +40,7 @@ public class WaltTcpConnection implements WaltConnection {
     private final SimpleLogger mLogger;
     private HandlerThread networkThread;
     private Handler networkHandler;
-    private Object mReadLock = new Object();
+    private final Object mReadLock = new Object();
     private boolean messageReceived = false;
     private Utils.ListenerState mConnectionState = Utils.ListenerState.STOPPED;
     private int lastRetVal;
@@ -232,7 +228,7 @@ public class WaltTcpConnection implements WaltConnection {
 
         @Override
         public void run() {
-            Socket socket = new Socket();;
+            Socket socket = new Socket();
             try {
                 InetSocketAddress remoteAddr = new InetSocketAddress(SERVER_IP, SERVER_PORT);
                 socket.connect(remoteAddr, 50 /* timeout in milliseconds */);

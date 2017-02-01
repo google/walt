@@ -16,7 +16,6 @@
 
 package org.chromium.latency.walt;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -26,32 +25,32 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class TapLatencyFragment extends Fragment
     implements View.OnClickListener {
 
-    private Activity activity;
     private SimpleLogger logger;
     private WaltDevice waltDevice;
-    TextView mLogTextView;
-    TextView mTapCatcher;
-    int moveCount = 0;
-    int allDownCount = 0;
-    int allUpCount = 0;
-    int okDownCount = 0;
-    int okUpCount = 0;
-
+    private TextView logTextView;
+    private TextView tapCatcherView;
+    private TextView tapCountsView;
+    private TextView moveCountsView;
+    private ImageButton finishButton;
+    private ImageButton restartButton;
+    private int moveCount = 0;
+    private int allDownCount = 0;
+    private int allUpCount = 0;
+    private int okDownCount = 0;
+    private int okUpCount = 0;
 
     ArrayList<UsMotionEvent> eventList = new ArrayList<>();
-    HashMap<Integer, Integer> tapCounts = new HashMap<>();
 
-
-    private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("message");
@@ -59,7 +58,7 @@ public class TapLatencyFragment extends Fragment
         }
     };
 
-    private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
+    private View.OnTouchListener touchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             UsMotionEvent tapEvent = new UsMotionEvent(event, waltDevice.clock.baseTime);
@@ -99,42 +98,43 @@ public class TapLatencyFragment extends Fragment
         // Required empty public constructor
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        activity = getActivity();
         waltDevice = WaltDevice.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_tap_latency, container, false);
+        final View view = inflater.inflate(R.layout.fragment_tap_latency, container, false);
+        restartButton = (ImageButton) view.findViewById(R.id.button_restart_tap);
+        finishButton = (ImageButton) view.findViewById(R.id.button_finish_tap);
+        tapCatcherView = (TextView) view.findViewById(R.id.tap_catcher);
+        logTextView = (TextView) view.findViewById(R.id.txt_log_tap_latency);
+        tapCountsView = (TextView) view.findViewById(R.id.txt_tap_counts);
+        moveCountsView = (TextView) view.findViewById(R.id.txt_move_count);
+        finishButton.setEnabled(false);
+        return view;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        restartMeasurement();
-        mLogTextView = (TextView) activity.findViewById(R.id.txt_log_tap_latency);
 
-        mLogTextView.setText(logger.getLogText());
-        logger.registerReceiver(mLogReceiver);
+        logTextView.setText(logger.getLogText());
+        logger.registerReceiver(logReceiver);
 
-        // Register this fregment class as the listener for some button clicks
-        activity.findViewById(R.id.button_restart_tap).setOnClickListener(this);
-        activity.findViewById(R.id.button_finish_tap).setOnClickListener(this);
-
-        mTapCatcher = (TextView) activity.findViewById(R.id.tap_catcher);
-        mTapCatcher.setOnTouchListener(mTouchListener);
+        // Register this fragment class as the listener for some button clicks
+        restartButton.setOnClickListener(this);
+        finishButton.setOnClickListener(this);
     }
 
     @Override
     public void onPause() {
-        logger.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(logReceiver);
         super.onPause();
     }
 
     public void appendLogText(String msg) {
-        mLogTextView.append(msg + "\n");
+        logTextView.append(msg + "\n");
     }
 
     public boolean checkTapSanity(UsMotionEvent e) {
@@ -156,26 +156,26 @@ public class TapLatencyFragment extends Fragment
     }
 
     void updateCountsDisplay() {
-        TextView tv = (TextView) activity.findViewById(R.id.txt_tap_counts);
         String tpl = "N ↓%d (%d)  ↑%d (%d)";
-        tv.setText(String.format(tpl,
+        tapCountsView.setText(String.format(tpl,
                 okDownCount,
                 allDownCount,
                 okUpCount,
                 allUpCount
                 ));
 
-        TextView tvMove = (TextView) activity.findViewById(R.id.txt_move_count);
-        tvMove.setText(String.format("⇄ %d", moveCount));
+        moveCountsView.setText(String.format("⇄ %d", moveCount));
     }
 
     void restartMeasurement() {
-        logger.log("\n## Restarting tap latency  measurement. Re-sync clocks ...");
+        logger.log("\n## Restarting tap latency measurement. Re-sync clocks ...");
         try {
             waltDevice.softReset();
             waltDevice.syncClock();
         } catch (IOException e) {
             logger.log("Error syncing clocks: " + e.getMessage());
+            restartButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+            finishButton.setEnabled(false);
             return;
         }
 
@@ -188,9 +188,11 @@ public class TapLatencyFragment extends Fragment
         okUpCount = 0;
 
         updateCountsDisplay();
+        tapCatcherView.setOnTouchListener(touchListener);
     }
 
     void finishAndShowStats() {
+        tapCatcherView.setOnTouchListener(null);
         logger.log("\n\n## Processing tap latency data");
         waltDevice.checkDrift();
         logger.log(String.format(
@@ -209,8 +211,6 @@ public class TapLatencyFragment extends Fragment
         printStats(MotionEvent.ACTION_DOWN);
         logger.log("\nACTION_UP:");
         printStats(MotionEvent.ACTION_UP);
-
-        restartMeasurement();
     }
 
     private void printStats(int action) {
@@ -240,12 +240,16 @@ public class TapLatencyFragment extends Fragment
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.button_restart_tap) {
+            restartButton.setImageResource(R.drawable.ic_refresh_black_24dp);
+            finishButton.setEnabled(true);
             restartMeasurement();
             return;
         }
 
         if (v.getId() == R.id.button_finish_tap) {
+            finishButton.setEnabled(false);
             finishAndShowStats();
+            restartButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
             return;
         }
 

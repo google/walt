@@ -20,6 +20,7 @@
     <string name="preference_audio_out_reps" translatable="false">pref_audio_out_reps</string>
     <string name="preference_midi_in_reps" translatable="false">pref_midi_in_reps</string>
     <string name="preference_midi_out_reps" translatable="false">pref_midi_out_reps</string>
+    <string name="preference_auto_increase_brightness">auto_increase_brightness</string>
     <string-array name="audio_mode_array">
         <item>Continuous Latency</item>
         <item>Cold Latency</item>
