@@ -15,12 +15,12 @@
             android:orientation="horizontal">
 
             <ImageButton
-                android:id="@+id/button_restart_screen_response"
+                android:id="@+id/button_stop_screen_response"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentLeft="true"
                 android:tint="@color/button_tint"
-                android:src="@drawable/ic_refresh_black_24dp" />
+                android:src="@drawable/ic_stop_black_24dp" />
 
             <ImageButton
                 android:id="@+id/button_start_screen_response"
@@ -30,13 +30,13 @@
                 android:tint="@color/button_tint"
                 android:src="@drawable/ic_play_arrow_black_24dp" />
 
-            <ImageButton
-                android:id="@+id/button_brightness_curve"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <Spinner
+                android:id="@+id/spinner_screen_response"
+                android:layout_height="40dp"
+                android:layout_width="fill_parent"
+                android:layout_toRightOf="@id/button_stop_screen_response"
                 android:layout_toLeftOf="@id/button_start_screen_response"
-                android:tint="@color/button_tint"
-                android:src="@drawable/ic_equalizer_black_24dp" />
+                android:prompt="@string/screen_response_mode"/>
         </RelativeLayout>
 
         <!-- The big box that flickers between black and white -->
@@ -44,7 +44,7 @@
             android:id="@+id/txt_black_box_screen"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#000000"
+            android:background="#aaaaaa"
             android:gravity="bottom"
             android:scrollbars="vertical"/>
 
