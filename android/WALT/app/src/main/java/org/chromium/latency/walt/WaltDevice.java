@@ -259,7 +259,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
             mLogger.log("Error sending GSHOCK command: " + e.getMessage());
             return -1;
         }
-        mLogger.log("Received S reply: " + s);
+        Log.i(TAG, "Received S reply: " + s);
         long t = 0;
         try {
             t = Integer.parseInt(s.trim());

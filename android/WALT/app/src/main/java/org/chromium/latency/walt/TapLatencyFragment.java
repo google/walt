@@ -30,6 +30,7 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class TapLatencyFragment extends Fragment
     implements View.OnClickListener {
@@ -70,7 +71,7 @@ public class TapLatencyFragment extends Fragment
                 return true;
             }
 
-            logger.log("\n"+ action + " event received: " + tapEvent.toStringLong());
+            // Debug: logger.log("\n"+ action + " event received: " + tapEvent.toStringLong());
             tapEvent.physicalTime = waltDevice.readLastShockTime();
 
             tapEvent.isOk = checkTapSanity(tapEvent);
@@ -140,6 +141,7 @@ public class TapLatencyFragment extends Fragment
     public boolean checkTapSanity(UsMotionEvent e) {
         String action = e.getActionString();
         double dt = (e.kernelTime - e.physicalTime) / 1000.0;
+        double dt_k2c = (e.createTime - e.kernelTime) / 1000.0;
 
         if (e.physicalTime == 0) {
             logger.log(action + " no shock found");
@@ -151,20 +153,24 @@ public class TapLatencyFragment extends Fragment
             return  false;
         }
 
-        logger.log(String.format("%s: dt_p2k = %.1f ms", action, dt));
+        logger.log(String.format(Locale.US,
+                "%s:\ntouch2kernel: %.1f ms\nkernel2java: %.1f ms",
+                action, dt, dt_k2c
+        ));
         return true;
     }
 
     void updateCountsDisplay() {
         String tpl = "N ↓%d (%d)  ↑%d (%d)";
-        tapCountsView.setText(String.format(tpl,
+        tapCountsView.setText(String.format(Locale.US,
+                tpl,
                 okDownCount,
                 allDownCount,
                 okUpCount,
                 allUpCount
                 ));
 
-        moveCountsView.setText(String.format("⇄ %d", moveCount));
+        moveCountsView.setText(String.format(Locale.US, "⇄ %d", moveCount));
     }
 
     void restartMeasurement() {
@@ -193,10 +199,14 @@ public class TapLatencyFragment extends Fragment
 
     void finishAndShowStats() {
         tapCatcherView.setOnTouchListener(null);
-        logger.log("\n\n## Processing tap latency data");
         waltDevice.checkDrift();
-        logger.log(String.format(
-                "Counts: ACTION_DOWN %d (bad %d), ACTION_UP %d (bad %d), ACTION_MOVE %d",
+        logger.log("\n-------------------------------");
+        logger.log(String.format(Locale.US,
+                "Tap latency results:\n" +
+                        "Number of events recorded:\n" +
+                        "   ACTION_DOWN %d (bad %d)\n" +
+                        "   ACTION_UP %d (bad %d)\n" +
+                        "   ACTION_MOVE %d",
                 okDownCount,
                 allDownCount - okDownCount,
                 okUpCount,
@@ -207,10 +217,11 @@ public class TapLatencyFragment extends Fragment
         // TODO: Here we should fire up a new fragment with histogram(s)
         // For now do the stats here and save them to log
 
-        logger.log("\nACTION_DOWN:");
+        logger.log("ACTION_DOWN median times:");
         printStats(MotionEvent.ACTION_DOWN);
-        logger.log("\nACTION_UP:");
+        logger.log("ACTION_UP median times:");
         printStats(MotionEvent.ACTION_UP);
+        logger.log("-------------------------------");
     }
 
     private void printStats(int action) {
@@ -227,11 +238,9 @@ public class TapLatencyFragment extends Fragment
             k2c.add((event.createTime - event.kernelTime) / 1000.);
         }
 
-        logger.log(p2k.toString());
-        logger.log(k2c.toString());
-
-        logger.log(String.format(
-                "Medians, p2k & k2c [ms]: %.1f    %.1f",
+        logger.log(String.format(Locale.US,
+                "   Touch to kernel: %.1f ms\n" +
+                "   Kernel to Java: %.1f ms",
                 Utils.median(p2k),
                 Utils.median(k2c)
         ));

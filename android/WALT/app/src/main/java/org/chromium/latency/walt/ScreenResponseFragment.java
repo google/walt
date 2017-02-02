@@ -247,10 +247,12 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         double median_b2w = Utils.median(deltas_b2w);
         double median_w2b = Utils.median(deltas_w2b);
         logger.log(String.format(Locale.US,
-                "\nMedian screen response latencies (N=%d):\n" +
+                "\n-------------------------------\n" +
+                        "Median screen response latencies (N=%d):\n" +
                         "Black to white: %.1f ms (N=%d)\n" +
                         "White to black: %.1f ms (N=%d)\n" +
-                        "Average: %.1f ms",
+                        "Average: %.1f ms\n" +
+                        "-------------------------------\n",
                 deltas.size(),
                 median_b2w, deltas_b2w.size(),
                 median_w2b, deltas_w2b.size(),
