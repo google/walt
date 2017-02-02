@@ -1,6 +1,7 @@
 ## Tap latency
 
-For detailed instructions on how to perform the measurement refer to the [usage doc](usage/WALT_usage.md#tap-latency).
+ * [Video demonstration of tap latency measurement](https://www.youtube.com/watch?v=1xAReF75Cts&list=PLd6Fi7WgXfcCEJg1FDqNCoQfpWo7W3J5a&index=2)
+ * [Detailed instructions on how to perform the measurement in usage doc](usage/WALT_usage.md#tap-latency).
 
 WALT uses a “stylus” equipped with an accelerometer. The finger is imitated by a flat metal
 tip that is grounded, pretty much any rigid tip can be used as long as it triggers the touch sensor.
