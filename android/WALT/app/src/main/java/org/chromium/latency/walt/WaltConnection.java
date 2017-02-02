@@ -36,7 +36,7 @@ public interface WaltConnection {
 
     void setConnectionStateListener(ConnectionStateListener connectionStateListener);
 
-    public interface ConnectionStateListener {
+    interface ConnectionStateListener {
         void onConnect();
         void onDisconnect();
     }

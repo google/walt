@@ -36,25 +36,25 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
     private static final int USB_READ_TIMEOUT_MS = 200;
     private static final String TAG = "WaltUsbConnection";
 
-    private UsbEndpoint mEndpointIn = null;
-    private UsbEndpoint mEndpointOut = null;
+    private UsbEndpoint endpointIn = null;
+    private UsbEndpoint endpointOut = null;
 
     private RemoteClockInfo remoteClock = new RemoteClockInfo();
 
-    private static final Object mLock = new Object();
+    private static final Object LOCK = new Object();
 
-    private static WaltUsbConnection mInstance;
+    private static WaltUsbConnection instance;
 
     private WaltUsbConnection(Context context) {
         super(context);
     }
 
     public static WaltUsbConnection getInstance(Context context) {
-        synchronized (mLock) {
-            if (mInstance == null) {
-                mInstance = new WaltUsbConnection(context.getApplicationContext());
+        synchronized (LOCK) {
+            if (instance == null) {
+                instance = new WaltUsbConnection(context.getApplicationContext());
             }
-            return mInstance;
+            return instance;
         }
     }
 
@@ -80,8 +80,8 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
     // Called when WALT is physically unplugged from USB
     @Override
     public void onDisconnect() {
-        mEndpointIn = null;
-        mEndpointOut = null;
+        endpointIn = null;
+        endpointOut = null;
         super.onDisconnect();
     }
 
@@ -95,24 +95,24 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
         int epInIdx = 1;
         int epOutIdx = 0;
 
-        UsbInterface iface = mUsbDevice.getInterface(ifIdx);
+        UsbInterface iface = usbDevice.getInterface(ifIdx);
 
-        if (mUsbConnection.claimInterface(iface, true)) {
-            mLogger.log("Interface claimed successfully\n");
+        if (usbConnection.claimInterface(iface, true)) {
+            logger.log("Interface claimed successfully\n");
         } else {
-            mLogger.log("ERROR - can't claim interface\n");
+            logger.log("ERROR - can't claim interface\n");
             return;
         }
 
-        mEndpointIn = iface.getEndpoint(epInIdx);
-        mEndpointOut = iface.getEndpoint(epOutIdx);
+        endpointIn = iface.getEndpoint(epInIdx);
+        endpointOut = iface.getEndpoint(epOutIdx);
 
         super.onConnect();
     }
 
     @Override
     public boolean isConnected() {
-        return super.isConnected() && (mEndpointIn != null) && (mEndpointOut != null);
+        return super.isConnected() && (endpointIn != null) && (endpointOut != null);
     }
 
 
@@ -121,13 +121,13 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
         if (!isConnected()) {
             throw new IOException("Not connected to WALT");
         }
-        // mLogger.log("Sending char " + c);
-        mUsbConnection.bulkTransfer(mEndpointOut, Utils.char2byte(c), 1, 100);
+        // logger.log("Sending char " + c);
+        usbConnection.bulkTransfer(endpointOut, Utils.char2byte(c), 1, 100);
     }
 
     @Override
     public int blockingRead(byte[] buffer) {
-        return mUsbConnection.bulkTransfer(mEndpointIn, buffer, buffer.length, USB_READ_TIMEOUT_MS);
+        return usbConnection.bulkTransfer(endpointIn, buffer, buffer.length, USB_READ_TIMEOUT_MS);
     }
 
 
@@ -138,17 +138,17 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
         }
 
         try {
-            int fd = mUsbConnection.getFileDescriptor();
-            int ep_out = mEndpointOut.getAddress();
-            int ep_in = mEndpointIn.getAddress();
+            int fd = usbConnection.getFileDescriptor();
+            int ep_out = endpointOut.getAddress();
+            int ep_in = endpointIn.getAddress();
 
             remoteClock.baseTime = syncClock(fd, ep_out, ep_in);
             remoteClock.minLag = 0;
             remoteClock.maxLag = getMaxE();
         } catch (Exception e) {
-            mLogger.log("Exception while syncing clocks: " + e.getStackTrace());
+            logger.log("Exception while syncing clocks: " + e.getStackTrace());
         }
-        mLogger.log("Synced clocks, maxE=" + remoteClock.maxLag + "us");
+        logger.log("Synced clocks, maxE=" + remoteClock.maxLag + "us");
         Log.i(TAG, remoteClock.toString());
         return remoteClock;
     }
@@ -156,7 +156,7 @@ public class WaltUsbConnection extends BaseUsbConnection implements WaltConnecti
     @Override
     public void updateLag() {
         if (! isConnected()) {
-            mLogger.log("ERROR: Not connected, aborting checkDrift()");
+            logger.log("ERROR: Not connected, aborting checkDrift()");
             return;
         }
         updateBounds();

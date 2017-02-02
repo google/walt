@@ -37,52 +37,48 @@ public class WaltTcpConnection implements WaltConnection {
     private static final int SERVER_PORT = 50007;
     private static final int TCP_READ_TIMEOUT_MS = 200;
 
-    private final SimpleLogger mLogger;
+    private final SimpleLogger logger;
     private HandlerThread networkThread;
     private Handler networkHandler;
-    private final Object mReadLock = new Object();
+    private final Object readLock = new Object();
     private boolean messageReceived = false;
-    private Utils.ListenerState mConnectionState = Utils.ListenerState.STOPPED;
+    private Utils.ListenerState connectionState = Utils.ListenerState.STOPPED;
     private int lastRetVal;
     static final int BUFF_SIZE = 1024 * 4;
     private byte[] buffer = new byte[BUFF_SIZE];
-
-
 
     private final Handler mainHandler = new Handler();
     private RemoteClockInfo remoteClock = new RemoteClockInfo();
 
     private Socket socket;
-    private OutputStream mOutputStream = null;
-    private InputStream mInputStream = null;
+    private OutputStream outputStream = null;
+    private InputStream inputStream = null;
 
-
-    private WaltConnection.ConnectionStateListener mConnectionStateListener;
+    private WaltConnection.ConnectionStateListener connectionStateListener;
 
     // Singleton stuff
-    private static WaltTcpConnection mInstance;
-    private static final Object mLock = new Object();
-
+    private static WaltTcpConnection instance;
+    private static final Object LOCK = new Object();
 
     public static WaltTcpConnection getInstance(Context context) {
-        synchronized (mLock) {
-            if (mInstance == null) {
-                mInstance = new WaltTcpConnection(context.getApplicationContext());
+        synchronized (LOCK) {
+            if (instance == null) {
+                instance = new WaltTcpConnection(context.getApplicationContext());
             }
-            return mInstance;
+            return instance;
         }
     }
 
     private WaltTcpConnection(Context context) {
-        mLogger = SimpleLogger.getInstance(context);
+        logger = SimpleLogger.getInstance(context);
     }
 
     public void connect() {
-        mConnectionState = Utils.ListenerState.STARTING;
+        connectionState = Utils.ListenerState.STARTING;
         networkThread = new HandlerThread("NetworkThread");
         networkThread.start();
         networkHandler = new Handler(networkThread.getLooper());
-        mLogger.log("Started network thread for TCP bridge");
+        logger.log("Started network thread for TCP bridge");
         networkHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -90,14 +86,14 @@ public class WaltTcpConnection implements WaltConnection {
                     InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
                     socket = new Socket(serverAddr, SERVER_PORT);
                     socket.setSoTimeout(TCP_READ_TIMEOUT_MS);
-                    mOutputStream = socket.getOutputStream();
-                    mInputStream = socket.getInputStream();
-                    mLogger.log("TCP connection established");
-                    mConnectionState = Utils.ListenerState.RUNNING;
+                    outputStream = socket.getOutputStream();
+                    inputStream = socket.getInputStream();
+                    logger.log("TCP connection established");
+                    connectionState = Utils.ListenerState.RUNNING;
                 } catch (Exception e) {
                     e.printStackTrace();
-                    mLogger.log("Can't connect to TCP bridge: " + e.getMessage());
-                    mConnectionState = Utils.ListenerState.STOPPED;
+                    logger.log("Can't connect to TCP bridge: " + e.getMessage());
+                    connectionState = Utils.ListenerState.STOPPED;
                     return;
                 }
 
@@ -114,21 +110,21 @@ public class WaltTcpConnection implements WaltConnection {
     }
 
     public void onConnect() {
-        if (mConnectionStateListener != null) {
-            mConnectionStateListener.onConnect();
+        if (connectionStateListener != null) {
+            connectionStateListener.onConnect();
         }
     }
 
     public synchronized boolean isConnected() {
-        return mConnectionState == Utils.ListenerState.RUNNING;
+        return connectionState == Utils.ListenerState.RUNNING;
     }
 
     public void sendByte(char c) throws IOException {
-        mOutputStream.write(Utils.char2byte(c));
+        outputStream.write(Utils.char2byte(c));
     }
 
     public void sendString(String s) throws IOException {
-        mOutputStream.write(s.getBytes("UTF-8"));
+        outputStream.write(s.getBytes("UTF-8"));
     }
 
     public synchronized int blockingRead(byte[] buff) {
@@ -140,10 +136,10 @@ public class WaltTcpConnection implements WaltConnection {
             public void run() {
                 lastRetVal = -1;
                 try {
-                    synchronized (mReadLock) {
-                        lastRetVal = mInputStream.read(buffer);
+                    synchronized (readLock) {
+                        lastRetVal = inputStream.read(buffer);
                         messageReceived = true;
-                        mReadLock.notifyAll();
+                        readLock.notifyAll();
                     }
                 } catch (SocketTimeoutException e) {
                     messageReceived = true;
@@ -159,10 +155,10 @@ public class WaltTcpConnection implements WaltConnection {
         });
 
         // TODO: make sure length is ok
-        // This blocks on mReadLock which is taken by the blocking read operation
+        // This blocks on readLock which is taken by the blocking read operation
         try {
-            synchronized (mReadLock) {
-                while (!messageReceived) mReadLock.wait(TCP_READ_TIMEOUT_MS);
+            synchronized (readLock) {
+                while (!messageReceived) readLock.wait(TCP_READ_TIMEOUT_MS);
             }
         } catch (InterruptedException e) {
             return -1;
@@ -193,7 +189,7 @@ public class WaltTcpConnection implements WaltConnection {
 
     public RemoteClockInfo syncClock() throws IOException {
         updateClock("bridge sync");
-        mLogger.log("Synced clocks via TCP bridge:\n" + remoteClock);
+        logger.log("Synced clocks via TCP bridge:\n" + remoteClock);
         return remoteClock;
     }
 
@@ -201,12 +197,12 @@ public class WaltTcpConnection implements WaltConnection {
         try {
             updateClock("bridge update");
         } catch (IOException e) {
-            mLogger.log("Failed to update clock lag: " + e.getMessage());
+            logger.log("Failed to update clock lag: " + e.getMessage());
         }
     }
 
     public void setConnectionStateListener(ConnectionStateListener connectionStateListener) {
-        mConnectionStateListener = connectionStateListener;
+        this.connectionStateListener = connectionStateListener;
     }
 
     // A way to test if there is a TCP bridge to decide whether to use it.

@@ -32,30 +32,30 @@ public class Programmer {
     private static final String TAG = "Programmer";
     private SimpleLogger logger;
 
-    private FirmwareImage mImage;
-    private BootloaderConnection mConn;
+    private FirmwareImage image;
+    private BootloaderConnection conn;
 
-    private Context mContext;
+    private Context context;
     private Handler handler = new Handler();
 
     public Programmer(Context context) {
-        mContext = context;
+        this.context = context;
     }
 
     public void program() {
-        logger = SimpleLogger.getInstance(mContext);
-        InputStream in = mContext.getResources().openRawResource(R.raw.walt);
-        mImage = new FirmwareImage();
+        logger = SimpleLogger.getInstance(context);
+        InputStream in = context.getResources().openRawResource(R.raw.walt);
+        image = new FirmwareImage();
         try {
-            mImage.parseHex(in);
+            image.parseHex(in);
         } catch (ParseException e) {
             Log.e(TAG, "Parsing input file: ", e);
         }
 
-        mConn = BootloaderConnection.getInstance(mContext);
+        conn = BootloaderConnection.getInstance(context);
         // TODO: automatically reboot into the bootloader
         logger.log("\nRemember to press the button on the Teensy first\n");
-        mConn.setConnectionStateListener(new WaltConnection.ConnectionStateListener() {
+        conn.setConnectionStateListener(new WaltConnection.ConnectionStateListener() {
             @Override
             public void onConnect() {
                 handler.post(programRunnable);
@@ -64,8 +64,8 @@ public class Programmer {
             @Override
             public void onDisconnect() {}
         });
-        if (!mConn.isConnected()) {
-            mConn.connect();
+        if (!conn.isConnected()) {
+            conn.connect();
         }
     }
 
@@ -79,16 +79,16 @@ public class Programmer {
             byte[] buf = new byte[DeviceConstants.BLOCK_SIZE + 64];
             for (int addr = 0; addr < DeviceConstants.FIRMWARE_SIZE;
                  addr += DeviceConstants.BLOCK_SIZE) {
-                if (!mImage.shouldWrite(addr, DeviceConstants.BLOCK_SIZE) && addr != 0)
+                if (!image.shouldWrite(addr, DeviceConstants.BLOCK_SIZE) && addr != 0)
                     continue; // don't need to flash this block
 
                 buf[0] = (byte) (addr & 255);
                 buf[1] = (byte) ((addr >>> 8) & 255);
                 buf[2] = (byte) ((addr >>> 16) & 255);
                 Arrays.fill(buf, 3, 64, (byte) 0);
-                mImage.getData(buf, 64, addr, DeviceConstants.BLOCK_SIZE);
+                image.getData(buf, 64, addr, DeviceConstants.BLOCK_SIZE);
 
-                mConn.write(buf, (addr == 0) ? 3000 : 250);
+                conn.write(buf, (addr == 0) ? 3000 : 250);
             }
 
             logger.log("Programming complete. Rebooting.");
@@ -98,7 +98,7 @@ public class Programmer {
             buf[1] = (byte) 0xFF;
             buf[2] = (byte) 0xFF;
             Arrays.fill(buf, 3, DeviceConstants.BLOCK_SIZE + 64, (byte) 0);
-            mConn.write(buf, 250);
+            conn.write(buf, 250);
         }
     };
 }

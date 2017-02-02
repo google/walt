@@ -90,15 +90,15 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
 
         modeSpinner.setOnItemSelectedListener(this);
 
-        // mLogTextView.setMovementMethod(new ScrollingMovementMethod());
+        // textView.setMovementMethod(new ScrollingMovementMethod());
         textView.setText(logger.getLogText());
-        logger.registerReceiver(mLogReceiver);
+        logger.registerReceiver(logReceiver);
 
     }
 
     @Override
     public void onPause() {
-        logger.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(logReceiver);
         super.onPause();
     }
 
@@ -148,7 +148,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         }
     }
 
-    private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("message");

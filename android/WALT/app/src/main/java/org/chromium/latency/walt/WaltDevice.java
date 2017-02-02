@@ -58,30 +58,30 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     static final char CMD_NOTE             = 'N'; // Generate a MIDI NoteOn message
 
     private static final int BYTE_BUFFER_SIZE = 1024 * 4;
-    private byte[] mBuffer = new byte[BYTE_BUFFER_SIZE];
+    private byte[] buffer = new byte[BYTE_BUFFER_SIZE];
 
-    private Context mContext;
-    protected SimpleLogger mLogger;
+    private Context context;
+    protected SimpleLogger logger;
     private WaltConnection connection;
     public RemoteClockInfo clock;
-    private WaltConnection.ConnectionStateListener mConnectionStateListener;
+    private WaltConnection.ConnectionStateListener connectionStateListener;
 
-    private static final Object mLock = new Object();
-    private static WaltDevice mInstance;
+    private static final Object LOCK = new Object();
+    private static WaltDevice instance;
 
     public static WaltDevice getInstance(Context context) {
-        synchronized (mLock) {
-            if (mInstance == null) {
-                mInstance = new WaltDevice(context.getApplicationContext());
+        synchronized (LOCK) {
+            if (instance == null) {
+                instance = new WaltDevice(context.getApplicationContext());
             }
-            return mInstance;
+            return instance;
         }
     }
 
     private WaltDevice(Context context) {
-        mContext = context;
-        mTriggerListener = new TriggerListener();
-        mLogger = SimpleLogger.getInstance(context);
+        this.context = context;
+        triggerListener = new TriggerListener();
+        logger = SimpleLogger.getInstance(context);
     }
 
     public void onConnect() {
@@ -91,11 +91,11 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
             checkVersion();
             syncClock();
         } catch (IOException e) {
-            mLogger.log("Unable to communicate with WALT: " + e.getMessage());
+            logger.log("Unable to communicate with WALT: " + e.getMessage());
         }
 
-        if (mConnectionStateListener != null) {
-            mConnectionStateListener.onConnect();
+        if (connectionStateListener != null) {
+            connectionStateListener.onConnect();
         }
     }
 
@@ -106,19 +106,19 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
             stopListener();
         }
 
-        if (mConnectionStateListener != null) {
-            mConnectionStateListener.onDisconnect();
+        if (connectionStateListener != null) {
+            connectionStateListener.onDisconnect();
         }
     }
 
     public void connect() {
         if (WaltTcpConnection.probe()) {
-            mLogger.log("Using TCP bridge for ChromeOS");
-            connection = WaltTcpConnection.getInstance(mContext);
+            logger.log("Using TCP bridge for ChromeOS");
+            connection = WaltTcpConnection.getInstance(context);
         } else {
             // USB connection
-            mLogger.log("No TCP bridge detected, using direct USB connection");
-            connection = WaltUsbConnection.getInstance(mContext);
+            logger.log("No TCP bridge detected, using direct USB connection");
+            connection = WaltUsbConnection.getInstance(context);
         }
         connection.setConnectionStateListener(this);
         connection.connect();
@@ -127,7 +127,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
     public void connect(UsbDevice usbDevice) {
         // This happens when apps starts as a result of plugging WALT into USB. In this case we
         // receive an intent with a usbDevice
-        WaltUsbConnection usbConnection = WaltUsbConnection.getInstance(mContext);
+        WaltUsbConnection usbConnection = WaltUsbConnection.getInstance(context);
         connection = usbConnection;
         connection.setConnectionStateListener(this);
         usbConnection.connect(usbDevice);
@@ -164,11 +164,11 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
         try {
             connection.sendByte(c);
-            while(connection.blockingRead(mBuffer) > 0) {
+            while(connection.blockingRead(buffer) > 0) {
                 // flushing all incoming data
             }
         } catch (Exception e) {
-            mLogger.log("Exception in sendAndFlush: " + e.getMessage());
+            logger.log("Exception in sendAndFlush: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -210,7 +210,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
         String s = command(CMD_VERSION);
         if (!PROTOCOL_VERSION.equals(s)) {
-            Resources res = mContext.getResources();
+            Resources res = context.getResources();
             throw new IOException(String.format(res.getString(R.string.protocol_version_mismatch),
                     s, PROTOCOL_VERSION));
         }
@@ -226,14 +226,14 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         clock = new RemoteClockInfo();
         clock.baseTime = RemoteClockInfo.microTime();
         String reply = sendReceive(CMD_SYNC_ZERO);
-        mLogger.log("Simple sync reply: " + reply);
+        logger.log("Simple sync reply: " + reply);
         clock.maxLag = (int) clock.micros();
-        mLogger.log("Synced clocks, the simple way:\n" + clock);
+        logger.log("Synced clocks, the simple way:\n" + clock);
     }
 
     public void checkDrift() {
         if (! isConnected()) {
-            mLogger.log("ERROR: Not connected, aborting checkDrift()");
+            logger.log("ERROR: Not connected, aborting checkDrift()");
             return;
         }
         connection.updateLag();
@@ -244,7 +244,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         if (drift > DEFAULT_DRIFT_LIMIT_US) {
             msg = "WARNING: High clock drift. " + msg;
         }
-        mLogger.log(msg);
+        logger.log(msg);
     }
 
     public long readLastShockTime_mock() {
@@ -256,7 +256,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         try {
             s = sendReceive(CMD_GSHOCK);
         } catch (IOException e) {
-            mLogger.log("Error sending GSHOCK command: " + e.getMessage());
+            logger.log("Error sending GSHOCK command: " + e.getMessage());
             return -1;
         }
         Log.i(TAG, "Received S reply: " + s);
@@ -264,7 +264,7 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         try {
             t = Integer.parseInt(s.trim());
         } catch (NumberFormatException e) {
-            mLogger.log("Bad reply for shock time: " + e.getMessage());
+            logger.log("Bad reply for shock time: " + e.getMessage());
         }
 
         return t;
@@ -301,8 +301,8 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
 
      */
 
-    private TriggerListener mTriggerListener;
-    private Thread mTriggerListenerThread;
+    private TriggerListener triggerListener;
+    private Thread triggerListenerThread;
 
     abstract static class TriggerHandler {
         private Handler handler;
@@ -332,14 +332,14 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         abstract void onReceive(TriggerMessage tmsg);
     }
 
-    private TriggerHandler mTriggerHandler;
+    private TriggerHandler triggerHandler;
 
     void setTriggerHandler(TriggerHandler triggerHandler) {
-        mTriggerHandler = triggerHandler;
+        this.triggerHandler = triggerHandler;
     }
 
     void clearTriggerHandler() {
-        mTriggerHandler = null;
+        triggerHandler = null;
     }
 
     private class TriggerListener implements Runnable {
@@ -352,11 +352,11 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
             state = Utils.ListenerState.RUNNING;
             while(isRunning()) {
                 int ret = connection.blockingRead(buffer);
-                if (ret > 0 && mTriggerHandler != null) {
+                if (ret > 0 && triggerHandler != null) {
                     String s = new String(buffer, 0, ret);
                     Log.i(TAG, "Listener received data: " + s);
                     if (s.length() > 0) {
-                        mTriggerHandler.go(s);
+                        triggerHandler.go(s);
                     }
                 }
             }
@@ -374,37 +374,37 @@ public class WaltDevice implements WaltConnection.ConnectionStateListener {
         public synchronized void stop() {
             state = Utils.ListenerState.STOPPING;
         }
-    };
+    }
 
     public boolean isListenerStopped() {
-        return mTriggerListener.isStopped();
+        return triggerListener.isStopped();
     }
 
     public void startListener() throws IOException {
         if (!isConnected()) {
             throw new IOException("Not connected to WALT");
         }
-        mTriggerListenerThread = new Thread(mTriggerListener);
-        mLogger.log("Starting Listener");
-        mTriggerListener.state = Utils.ListenerState.STARTING;
-        mTriggerListenerThread.start();
+        triggerListenerThread = new Thread(triggerListener);
+        logger.log("Starting Listener");
+        triggerListener.state = Utils.ListenerState.STARTING;
+        triggerListenerThread.start();
     }
 
     public void stopListener() {
-        mLogger.log("Stopping Listener");
-        mTriggerListener.stop();
+        logger.log("Stopping Listener");
+        triggerListener.stop();
         try {
-            mTriggerListenerThread.join();
+            triggerListenerThread.join();
         } catch (Exception e) {
-            mLogger.log("Error while stopping Listener: " + e.getMessage());
+            logger.log("Error while stopping Listener: " + e.getMessage());
         }
-        mLogger.log("Listener stopped");
+        logger.log("Listener stopped");
     }
 
     public void setConnectionStateListener(WaltConnection.ConnectionStateListener connectionStateListener) {
-        this.mConnectionStateListener = connectionStateListener;
+        this.connectionStateListener = connectionStateListener;
         if (isConnected()) {
-            mConnectionStateListener.onConnect();
+            this.connectionStateListener.onConnect();
         }
     }
 

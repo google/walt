@@ -300,7 +300,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         public void onReceiveRaw(String s) {
             brightnessCurveData.append(s);
             if (s.trim().equals("end")) {
-                // Remove the delayed callbed and run it now
+                // Remove the delayed callback and run it now
                 handler.removeCallbacks(finishBrightnessCurve);
                 handler.post(finishBrightnessCurve);
             }

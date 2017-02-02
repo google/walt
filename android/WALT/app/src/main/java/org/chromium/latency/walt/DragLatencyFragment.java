@@ -42,17 +42,12 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
     private View restartButton;
     private View finishButton;
     int moveCount = 0;
-    int allDownCount = 0;
-    int allUpCount = 0;
-    int okDownCount = 0;
-    int okUpCount = 0;
-
 
     ArrayList<UsMotionEvent> touchEventList = new ArrayList<>();
     ArrayList<WaltDevice.TriggerMessage> laserEventList = new ArrayList<>();
 
 
-    private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("message");
@@ -60,7 +55,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         }
     };
 
-    private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
+    private View.OnTouchListener touchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             int histLen = event.getHistorySize();
@@ -106,7 +101,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         super.onResume();
 
         logTextView.setText(logger.getLogText());
-        logger.registerReceiver(mLogReceiver);
+        logger.registerReceiver(logReceiver);
 
         // Register this fragment class as the listener for some button clicks
         startButton.setOnClickListener(this);
@@ -116,7 +111,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
 
     @Override
     public void onPause() {
-        logger.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(logReceiver);
         super.onPause();
     }
 
@@ -150,7 +145,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
             waltDevice.clearTriggerHandler();
             return false;
         }
-        touchCatcher.setOnTouchListener(mTouchListener);
+        touchCatcher.setOnTouchListener(touchListener);
         touchCatcher.startAnimation();
         return true;
     }
@@ -164,15 +159,8 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         }
 
         touchCatcher.startAnimation();
-
         touchEventList.clear();
-
         moveCount = 0;
-        allDownCount = 0;
-        allUpCount = 0;
-        okDownCount = 0;
-        okUpCount = 0;
-
         updateCountsDisplay();
     }
 

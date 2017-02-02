@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
     LocalBroadcastManager broadcastManager;
     private SimpleLogger logger;
     private WaltDevice waltDevice;
-    public Menu mMenu;
+    public Menu menu;
 
     public Handler handler = new Handler();
 
@@ -180,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        mMenu = menu;
+        this.menu = menu;
         return true;
     }
 
@@ -262,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClickOpenLog(View view) {
         LogFragment logFragment = new LogFragment();
-        // mMenu.findItem(R.id.action_help).setVisible(false);
+        // menu.findItem(R.id.action_help).setVisible(false);
         switchScreen(logFragment, "Log");
     }
 

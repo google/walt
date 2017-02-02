@@ -38,7 +38,7 @@ public class DiagnosticsFragment extends Fragment {
     private TextView logTextView;
 
 
-    private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("message");
@@ -66,12 +66,12 @@ public class DiagnosticsFragment extends Fragment {
         super.onResume();
         logTextView.setMovementMethod(new ScrollingMovementMethod());
         logTextView.setText(logger.getLogText());
-        logger.registerReceiver(mLogReceiver);
+        logger.registerReceiver(logReceiver);
     }
 
     @Override
     public void onPause() {
-        logger.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(logReceiver);
         super.onPause();
     }
 

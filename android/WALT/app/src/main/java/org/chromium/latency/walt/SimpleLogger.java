@@ -24,25 +24,25 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 /**
- * A very simple mLogger that keeps its data in a StringBuilder. We need on screen log because the
+ * A very simple logger that keeps its data in a StringBuilder. We need on screen log because the
  * USB port is often taken and we don't have easy access to adb log.
  */
 public class SimpleLogger {
     private static final String LOG_INTENT = "log-message";
     public static final String TAG = "WaltLogger";
 
-    private static final Object mLock = new Object();
-    private static SimpleLogger mInstance;
+    private static final Object LOCK = new Object();
+    private static SimpleLogger instance;
 
     private StringBuilder sb = new StringBuilder();
     private LocalBroadcastManager broadcastManager;
 
     public static SimpleLogger getInstance(Context context) {
-        synchronized (mLock) {
-            if (mInstance == null) {
-                mInstance = new SimpleLogger(context.getApplicationContext());
+        synchronized (LOCK) {
+            if (instance == null) {
+                instance = new SimpleLogger(context.getApplicationContext());
             }
-            return mInstance;
+            return instance;
         }
     }
 
