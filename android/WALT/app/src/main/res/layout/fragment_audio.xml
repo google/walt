@@ -29,13 +29,16 @@
                 android:layout_alignParentRight="true"
                 android:tint="@color/button_tint"
                 android:src="@drawable/ic_play_arrow_black_24dp" />
-        </RelativeLayout>
 
-        <Spinner
-            android:id="@+id/spinner_audio_mode"
-            android:layout_height="30dp"
-            android:layout_width="fill_parent"
-            android:prompt="@string/audio_mode"/>
+            <Spinner
+                android:id="@+id/spinner_audio_mode"
+                android:layout_height="40dp"
+                android:layout_width="fill_parent"
+                android:layout_toRightOf="@id/button_start_audio_rec"
+                android:layout_toLeftOf="@id/button_start_audio_play"
+                android:prompt="@string/audio_mode"/>
+
+        </RelativeLayout>
 
         <!-- For now the results are just listed in this textView -->
         <TextView

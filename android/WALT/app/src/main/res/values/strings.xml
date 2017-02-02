@@ -8,6 +8,7 @@
         supported. Please program WALT to a firmware with protocol version %2$s. To do this
         from the app, choose "Reprogram" from the "Diagnostics" menu.</string>
     <string name="audio_mode">Audio Testing Mode</string>
+    <string name="screen_response_mode">Screen Testing Mode</string>
     <string name="about_description">WALT is designed to measure the latency of physical sensors
         and outputs on phones and computers. It can currently perform the following measurements:
         tap latency, drag latency (scroll), screen draw latency, audio output/microphone
@@ -24,6 +25,10 @@
     <string-array name="audio_mode_array">
         <item>Continuous Latency</item>
         <item>Cold Latency</item>
+    </string-array>
+    <string-array name="screen_response_mode_array">
+        <item>Blink Latency</item>
+        <item>Brightness Curve</item>
     </string-array>
 
 </resources>
