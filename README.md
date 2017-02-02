@@ -12,7 +12,7 @@ WALT is designed to measure the latency of physical sensors and outputs on phone
    until the kernel timestamps an ACTION_DOWN (or ACTION_UP) event. This physical contact with
    the screen is timed using an accelerometer mounted on the probe.
  * [Drag latency](docs/DragLatency.md) (scroll).
- * Screen draw latency - using a photodiode that detects whether the screen is black or white.
+ * [Screen draw latency](docs/ScreenLatency.md) - using a photodiode that detects whether the screen is black or white.
  * [Audio output and microphone latencies](docs/AudioLatency.md).
  * MIDI input and output latencies
 
