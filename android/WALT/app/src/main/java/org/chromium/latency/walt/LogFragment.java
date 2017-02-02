@@ -37,10 +37,10 @@ public class LogFragment extends Fragment {
 
     private Activity activity;
     private SimpleLogger logger;
-    TextView mTextView;
+    TextView textView;
 
 
-    private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("message");
@@ -65,20 +65,20 @@ public class LogFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        mTextView = (TextView) activity.findViewById(R.id.txt_log);
-        mTextView.setMovementMethod(new ScrollingMovementMethod());
-        mTextView.setText(logger.getLogText());
-        logger.registerReceiver(mLogReceiver);
+        textView = (TextView) activity.findViewById(R.id.txt_log);
+        textView.setMovementMethod(new ScrollingMovementMethod());
+        textView.setText(logger.getLogText());
+        logger.registerReceiver(logReceiver);
     }
 
     @Override
     public void onPause() {
-        logger.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(logReceiver);
         super.onPause();
     }
 
     public void appendLogText(String msg) {
-        mTextView.append(msg + "\n");
+        textView.append(msg + "\n");
     }
 
 }

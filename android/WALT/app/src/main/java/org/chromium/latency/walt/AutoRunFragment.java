@@ -191,7 +191,7 @@ public class AutoRunFragment extends Fragment {
         // Required empty public constructor
     }
 
-    private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("message");
@@ -222,12 +222,12 @@ public class AutoRunFragment extends Fragment {
         txtLogAutoRun = (TextView) getActivity().findViewById(R.id.txt_log_auto_run);
         txtLogAutoRun.setMovementMethod(new ScrollingMovementMethod());
         txtLogAutoRun.setText(logger.getLogText());
-        logger.registerReceiver(mLogReceiver);
+        logger.registerReceiver(logReceiver);
     }
 
     @Override
     public void onPause() {
-        logger.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(logReceiver);
         super.onPause();
     }
 }

@@ -82,7 +82,7 @@ public class UsMotionEvent {
 
     }
 
-    // The MotionEvent.actionToString is not present befoe API 19
+    // The MotionEvent.actionToString is not present before API 19
     public static String actionToString(int action) {
         switch (action) {
             case MotionEvent.ACTION_DOWN:

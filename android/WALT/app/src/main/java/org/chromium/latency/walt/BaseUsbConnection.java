@@ -33,21 +33,21 @@ public abstract class BaseUsbConnection {
     private static final String USB_PERMISSION_RESPONSE_INTENT = "usb-permission-response";
     private static final String CONNECT_INTENT = "org.chromium.latency.walt.CONNECT";
 
-    protected SimpleLogger mLogger;
-    protected Context mContext;
-    private LocalBroadcastManager mBroadcastManager;
-    private BroadcastReceiver mCurrentConnectReceiver;
-    private WaltConnection.ConnectionStateListener mConnectionStateListener;
+    protected SimpleLogger logger;
+    protected Context context;
+    private LocalBroadcastManager broadcastManager;
+    private BroadcastReceiver currentConnectReceiver;
+    private WaltConnection.ConnectionStateListener connectionStateListener;
 
-    private UsbManager mUsbManager;
-    protected UsbDevice mUsbDevice = null;
-    protected UsbDeviceConnection mUsbConnection;
+    private UsbManager usbManager;
+    protected UsbDevice usbDevice = null;
+    protected UsbDeviceConnection usbConnection;
 
     public BaseUsbConnection(Context context) {
-        mContext = context;
-        mUsbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
-        mLogger = SimpleLogger.getInstance(context);
-        mBroadcastManager = LocalBroadcastManager.getInstance(context);
+        this.context = context;
+        usbManager = (UsbManager) this.context.getSystemService(Context.USB_SERVICE);
+        logger = SimpleLogger.getInstance(context);
+        broadcastManager = LocalBroadcastManager.getInstance(context);
     }
 
     public abstract int getVid();
@@ -58,14 +58,14 @@ public abstract class BaseUsbConnection {
     protected abstract boolean isCompatibleUsbDevice(UsbDevice usbDevice);
 
     public void onDisconnect() {
-        if (mConnectionStateListener != null) {
-            mConnectionStateListener.onDisconnect();
+        if (connectionStateListener != null) {
+            connectionStateListener.onDisconnect();
         }
     }
 
     public void onConnect() {
-        if (mConnectionStateListener != null) {
-            mConnectionStateListener.onConnect();
+        if (connectionStateListener != null) {
+            connectionStateListener.onConnect();
         }
     }
 
@@ -79,13 +79,13 @@ public abstract class BaseUsbConnection {
     }
 
     public boolean isConnected() {
-        return mUsbConnection != null;
+        return usbConnection != null;
     }
 
     public void registerConnectCallback(final Runnable r) {
-        if (mCurrentConnectReceiver != null) {
-            mBroadcastManager.unregisterReceiver(mCurrentConnectReceiver);
-            mCurrentConnectReceiver = null;
+        if (currentConnectReceiver != null) {
+            broadcastManager.unregisterReceiver(currentConnectReceiver);
+            currentConnectReceiver = null;
         }
 
         if (isConnected()) {
@@ -93,14 +93,14 @@ public abstract class BaseUsbConnection {
             return;
         }
 
-        mCurrentConnectReceiver = new BroadcastReceiver() {
+        currentConnectReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                mBroadcastManager.unregisterReceiver(this);
+                broadcastManager.unregisterReceiver(this);
                 r.run();
             }
         };
-        mBroadcastManager.registerReceiver(mCurrentConnectReceiver,
+        broadcastManager.registerReceiver(currentConnectReceiver,
                 new IntentFilter(getConnectIntent()));
     }
 
@@ -111,46 +111,46 @@ public abstract class BaseUsbConnection {
 
     public void connect(UsbDevice usbDevice) {
         if (usbDevice == null) {
-            mLogger.log("Device not found.");
+            logger.log("Device not found.");
             return;
         }
 
         if (!isCompatibleUsbDevice(usbDevice)) {
-            mLogger.log("Not a valid device");
+            logger.log("Not a valid device");
             return;
         }
 
-        mUsbDevice = usbDevice;
+        this.usbDevice = usbDevice;
 
         // Request permission
         // This displays a dialog asking user for permission to use the device.
         // No dialog is displayed if the permission was already given before or the app started as a
         // result of intent filter when the device was plugged in.
 
-        PendingIntent permissionIntent = PendingIntent.getBroadcast(mContext, 0,
+        PendingIntent permissionIntent = PendingIntent.getBroadcast(context, 0,
                 new Intent(getUsbPermissionResponseIntent()), 0);
-        mContext.registerReceiver(respondToUsbPermission,
+        context.registerReceiver(respondToUsbPermission,
                 new IntentFilter(getUsbPermissionResponseIntent()));
-        mLogger.log("Requesting permission for USB device.");
-        mUsbManager.requestPermission(mUsbDevice, permissionIntent);
+        logger.log("Requesting permission for USB device.");
+        usbManager.requestPermission(this.usbDevice, permissionIntent);
     }
 
     public void disconnect() {
         onDisconnect();
 
-        mUsbConnection.close();
-        mUsbConnection = null;
-        mUsbDevice = null;
+        usbConnection.close();
+        usbConnection = null;
+        usbDevice = null;
 
-        mContext.unregisterReceiver(disconnectReceiver);
+        context.unregisterReceiver(disconnectReceiver);
     }
 
     private BroadcastReceiver disconnectReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-            if (isConnected() && mUsbDevice.equals(usbDevice)) {
-                mLogger.log("WALT was detached");
+            if (isConnected() && BaseUsbConnection.this.usbDevice.equals(usbDevice)) {
+                logger.log("WALT was detached");
                 disconnect();
             }
         }
@@ -160,39 +160,39 @@ public abstract class BaseUsbConnection {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            if (mUsbDevice == null) {
-                mLogger.log("USB device was not properly opened");
+            if (usbDevice == null) {
+                logger.log("USB device was not properly opened");
                 return;
             }
 
             if(intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) &&
-                    mUsbDevice.equals(intent.getParcelableExtra(UsbManager.EXTRA_DEVICE))){
-                mUsbConnection = mUsbManager.openDevice(mUsbDevice);
+                    usbDevice.equals(intent.getParcelableExtra(UsbManager.EXTRA_DEVICE))){
+                usbConnection = usbManager.openDevice(usbDevice);
 
-                mContext.registerReceiver(disconnectReceiver,
+                BaseUsbConnection.this.context.registerReceiver(disconnectReceiver,
                         new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
 
                 onConnect();
 
-                mBroadcastManager.sendBroadcast(new Intent(getConnectIntent()));
+                broadcastManager.sendBroadcast(new Intent(getConnectIntent()));
             } else {
-                mLogger.log("Could not get permission to open the USB device");
+                logger.log("Could not get permission to open the USB device");
             }
-            mContext.unregisterReceiver(respondToUsbPermission);
+            BaseUsbConnection.this.context.unregisterReceiver(respondToUsbPermission);
         }
     };
 
     public UsbDevice findUsbDevice() {
 
-        mLogger.log(String.format("Looking for TeensyUSB VID=0x%x PID=0x%x", getVid(), getPid()));
+        logger.log(String.format("Looking for TeensyUSB VID=0x%x PID=0x%x", getVid(), getPid()));
 
-        HashMap<String, UsbDevice> deviceHash = mUsbManager.getDeviceList();
+        HashMap<String, UsbDevice> deviceHash = usbManager.getDeviceList();
         if (deviceHash.size() == 0) {
-            mLogger.log("No connected USB devices found");
+            logger.log("No connected USB devices found");
             return null;
         }
 
-        mLogger.log("Found " + deviceHash.size() + " connected USB devices:");
+        logger.log("Found " + deviceHash.size() + " connected USB devices:");
 
         UsbDevice usbDevice = null;
 
@@ -212,12 +212,12 @@ public abstract class BaseUsbConnection {
                 msg = "Skipping " + msg;
             }
 
-            mLogger.log(msg);
+            logger.log(msg);
         }
         return usbDevice;
     }
 
     public void setConnectionStateListener(WaltConnection.ConnectionStateListener connectionStateListener) {
-        this.mConnectionStateListener = connectionStateListener;
+        this.connectionStateListener = connectionStateListener;
     }
 }

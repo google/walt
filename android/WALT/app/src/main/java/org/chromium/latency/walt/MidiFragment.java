@@ -61,14 +61,14 @@ public class MidiFragment extends Fragment
         startMidiInButton.setOnClickListener(this);
         startMidiOutButton.setOnClickListener(this);
 
-        // mLogTextView.setMovementMethod(new ScrollingMovementMethod());
+        // textView.setMovementMethod(new ScrollingMovementMethod());
         textView.setText(logger.getLogText());
-        logger.registerReceiver(mLogReceiver);
+        logger.registerReceiver(logReceiver);
     }
 
     @Override
     public void onPause() {
-        logger.unregisterReceiver(mLogReceiver);
+        logger.unregisterReceiver(logReceiver);
         super.onPause();
     }
 
@@ -91,7 +91,7 @@ public class MidiFragment extends Fragment
         startMidiOutButton.setEnabled(false);
     }
 
-    private BroadcastReceiver mLogReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("message");

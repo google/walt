@@ -28,25 +28,25 @@ import java.util.Arrays;
 class FirmwareImage {
     private static final String TAG = "FirmwareImage";
 
-    private boolean mAtEOF = false;
-    private byte[] mImage = new byte[DeviceConstants.FIRMWARE_SIZE];
-    private boolean[] mMask = new boolean[DeviceConstants.FIRMWARE_SIZE];
+    private boolean atEOF = false;
+    private byte[] image = new byte[DeviceConstants.FIRMWARE_SIZE];
+    private boolean[] mask = new boolean[DeviceConstants.FIRMWARE_SIZE];
 
     boolean shouldWrite(int addr, int len) {
         if (addr < 0 || addr + len > DeviceConstants.FIRMWARE_SIZE) return false;
         for (int i = 0; i < len; i++) {
-            if (mMask[addr + i]) return true;
+            if (mask[addr + i]) return true;
         }
         return false;
     }
 
     void getData(byte[] dest, int index, int addr, int count) {
-        System.arraycopy(mImage, addr, dest, index, count);
+        System.arraycopy(image, addr, dest, index, count);
     }
 
     void parseHex(InputStream stream) throws ParseException {
-        Arrays.fill(mImage, (byte) 0xFF);
-        Arrays.fill(mMask, false);
+        Arrays.fill(image, (byte) 0xFF);
+        Arrays.fill(mask, false);
         BufferedReader in = new BufferedReader(new InputStreamReader(stream));
         try {
             String line;
@@ -57,12 +57,12 @@ class FirmwareImage {
             Log.e(TAG, "Reading input file: " + e);
         }
 
-        if (!mAtEOF) throw new ParseException("No EOF marker", -1);
+        if (!atEOF) throw new ParseException("No EOF marker", -1);
         Log.d(TAG, "Done parsing file");
     }
 
     private void parseLine(String line) throws ParseException {
-        if (mAtEOF) throw new ParseException("Line after EOF marker", -1);
+        if (atEOF) throw new ParseException("Line after EOF marker", -1);
         int cur = 0;
         final int length = line.length();
         if (length < 1 || line.charAt(cur) != ':') {
@@ -79,13 +79,13 @@ class FirmwareImage {
 
         switch (code) {
             case 0x00: {
-                parseData(line, cur, count, mImage, mMask, addr);
+                parseData(line, cur, count, image, mask, addr);
                 // TODO: verify checksum
                 break;
             }
             case 0x01: {
                 Log.d(TAG, "Got EOF marker");
-                mAtEOF = true;
+                atEOF = true;
                 return;
             }
             default: {
