@@ -1,10 +1,14 @@
-WALT uses a “stylus” equipped with an accelerometer. The finger is imitated by a flat circular metal
+## Tap latency
+
+For detailed instructions on how to perform the measurement refer to the [usage doc](usage/WALT_usage.md#tap-latency).
+
+WALT uses a “stylus” equipped with an accelerometer. The finger is imitated by a flat metal
 tip that is grounded, pretty much any rigid tip can be used as long as it triggers the touch sensor.
 When the stylus “collides” with touch screen the accelerometer senses a shock (above 3g) which is
 timestamped by the Teensy. In order to generate a similar shock when picking the stylus up from the
 screen, the conductive surface and the accelerometer are mounted on a button of a retractable pen.
 On the way up, the spring keeps the button in contact with the touch screen for the first few mm of
-motion. This allows the hand holding the main part of the pen gain some speed to which the button is
+motion. This allows the hand holding the main part of the pen to gain some speed to which the button is
 then abruptly accelerated generating an easily detectable shock.
 
 Linux [Multi Touch (MT)](https://www.kernel.org/doc/Documentation/input/multi-touch-protocol.txt)
@@ -14,4 +18,4 @@ the MT events are then exposed in Java as
 and include the kernel timestamp. For tap, the relevant MotionEvent types are
 ACTION_DOWN and ACTION_UP.
 
-![WALT Stylus](WALT_stylus.jpg)
+![Tap measurement](usage/images/tap.png)
