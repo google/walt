@@ -9,8 +9,8 @@ model {
             applicationId "org.chromium.latency.walt"
             minSdkVersion.apiLevel 17
             targetSdkVersion.apiLevel 23
-            versionCode 6
-            versionName "0.1.5"
+            versionCode 7
+            versionName "0.1.6"
         }
         ndk {
             moduleName "sync_clock_jni"
