@@ -398,7 +398,7 @@ void loop() {
 
   // Probe MIDI
   boolean has_midi = usbMIDI.read(1);
-  if(has_midi && midi.probe && usbMIDI.getType() == 1) {  // Type 1: note on
+  if(has_midi && midi.probe && usbMIDI.getType() == 0) {  // Type 1: note on
     midi.t = time_us;
     midi.count++;
     midi.probe = false;
