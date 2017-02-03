@@ -32,7 +32,7 @@
 
             <Spinner
                 android:id="@+id/spinner_screen_response"
-                android:layout_height="40dp"
+                android:layout_height="45dp"
                 android:layout_width="fill_parent"
                 android:layout_toRightOf="@id/button_stop_screen_response"
                 android:layout_toLeftOf="@id/button_start_screen_response"

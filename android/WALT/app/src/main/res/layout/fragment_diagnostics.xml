@@ -149,7 +149,7 @@
 
                     <TextView
                         style="@style/MenuTextTop"
-                        android:text="Reprogram WALT" />
+                        android:text="Update WALT Firmware" />
 
                     <TextView
                         style="@style/MenuTextBottom"

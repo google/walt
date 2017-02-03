@@ -6,6 +6,8 @@
         <item name="colorPrimaryDark">@color/ColorPrimaryDark</item>
         <item name="colorAccent">@color/ColorAccent</item>
         <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
+        <item name="android:imageButtonStyle">@style/ImageButtonStyle</item>
+        <item name="imageButtonStyle">@style/ImageButtonStyle</item>
         <!-- the homeAsUpIndicator doesn't work with either png or xml icons -->
         <!--<item name="android:homeAsUpIndicator">@drawable/ic_chevron_left_black_24dp</item> -->
 
@@ -49,6 +51,10 @@
         <item name="android:layout_height">72dp</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:clickable">true</item>
+    </style>
+
+    <style name="ImageButtonStyle" parent="Widget.AppCompat.ImageButton">
+        <item name="android:padding">14dp</item>
     </style>
 
 
