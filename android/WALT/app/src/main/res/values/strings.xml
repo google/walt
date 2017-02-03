@@ -5,7 +5,7 @@
     <string name="title_activity_crash_log">Crash Log</string>
     <string name="protocol_version_mismatch">WALT reports protocol version %1$s, which is not
         supported. Please program WALT to a firmware with protocol version %2$s. To do this
-        from the app, choose "Reprogram" from the "Diagnostics" menu.</string>
+        from the app, choose "Update WALT Firmware" from the "Diagnostics" menu.</string>
     <string name="audio_mode">Audio Testing Mode</string>
     <string name="screen_response_mode">Screen Testing Mode</string>
     <string name="about_description">WALT is designed to measure the latency of physical sensors
