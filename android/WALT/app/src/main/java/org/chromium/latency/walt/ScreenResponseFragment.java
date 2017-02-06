@@ -33,8 +33,15 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import static org.chromium.latency.walt.Utils.getBooleanPreference;
@@ -54,6 +61,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private View startButton;
     private View stopButton;
     private Spinner spinner;
+    private LineChart chart;
+    private View chartLayout;
     private int timesToBlink;
     private boolean isTestRunning = false;
     int initiatedBlinks = 0;
@@ -66,7 +75,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     ArrayList<Double> deltas_b2w = new ArrayList<>();
     ArrayList<Double> deltas = new ArrayList<>();
     private static final int color_gray = Color.argb(0xFF, 0xBB, 0xBB, 0xBB);
-    private StringBuilder brightnessCurveData = new StringBuilder();
+    private StringBuilder brightnessCurveData;
 
     private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
@@ -101,6 +110,9 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         spinner.setAdapter(modeAdapter);
         stopButton.setEnabled(false);
         blackBox.setMovementMethod(new ScrollingMovementMethod());
+        chartLayout = view.findViewById(R.id.chart_layout);
+        view.findViewById(R.id.button_close_chart).setOnClickListener(this);
+        chart = (LineChart) view.findViewById(R.id.chart);
 
         if (getBooleanPreference(getContext(), R.string.preference_auto_increase_brightness, true)) {
             increaseScreenBrightness();
@@ -306,6 +318,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
 
         if (v.getId() == R.id.button_start_screen_response) {
+            chartLayout.setVisibility(View.GONE);
             if (!waltDevice.isConnected()) {
                 logger.log("Error starting test: WALT is not connected");
                 return;
@@ -323,6 +336,11 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 logger.log("Starting screen brightness curve measurement");
                 startBrightnessCurve();
             }
+            return;
+        }
+
+        if (v.getId() == R.id.button_close_chart) {
+            chartLayout.setVisibility(View.GONE);
             return;
         }
     }
@@ -348,6 +366,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     void startBrightnessCurve() {
         try {
+            brightnessCurveData = new StringBuilder();
             waltDevice.syncClock();
             waltDevice.startListener();
         } catch (IOException e) {
@@ -410,8 +429,41 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             blackBox.setBackgroundColor(color_gray);
             isTestRunning = false;
             startButton.setEnabled(true);
+            drawBrightnessChart();
         }
     };
+
+    private void drawBrightnessChart() {
+        final String brightnessCurveString = brightnessCurveData.toString();
+        List<Entry> entries = new ArrayList<>();
+
+        // "u" marks the start of the brightness curve data
+        int startIndex = brightnessCurveString.indexOf("u") + 1;
+        int endIndex = brightnessCurveString.indexOf("end");
+        if (endIndex == -1) endIndex = brightnessCurveString.length();
+
+        String[] brightnessStrings =
+                brightnessCurveString.substring(startIndex, endIndex).trim().split("\n");
+        for (String str : brightnessStrings) {
+            String[] arr = str.split(" ");
+            entries.add(new Entry(Integer.parseInt(arr[0]), Integer.parseInt(arr[1])));
+        }
+        LineDataSet dataSet = new LineDataSet(entries, "Brightness");
+        dataSet.setColor(Color.BLACK);
+        dataSet.setValueTextColor(Color.BLACK);
+        dataSet.setCircleColor(Color.BLACK);
+        dataSet.setCircleRadius(1.5f);
+        dataSet.setCircleColorHole(Color.DKGRAY);
+        LineData lineData = new LineData(dataSet);
+        chart.setData(lineData);
+        final Description desc = new Description();
+        desc.setText("Screen Brightness (0-1024) vs. Time (µs)");
+        desc.setTextSize(12f);
+        chart.setDescription(desc);
+        chart.getLegend().setEnabled(false);
+        chart.invalidate();
+        chartLayout.setVisibility(View.VISIBLE);
+    }
 
     private void increaseScreenBrightness() {
         final WindowManager.LayoutParams layoutParams = getActivity().getWindow().getAttributes();
