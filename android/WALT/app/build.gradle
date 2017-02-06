@@ -36,4 +36,5 @@ dependencies {
     compile 'com.android.support:design:25.1.0'
     compile 'com.android.support:preference-v7:25.1.0'
     compile 'com.android.support:preference-v14:25.1.0'
+    compile 'com.github.PhilJay:MPAndroidChart:v3.0.1'
 }
