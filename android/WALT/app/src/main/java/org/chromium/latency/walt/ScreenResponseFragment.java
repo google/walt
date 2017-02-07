@@ -446,7 +446,9 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 brightnessCurveString.substring(startIndex, endIndex).trim().split("\n");
         for (String str : brightnessStrings) {
             String[] arr = str.split(" ");
-            entries.add(new Entry(Integer.parseInt(arr[0]), Integer.parseInt(arr[1])));
+            final float timestampMs = Integer.parseInt(arr[0]) / 1000f;
+            final float brightness = Integer.parseInt(arr[1]);
+            entries.add(new Entry(timestampMs, brightness));
         }
         LineDataSet dataSet = new LineDataSet(entries, "Brightness");
         dataSet.setColor(Color.BLACK);
@@ -457,7 +459,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         LineData lineData = new LineData(dataSet);
         chart.setData(lineData);
         final Description desc = new Description();
-        desc.setText("Screen Brightness (0-1024) vs. Time (µs)");
+        desc.setText("Screen Brightness [digital level 0-1023] vs. Time [ms]");
         desc.setTextSize(12f);
         chart.setDescription(desc);
         chart.getLegend().setEnabled(false);
