@@ -21,6 +21,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -29,23 +30,44 @@ import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.components.LimitLine;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.chromium.latency.walt.Utils.getIntPreference;
 
 /**
  * A simple {@link Fragment} subclass.
  */
 public class AudioFragment extends Fragment implements View.OnClickListener,
-        AdapterView.OnItemSelectedListener, BaseTest.TestStateListener {
+        BaseTest.TestStateListener {
+
+    enum AudioTestType {
+        CONTINUOUS_PLAYBACK,
+        CONTINUOUS_RECORDING,
+        COLD_PLAYBACK,
+        COLD_RECORDING,
+        DISPLAY_WAVEFORM
+    }
 
     private SimpleLogger logger;
     private TextView textView;
     private AudioTest audioTest;
-    private View startPlaybackButton;
-    private View startRecordingButton;
+    private View startButton;
+    private View stopButton;
     private Spinner modeSpinner;
+    private LineChart chart;
+    private View chartLayout;
 
     private static final int PERMISSION_REQUEST_RECORD_AUDIO = 1;
 
@@ -67,8 +89,13 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         View view = inflater.inflate(R.layout.fragment_audio, container, false);
         textView = (TextView) view.findViewById(R.id.txt_box_audio);
         textView.setMovementMethod(new ScrollingMovementMethod());
-        startPlaybackButton = view.findViewById(R.id.button_start_audio_play);
-        startRecordingButton = view.findViewById(R.id.button_start_audio_rec);
+        startButton = view.findViewById(R.id.button_start_audio);
+        stopButton = view.findViewById(R.id.button_stop_audio);
+        chartLayout = view.findViewById(R.id.chart_layout);
+        chart = (LineChart) view.findViewById(R.id.chart);
+
+        view.findViewById(R.id.button_close_chart).setOnClickListener(this);
+        enableButtons();
 
         // Configure the audio mode spinner
         modeSpinner = (Spinner) view.findViewById(R.id.spinner_audio_mode);
@@ -85,10 +112,8 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         super.onResume();
 
         // Register this fragment class as the listener for some button clicks
-        startPlaybackButton.setOnClickListener(this);
-        startRecordingButton.setOnClickListener(this);
-
-        modeSpinner.setOnItemSelectedListener(this);
+        startButton.setOnClickListener(this);
+        stopButton.setOnClickListener(this);
 
         // textView.setMovementMethod(new ScrollingMovementMethod());
         textView.setText(logger.getLogText());
@@ -111,41 +136,56 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.button_start_audio_rec:
-                attemptRecordingTest();
-                break;
-            case R.id.button_start_audio_play:
+            case R.id.button_start_audio:
+                chartLayout.setVisibility(View.GONE);
                 disableButtons();
-
-                // Set media volume to max
-                AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
-                am.setStreamVolume(AudioManager.STREAM_MUSIC, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
-                audioTest.beginPlaybackMeasurement();
+                AudioTestType testType = getSelectedTestType();
+                switch (testType) {
+                    case CONTINUOUS_PLAYBACK:
+                    case CONTINUOUS_RECORDING:
+                    case DISPLAY_WAVEFORM:
+                        audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
+                        audioTest.setPeriod(AudioTest.CONTINUOUS_TEST_PERIOD);
+                        break;
+                    case COLD_PLAYBACK:
+                    case COLD_RECORDING:
+                        audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
+                        audioTest.setPeriod(AudioTest.COLD_TEST_PERIOD);
+                        break;
+                }
+                if (testType == AudioTestType.DISPLAY_WAVEFORM) {
+                    // Only need to record 1 beep to display wave
+                    audioTest.setRecordingRepetitions(1);
+                } else {
+                    audioTest.setRecordingRepetitions(
+                            getIntPreference(getContext(), R.string.preference_audio_in_reps, 5));
+                }
+                switch (testType) {
+                    case CONTINUOUS_RECORDING:
+                    case COLD_RECORDING:
+                    case DISPLAY_WAVEFORM:
+                        attemptRecordingTest();
+                        break;
+                    case CONTINUOUS_PLAYBACK:
+                    case COLD_PLAYBACK:
+                        // Set media volume to max
+                        AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+                        am.setStreamVolume(AudioManager.STREAM_MUSIC, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
+                        audioTest.beginPlaybackMeasurement();
+                        break;
+                }
+                break;
+            case R.id.button_stop_audio:
+                audioTest.stopTest();
+                break;
+            case R.id.button_close_chart:
+                chartLayout.setVisibility(View.GONE);
                 break;
         }
     }
 
-    @Override
-    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        if (parent.getId() == R.id.spinner_audio_mode) {
-            switch (position) {
-                case 0:
-                    audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
-                    audioTest.setPeriod(AudioTest.CONTINUOUS_TEST_PERIOD);
-                    break;
-                case 1:
-                    audioTest.setAudioMode(AudioTest.AudioMode.COLD);
-                    audioTest.setPeriod(AudioTest.COLD_TEST_PERIOD);
-                    break;
-            }
-        }
-    }
-
-    @Override
-    public void onNothingSelected(AdapterView<?> parent) {
-        if (parent.getId() == R.id.spinner_audio_mode) {
-            audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS); // set the default
-        }
+    private AudioTestType getSelectedTestType() {
+        return AudioTestType.values()[modeSpinner.getSelectedItemPosition()];
     }
 
     private BroadcastReceiver logReceiver = new BroadcastReceiver() {
@@ -183,14 +223,60 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         }
     }
 
-    private void disableButtons() {
-        startRecordingButton.setEnabled(false);
-        startPlaybackButton.setEnabled(false);
+    @Override
+    public void onTestStopped() {
+        if (getSelectedTestType() == AudioTestType.DISPLAY_WAVEFORM) {
+            drawWaveformChart();
+        }
+        enableButtons();
     }
 
     @Override
-    public void onTestStopped() {
-        startRecordingButton.setEnabled(true);
-        startPlaybackButton.setEnabled(true);
+    public void onTestStoppedWithError() {
+        enableButtons();
+    }
+
+    private void drawWaveformChart() {
+        final short[] wave = AudioTest.getRecordedWave();
+        List<Entry> entries = new ArrayList<>();
+        int frameRate = audioTest.getOptimalFrameRate();
+        for (int i = 0; i < wave.length; i++) {
+            float timeStamp = (float) i / frameRate * 1000f;
+            entries.add(new Entry(timeStamp, (float) wave[i]));
+        }
+        LineDataSet dataSet = new LineDataSet(entries, "Waveform");
+        dataSet.setColor(Color.BLACK);
+        dataSet.setValueTextColor(Color.BLACK);
+        dataSet.setCircleColor(ContextCompat.getColor(getContext(), R.color.DarkGreen));
+        dataSet.setCircleRadius(1.5f);
+        dataSet.setCircleColorHole(Color.DKGRAY);
+        LineData lineData = new LineData(dataSet);
+        chart.setData(lineData);
+
+        LimitLine line = new LimitLine(audioTest.getThreshold(), "Threshold");
+        line.setLineColor(Color.RED);
+        line.setLabelPosition(LimitLine.LimitLabelPosition.LEFT_TOP);
+        line.setLineWidth(2f);
+        line.setTextColor(Color.DKGRAY);
+        line.setTextSize(10f);
+        chart.getAxisLeft().addLimitLine(line);
+
+        final Description desc = new Description();
+        desc.setText("Wave [digital level -32768 to +32767] vs. Time [ms]");
+        desc.setTextSize(12f);
+        chart.setDescription(desc);
+        chart.getLegend().setEnabled(false);
+        chart.invalidate();
+        chartLayout.setVisibility(View.VISIBLE);
+    }
+
+    private void disableButtons() {
+        startButton.setEnabled(false);
+        stopButton.setEnabled(true);
+    }
+
+    private void enableButtons() {
+        startButton.setEnabled(true);
+        stopButton.setEnabled(false);
     }
 }

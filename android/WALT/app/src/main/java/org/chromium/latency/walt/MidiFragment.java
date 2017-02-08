@@ -104,4 +104,9 @@ public class MidiFragment extends Fragment
         startMidiInButton.setEnabled(true);
         startMidiOutButton.setEnabled(true);
     }
+
+    @Override
+    public void onTestStoppedWithError() {
+        onTestStopped();
+    }
 }

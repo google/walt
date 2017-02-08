@@ -38,6 +38,7 @@ class AudioTest extends BaseTest {
     enum AudioMode {COLD, CONTINUOUS}
 
     private Handler handler = new Handler();
+    private boolean userStoppedTest = false;
 
     // Sound params
     private final double duration = 0.3; // seconds
@@ -52,9 +53,8 @@ class AudioTest extends BaseTest {
     // Audio in
     private long last_tb = 0;
     private int msToRecord = 1000;
-    private int framesToRecord;
-    private int frameRate;
-    private int framesPerBuffer;
+    private final int frameRate;
+    private final int framesPerBuffer;
 
     private int initiatedBeeps, detectedBeeps;
     private int playbackRepetitions;
@@ -64,6 +64,7 @@ class AudioTest extends BaseTest {
     private int requestedBeeps;
     private int recordingRepetitions;
     private static int recorderSyncAfterRepetitions = 10;
+    private final int threshold;
 
     private ArrayList<Double> deltas_mic = new ArrayList<>();
     private ArrayList<Double> deltas_play2queue = new ArrayList<>();
@@ -90,6 +91,7 @@ class AudioTest extends BaseTest {
         super(context);
         playbackRepetitions = getIntPreference(context, R.string.preference_audio_out_reps, 10);
         recordingRepetitions = getIntPreference(context, R.string.preference_audio_in_reps, 5);
+        threshold = getIntPreference(context, R.string.preference_audio_in_threshold, 5000);
 
         //Check for optimal output sample rate and buffer size
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -129,15 +131,32 @@ class AudioTest extends BaseTest {
         audioMode = mode;
     }
 
+    AudioMode getAudioMode() {
+        return audioMode;
+    }
+
+    int getOptimalFrameRate() {
+        return frameRate;
+    }
+
+    int getThreshold() {
+        return threshold;
+    }
+
+    void stopTest() {
+        userStoppedTest = true;
+    }
+
     void teardown() {
         destroyEngine();
         logger.log("Audio engine destroyed");
     }
 
     void beginRecordingMeasurement() {
+        userStoppedTest = false;
         deltas_mic.clear();
 
-        framesToRecord = (int) (0.001 * msToRecord * frameRate);
+        int framesToRecord = (int) (0.001 * msToRecord * frameRate);
         createAudioRecorder(frameRate, framesToRecord);
         logger.log("Audio recorder created; starting test");
 
@@ -146,7 +165,7 @@ class AudioTest extends BaseTest {
     }
 
     private void doRecordingTestRepetition() {
-        if (requestedBeeps >= recordingRepetitions) {
+        if (requestedBeeps >= recordingRepetitions || userStoppedTest) {
             finishRecordingMeasurement();
             return;
         }
@@ -156,7 +175,7 @@ class AudioTest extends BaseTest {
                 waltDevice.syncClock();
             } catch (IOException e) {
                 logger.log("Error syncing clocks: " + e.getMessage());
-                finishRecordingMeasurement();
+                if (testStateListener != null) testStateListener.onTestStoppedWithError();
                 return;
             }
         }
@@ -175,6 +194,7 @@ class AudioTest extends BaseTest {
     }
 
     void beginPlaybackMeasurement() {
+        userStoppedTest = false;
         if (audioMode == AudioMode.CONTINUOUS) {
             startWarmTest();
         }
@@ -183,7 +203,7 @@ class AudioTest extends BaseTest {
             waltDevice.startListener();
         } catch (IOException e) {
             logger.log("Error starting test: " + e.getMessage());
-            if (testStateListener != null) testStateListener.onTestStopped();
+            if (testStateListener != null) testStateListener.onTestStoppedWithError();
             return;
         }
         deltas_play2queue.clear();
@@ -198,7 +218,6 @@ class AudioTest extends BaseTest {
         waltDevice.setTriggerHandler(playbackTriggerHandler);
 
         handler.postDelayed(playBeepRunnable, 300);
-
     }
 
     private WaltDevice.TriggerHandler playbackTriggerHandler = new WaltDevice.TriggerHandler() {
@@ -240,7 +259,7 @@ class AudioTest extends BaseTest {
                 return;
             }
 
-            if (initiatedBeeps >= playbackRepetitions) {
+            if (initiatedBeeps >= playbackRepetitions || userStoppedTest) {
                 finishPlaybackMeasurement();
                 return;
             }
@@ -318,9 +337,8 @@ class AudioTest extends BaseTest {
             long tc = getTcRec();  // When callback receiving a recorded buffer fired
             long tb = last_tb;  // When WALT started a beep (according to WALT clock)
             short[] wave = getRecordedWave();
-            int thresh = 20000;
             int noisyAtFrame = 0;  // First frame when some noise starts
-            while (noisyAtFrame < wave.length && wave[noisyAtFrame] < thresh)
+            while (noisyAtFrame < wave.length && wave[noisyAtFrame] < threshold)
                 noisyAtFrame++;
             if (noisyAtFrame == wave.length) {
                 logger.log("WARNING: No sound detected");

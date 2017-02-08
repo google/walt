@@ -18,13 +18,17 @@
     <string name="privacy_policy">Privacy policy:\ngithub.com/google/walt/blob/master/docs/PrivacyPolicy.md</string>
     <string name="preference_screen_blinks" translatable="false">pref_screen_blinks</string>
     <string name="preference_audio_in_reps" translatable="false">pref_audio_in_reps</string>
+    <string name="preference_audio_in_threshold" translatable="false">pref_audio_in_threshold</string>
     <string name="preference_audio_out_reps" translatable="false">pref_audio_out_reps</string>
     <string name="preference_midi_in_reps" translatable="false">pref_midi_in_reps</string>
     <string name="preference_midi_out_reps" translatable="false">pref_midi_out_reps</string>
     <string name="preference_auto_increase_brightness">auto_increase_brightness</string>
     <string-array name="audio_mode_array">
-        <item>Continuous Latency</item>
-        <item>Cold Latency</item>
+        <item>Continuous Playback Latency</item>
+        <item>Continuous Recording Latency</item>
+        <item>Cold Playback Latency</item>
+        <item>Cold Recording Latency</item>
+        <item>Display Recorded Waveform</item>
     </string-array>
     <string-array name="screen_response_mode_array">
         <item>Blink Latency</item>
