@@ -45,6 +45,15 @@
             walt:maxValue="1000"
             walt:minValue="1" />
 
+        <org.chromium.latency.walt.NumberPickerPreference
+            android:defaultValue="5000"
+            android:dialogTitle="Threshold for audio recording test"
+            android:key="@string/preference_audio_in_threshold"
+            android:summary="%s"
+            android:title="Threshold for audio recording test"
+            walt:maxValue="100000"
+            walt:minValue="1" />
+
     </android.support.v7.preference.PreferenceScreen>
 
     <android.support.v7.preference.PreferenceScreen

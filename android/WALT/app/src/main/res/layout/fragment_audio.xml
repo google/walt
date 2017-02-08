@@ -15,15 +15,15 @@
             android:orientation="horizontal">
 
             <ImageButton
-                android:id="@+id/button_start_audio_rec"
+                android:id="@+id/button_stop_audio"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentLeft="true"
                 android:tint="@color/button_tint"
-                android:src="@drawable/ic_mic_black_24dp" />
+                android:src="@drawable/ic_stop_black_24dp" />
 
             <ImageButton
-                android:id="@+id/button_start_audio_play"
+                android:id="@+id/button_start_audio"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
@@ -34,11 +34,15 @@
                 android:id="@+id/spinner_audio_mode"
                 android:layout_height="45dp"
                 android:layout_width="fill_parent"
-                android:layout_toRightOf="@id/button_start_audio_rec"
-                android:layout_toLeftOf="@id/button_start_audio_play"
+                android:layout_toRightOf="@id/button_stop_audio"
+                android:layout_toLeftOf="@id/button_start_audio"
                 android:prompt="@string/audio_mode"/>
 
         </RelativeLayout>
+
+        <include
+            android:id="@+id/chart_layout"
+            layout="@layout/line_chart" />
 
         <!-- For now the results are just listed in this textView -->
         <TextView

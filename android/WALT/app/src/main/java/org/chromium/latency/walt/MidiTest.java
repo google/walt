@@ -93,7 +93,7 @@ class MidiTest extends BaseTest {
                 });
             } else {
                 logger.log("MIDI device is not open!");
-                if (testStateListener != null) testStateListener.onTestStopped();
+                if (testStateListener != null) testStateListener.onTestStoppedWithError();
             }
             return;
         }
@@ -101,7 +101,7 @@ class MidiTest extends BaseTest {
             setupMidiOut();
         } catch (IOException e) {
             logger.log("Error setting up test: " + e.getMessage());
-            if (testStateListener != null) testStateListener.onTestStopped();
+            if (testStateListener != null) testStateListener.onTestStoppedWithError();
             return;
         }
         handler.postDelayed(cancelMidiOutRunnable, noteDelay * inputRepetitions + timeout);
@@ -119,7 +119,7 @@ class MidiTest extends BaseTest {
                 });
             } else {
                 logger.log("MIDI device is not open!");
-                if (testStateListener != null) testStateListener.onTestStopped();
+                if (testStateListener != null) testStateListener.onTestStoppedWithError();
             }
             return;
         }
@@ -127,7 +127,7 @@ class MidiTest extends BaseTest {
             setupMidiIn();
         } catch (IOException e) {
             logger.log("Error setting up test: " + e.getMessage());
-            if (testStateListener != null) testStateListener.onTestStopped();
+            if (testStateListener != null) testStateListener.onTestStoppedWithError();
             return;
         }
         handler.postDelayed(requestNoteRunnable, noteDelay);
@@ -228,7 +228,7 @@ class MidiTest extends BaseTest {
         @Override
         public void run() {
             logger.log("Timed out waiting for notes to be detected by WALT");
-            if (testStateListener != null) testStateListener.onTestStopped();
+            if (testStateListener != null) testStateListener.onTestStoppedWithError();
             teardownMidiOut();
         }
     };
@@ -254,7 +254,7 @@ class MidiTest extends BaseTest {
                 s = waltDevice.command(WaltDevice.CMD_NOTE);
             } catch (IOException e) {
                 logger.log("Error sending NOTE command: " + e.getMessage());
-                if (testStateListener != null) testStateListener.onTestStopped();
+                if (testStateListener != null) testStateListener.onTestStoppedWithError();
                 return;
             }
             last_tWalt = Integer.parseInt(s);

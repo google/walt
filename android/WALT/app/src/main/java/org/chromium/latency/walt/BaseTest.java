@@ -22,6 +22,7 @@ abstract class BaseTest {
 
     interface TestStateListener {
         void onTestStopped();
+        void onTestStoppedWithError();
     }
 
     SimpleLogger logger;
