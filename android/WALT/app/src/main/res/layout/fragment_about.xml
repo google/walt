@@ -36,6 +36,16 @@
         android:text="@string/more_info" />
 
     <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autoLink="web"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:paddingTop="20dp"
+        android:scrollbars="vertical"
+        android:text="@string/privacy_policy" />
+
+    <TextView
         android:id="@+id/txt_build_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
