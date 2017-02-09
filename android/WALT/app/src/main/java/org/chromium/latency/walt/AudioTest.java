@@ -227,7 +227,7 @@ class AudioTest extends BaseTest {
             handler.removeCallbacks(playBeepRunnable);
 
             detectedBeeps++;
-            long enqueueTime = getTePlay();
+            long enqueueTime = getTePlay() - waltDevice.clock.baseTime;
             double dt_play2queue = (enqueueTime - lastBeepTime) / 1000.;
             deltas_play2queue.add(dt_play2queue);
 
@@ -285,7 +285,7 @@ class AudioTest extends BaseTest {
                 return;
             }
             long javaBeepTime = waltDevice.clock.micros();
-            lastBeepTime = playTone();
+            lastBeepTime = playTone() - waltDevice.clock.baseTime;
             double dtJ2N = (lastBeepTime - javaBeepTime)/1000.;
             deltasJ2N.add(dtJ2N);
             logger.log(String.format(Locale.US,
@@ -333,8 +333,8 @@ class AudioTest extends BaseTest {
     private Runnable processRecordingRunnable = new Runnable() {
         @Override
         public void run() {
-            long te = getTeRec();  // When a buffer was enqueued for recording
-            long tc = getTcRec();  // When callback receiving a recorded buffer fired
+            long te = getTeRec() - waltDevice.clock.baseTime;  // When a buffer was enqueued for recording
+            long tc = getTcRec() - waltDevice.clock.baseTime;  // When callback receiving a recorded buffer fired
             long tb = last_tb;  // When WALT started a beep (according to WALT clock)
             short[] wave = getRecordedWave();
             int noisyAtFrame = 0;  // First frame when some noise starts
