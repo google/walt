@@ -5,6 +5,8 @@
  * [Post about WALT on Android Developers Blog](http://android-developers.blogspot.ca/2016/04/a-new-method-to-measure-touch-and-audio.html)
  * [Instructional videos showing how to use WALT](https://www.youtube.com/playlist?list=PLd6Fi7WgXfcCEJg1FDqNCoQfpWo7W3J5a)
  * [Detailed usage instructions](docs/usage/WALT_usage.md)
+ * Mailing list - [walt-discuss](https://groups.google.com/forum/#!forum/walt-discuss)
+ * Low-traffic mailing list for major announcements [walt-announce](https://groups.google.com/forum/#!forum/walt-announce)
 
 WALT is designed to measure the latency of physical sensors and outputs on phones and computers. It can currently perform the following measurements:
 
