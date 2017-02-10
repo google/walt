@@ -120,8 +120,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         view.findViewById(R.id.button_close_latency_chart).setOnClickListener(this);
         brightnessChart = (LineChart) view.findViewById(R.id.chart);
         latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
-        latencyChart.setLabel(W2B_INDEX, "White-to-black Latency");
-        latencyChart.setLabel(B2W_INDEX, "Black-to-white Latency");
+        latencyChart.setLabel(W2B_INDEX, "White-to-black");
+        latencyChart.setLabel(B2W_INDEX, "Black-to-white");
 
         if (getBooleanPreference(getContext(), R.string.preference_auto_increase_brightness, true)) {
             increaseScreenBrightness();
@@ -317,6 +317,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         blackBox.setBackgroundColor(color_gray);
         stopButton.setEnabled(false);
         startButton.setEnabled(true);
+        latencyChart.setLabel(W2B_INDEX, String.format(Locale.US, "White-to-black m=%.1f", median_w2b));
+        latencyChart.setLabel(B2W_INDEX, String.format(Locale.US, "Black-to-white m=%.1f", median_b2w));
     }
 
     @Override

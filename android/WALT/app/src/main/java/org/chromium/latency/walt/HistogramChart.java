@@ -68,33 +68,28 @@ public class HistogramChart extends BarChart {
         }
 
         BarData barData = new BarData(dataSets);
-        barData.setBarWidth(0.45f);
+        barData.setBarWidth(0.9f/numDataSets);
         setData(barData);
-        groupBars(minBin, 0.08f, 0.01f);
+        groupBars(0, 0.08f, 0.01f);
         final Description desc = new Description();
         desc.setText(descString);
         desc.setTextSize(12f);
         setDescription(desc);
 
         XAxis xAxis = getXAxis();
-        xAxis.setCenterAxisLabels(true);
         xAxis.setGranularityEnabled(true);
         xAxis.setGranularity(1);
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setValueFormatter(new IAxisValueFormatter() {
             DecimalFormat df = new DecimalFormat("#.##");
 
             @Override
             public String getFormattedValue(float value, AxisBase axis) {
-                final float mid = (value - minBin) * BIN_WIDTH + minBin;
-                if (axis.mEntries.length > 1) {
-                    final float width = (axis.mEntries[1] - axis.mEntries[0])*BIN_WIDTH;
-                    return df.format(mid - width/2) + " - " + df.format(mid + width/2);
-                } else {
-                    return df.format(mid);
-                }
+                return df.format(value * BIN_WIDTH + minBin);
             }
         });
 
+        setFitBars(true);
         invalidate();
     }
 
@@ -117,14 +112,14 @@ public class HistogramChart extends BarChart {
 
         rawData.get(dataSetIndex).add(value);
         minBin = (int) (Math.floor(min/BIN_WIDTH)*BIN_WIDTH);
-        maxBin = (int) (Math.ceil(max/BIN_WIDTH)*BIN_WIDTH);
+        maxBin = (int) (Math.floor(max/BIN_WIDTH)*BIN_WIDTH);
 
-        final int numBins = (int) ((maxBin - minBin) / BIN_WIDTH + 1);
+        final int numBins = (int) ((maxBin - minBin) / BIN_WIDTH) + 1;
         int[][] bins = new int[rawData.size()][numBins];
 
-        for (int i = 0; i < rawData.size(); i++) {
-            for (Double d : rawData.get(i)) {
-                ++bins[i][(int) (Math.round((d - minBin)/ BIN_WIDTH))];
+        for (int setNum = 0; setNum < rawData.size(); setNum++) {
+            for (Double d : rawData.get(setNum)) {
+                ++bins[setNum][(int) (Math.floor((d - minBin)/ BIN_WIDTH))];
             }
         }
 
@@ -132,16 +127,15 @@ public class HistogramChart extends BarChart {
             dataSet.clear();
         }
 
-        for (int x = 0; x < dataSets.size(); x++) {
-            for (int i = 0; i < bins[x].length; i++) {
-                dataSets.get(x).addEntry(new BarEntry(i, bins[x][i]));
+        for (int setNum = 0; setNum < dataSets.size(); setNum++) {
+            for (int i = 0; i < bins[setNum].length; i++) {
+                dataSets.get(setNum).addEntry(new BarEntry(i, bins[setNum][i]));
             }
         }
 
-        mXAxis.setAxisMinimum(minBin);
-        mXAxis.setAxisMaximum(minBin + numBins);
-        groupBars(minBin, 0.08f, 0.01f);
-        setFitBars(true);
+        mXAxis.setAxisMinimum(0);
+        mXAxis.setAxisMaximum(numBins);
+        groupBars(0, 0.08f, 0.01f);
         invalidate();
     }
 
@@ -154,5 +148,7 @@ public class HistogramChart extends BarChart {
 
     public void setLabel(int dataSetIndex, String label) {
         dataSets.get(dataSetIndex).setLabel(label);
+        getLegendRenderer().computeLegend(getBarData());
+        invalidate();
     }
 }
