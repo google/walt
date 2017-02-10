@@ -21,10 +21,16 @@ In order to avoid warm up latency during audio playback it is
 [recommended to constantly enqueue buffers containing silence](http://googlesamples.github.io/android-audio-high-performance/guides/audio-output-latency.html#avoid-warm-up-latency).
 WALT app follows this pattern.
 
-The audio data buffers are enqueued in the player callback (TODO: link to code) and the latency reported by WALT app is the time from the Enqueue() call until there is a detectable signal on the wire. Note that this does not include the time between the moment the app decided to output a tone until the Enqueue() call. This is somewhat counterintuitive but this time is deliberately omitted. In case of the WALT app code this time is likely be uniformly distributed between 0 and the length of the buffer (5 ms in case of Nexus 5) and therefore would contribute considerable variance but little interesting information if included in the reported latency.
+The audio data buffers are enqueued in the
+[player callback](https://github.com/google/walt/blob/v0.1.6/android/WALT/app/src/main/jni/player.c#L107)
+and the latency reported by WALT app is the time from the
+[Enqueue() call](https://github.com/google/walt/blob/v0.1.6/android/WALT/app/src/main/jni/player.c#L123)
+until there is a detectable signal on the wire. Note that this does not include the time between the moment the app decided to output a tone until the Enqueue() call. This is somewhat counterintuitive but this time is deliberately omitted. In case of the WALT app code this time is likely be uniformly distributed between 0 and the length of the buffer (5 ms in case of Nexus 5) and therefore would contribute considerable variance but little interesting information if included in the reported latency.
 
 ##### Recording
-The reported latency is the time from the moment the last frame in a buffer was recorded until the recorder callback receiving that buffer is executed.
+The reported latency is the time from the moment the last frame in a buffer was recorded until the
+[recorder callback](https://github.com/google/walt/blob/v0.1.6/android/WALT/app/src/main/jni/player.c#L345)
+receiving that buffer is executed.
 
 TODO: Is the round trip latency expected to be Recording latency + Playback latency + one buffer length?
 
@@ -50,7 +56,8 @@ Superpowered Inc. maintains an open source app for measuring round trip audio la
 ### Hardware
 
 Audio signal for measuring microphone latency is generated as a square wave using the Teensy tone()
-function (currently at 5 kHz). The signal is attenuated by a simple circuit similar to the
+function ([currently at 5 kHz](https://github.com/google/walt/blob/v0.1.6/arduino/walt/walt.ino#L310)).
+The signal is attenuated by a simple circuit similar to the
 [ChromeOS/Android audio loopback dongle](https://source.android.com/devices/audio/loopback.html).
 
 Audio output signal from the phone is detected when audio line voltage crosses a predefined
