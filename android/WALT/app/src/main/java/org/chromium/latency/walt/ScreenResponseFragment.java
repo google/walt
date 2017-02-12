@@ -54,6 +54,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     private static final int CURVE_TIMEOUT = 1000;  // milliseconds
     private static final int CURVE_BLINK_TIME = 250;  // milliseconds
+    private static final int W2B_INDEX = 0;
+    private static final int B2W_INDEX = 1;
     private SimpleLogger logger;
     private WaltDevice waltDevice;
     private Handler handler = new Handler();
@@ -61,8 +63,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private View startButton;
     private View stopButton;
     private Spinner spinner;
-    private LineChart chart;
-    private View chartLayout;
+    private LineChart brightnessChart;
+    private HistogramChart latencyChart;
+    private View brightnessChartLayout;
+    private View latencyChartLayout;
     private int timesToBlink;
     private boolean isTestRunning = false;
     int initiatedBlinks = 0;
@@ -110,9 +114,14 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         spinner.setAdapter(modeAdapter);
         stopButton.setEnabled(false);
         blackBox.setMovementMethod(new ScrollingMovementMethod());
-        chartLayout = view.findViewById(R.id.chart_layout);
+        brightnessChartLayout = view.findViewById(R.id.brightness_chart_layout);
+        latencyChartLayout = view.findViewById(R.id.latency_chart_layout);
         view.findViewById(R.id.button_close_chart).setOnClickListener(this);
-        chart = (LineChart) view.findViewById(R.id.chart);
+        view.findViewById(R.id.button_close_latency_chart).setOnClickListener(this);
+        brightnessChart = (LineChart) view.findViewById(R.id.chart);
+        latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
+        latencyChart.setLabel(W2B_INDEX, "White-to-black");
+        latencyChart.setLabel(B2W_INDEX, "Black-to-white");
 
         if (getBooleanPreference(getContext(), R.string.preference_auto_increase_brightness, true)) {
             increaseScreenBrightness();
@@ -139,7 +148,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         deltas.clear();
         deltas_b2w.clear();
         deltas_w2b.clear();
-
+        latencyChart.clearData();
+        latencyChartLayout.setVisibility(View.VISIBLE);
         initiatedBlinks = 0;
         detectedBlinks = 0;
 
@@ -247,8 +257,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             deltas.add(dt);
             if (isBoxWhite) {  // Current color is the color we transitioned to
                 deltas_b2w.add(dt);
+                latencyChart.addEntry(B2W_INDEX, dt);
             } else {
                 deltas_w2b.add(dt);
+                latencyChart.addEntry(W2B_INDEX, dt);
             }
 
             // Other times can be important, logging them to allow more detailed analysis
@@ -305,6 +317,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         blackBox.setBackgroundColor(color_gray);
         stopButton.setEnabled(false);
         startButton.setEnabled(true);
+        latencyChart.setLabel(W2B_INDEX, String.format(Locale.US, "White-to-black m=%.1f", median_w2b));
+        latencyChart.setLabel(B2W_INDEX, String.format(Locale.US, "Black-to-white m=%.1f", median_b2w));
     }
 
     @Override
@@ -318,7 +332,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
 
         if (v.getId() == R.id.button_start_screen_response) {
-            chartLayout.setVisibility(View.GONE);
+            brightnessChartLayout.setVisibility(View.GONE);
+            latencyChartLayout.setVisibility(View.GONE);
             if (!waltDevice.isConnected()) {
                 logger.log("Error starting test: WALT is not connected");
                 return;
@@ -340,7 +355,12 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
 
         if (v.getId() == R.id.button_close_chart) {
-            chartLayout.setVisibility(View.GONE);
+            brightnessChartLayout.setVisibility(View.GONE);
+            return;
+        }
+
+        if (v.getId() == R.id.button_close_latency_chart) {
+            latencyChartLayout.setVisibility(View.GONE);
             return;
         }
     }
@@ -457,14 +477,14 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         dataSet.setCircleRadius(1.5f);
         dataSet.setCircleColorHole(Color.DKGRAY);
         LineData lineData = new LineData(dataSet);
-        chart.setData(lineData);
+        brightnessChart.setData(lineData);
         final Description desc = new Description();
         desc.setText("Screen Brightness [digital level 0-1023] vs. Time [ms]");
         desc.setTextSize(12f);
-        chart.setDescription(desc);
-        chart.getLegend().setEnabled(false);
-        chart.invalidate();
-        chartLayout.setVisibility(View.VISIBLE);
+        brightnessChart.setDescription(desc);
+        brightnessChart.getLegend().setEnabled(false);
+        brightnessChart.invalidate();
+        brightnessChartLayout.setVisibility(View.VISIBLE);
     }
 
     private void increaseScreenBrightness() {

@@ -4,4 +4,8 @@
         <attr name="minValue" format="integer" />
         <attr name="maxValue" format="integer" />
     </declare-styleable>
+    <declare-styleable name="HistogramChart">
+        <attr name="description" format="string" />
+        <attr name="numDataSets" format="integer" />
+    </declare-styleable>
 </resources>
