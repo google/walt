@@ -44,32 +44,16 @@
             android:id="@+id/brightness_chart_layout"
             layout="@layout/line_chart" />
 
-        <RelativeLayout
-            android:id="@+id/latency_chart_layout"
+        <org.chromium.latency.walt.HistogramChart
+            android:id="@+id/latency_chart"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_margin="5dp"
-            android:background="@drawable/border"
-            android:visibility="gone">
-            <org.chromium.latency.walt.HistogramChart
-                android:id="@+id/latency_chart"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="10dp"
-                android:gravity="bottom"
-                walt:description="Blink Latency [ms]"
-                walt:numDataSets="2" />
-            <Button
-                android:id="@+id/button_close_latency_chart"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:layout_alignParentTop="true"
-                android:tint="@color/button_tint"
-                android:layout_margin="5dp"
-                android:text="Close" />
-        </RelativeLayout>
+            android:visibility="gone"
+            walt:description="Blink Latency [ms]"
+            walt:numDataSets="2"
+            walt:binWidth="5" />
 
         <!-- The big box that flickers between black and white -->
         <TextView

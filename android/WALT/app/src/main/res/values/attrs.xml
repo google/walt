@@ -7,5 +7,6 @@
     <declare-styleable name="HistogramChart">
         <attr name="description" format="string" />
         <attr name="numDataSets" format="integer" />
+        <attr name="binWidth" format="float" />
     </declare-styleable>
 </resources>
