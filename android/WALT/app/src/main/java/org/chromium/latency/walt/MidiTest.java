@@ -55,7 +55,8 @@ class MidiTest extends BaseTest {
     private int outputRepetitions;
     private int repetitionsDone;
     private ArrayList<Double> deltasToSys = new ArrayList<>();
-    private ArrayList<Double> deltasTotal = new ArrayList<>();
+    ArrayList<Double> deltasInputTotal = new ArrayList<>();
+    ArrayList<Double> deltasOutputTotal = new ArrayList<>();
 
     private static final int noteDelay = 300;
     private static final int timeout = 1000;
@@ -135,7 +136,8 @@ class MidiTest extends BaseTest {
 
     private void setupMidiOut() throws IOException {
         repetitionsDone = 0;
-        deltasTotal.clear();
+        deltasInputTotal.clear();
+        deltasOutputTotal.clear();
 
         midiInputPort = midiDevice.openInputPort(0);
 
@@ -178,7 +180,9 @@ class MidiTest extends BaseTest {
             last_tWalt = tmsg.t + waltDevice.clock.baseTime;
             double dt = (last_tWalt - last_tSys) / 1000.;
 
+            deltasOutputTotal.add(dt);
             logger.log(String.format(Locale.US, "Note detected: latency of %.3f ms", dt));
+            if (testStateListener != null) testStateListener.onTestPartialResult(dt);
 
             last_tSys += noteDelay * 1000;
             repetitionsDone++;
@@ -215,10 +219,13 @@ class MidiTest extends BaseTest {
 
     private void finishMidiOut() {
         logger.log("All notes detected");
+        logger.log(String.format(
+                Locale.US, "Median total output latency %.1f ms", Utils.median(deltasOutputTotal)));
+
         handler.removeCallbacks(cancelMidiOutRunnable);
 
         if (resultHandler != null) {
-            resultHandler.onResult(deltasTotal);
+            resultHandler.onResult(deltasOutputTotal);
         }
         if (testStateListener != null) testStateListener.onTestStopped();
         teardownMidiOut();
@@ -271,11 +278,11 @@ class MidiTest extends BaseTest {
             logger.log("MIDI Input Test Results:");
             logger.log(String.format(Locale.US,
                     "Median MIDI subsystem latency %.1f ms\nMedian total latency %.1f ms",
-                    Utils.median(deltasToSys), Utils.median(deltasTotal)
+                    Utils.median(deltasToSys), Utils.median(deltasInputTotal)
             ));
 
             if (resultHandler != null) {
-                resultHandler.onResult(deltasToSys, deltasTotal);
+                resultHandler.onResult(deltasToSys, deltasInputTotal);
             }
             if (testStateListener != null) testStateListener.onTestStopped();
             teardownMidiIn();
@@ -290,15 +297,23 @@ class MidiTest extends BaseTest {
                 last_tJava = waltDevice.clock.micros();
                 last_tSys = timestamp / 1000 - waltDevice.clock.baseTime;
 
-                double d1 = (last_tSys - last_tWalt) / 1000.;
-                double d2 = (last_tJava - last_tSys) / 1000.;
-                double dt = (last_tJava - last_tWalt) / 1000.;
+                final double d1 = (last_tSys - last_tWalt) / 1000.;
+                final double d2 = (last_tJava - last_tSys) / 1000.;
+                final double dt = (last_tJava - last_tWalt) / 1000.;
                 logger.log(String.format(Locale.US,
                         "Result: Time to MIDI subsystem = %.3f ms, Time to Java = %.3f ms, " +
                                 "Total = %.3f ms",
                         d1, d2, dt));
                 deltasToSys.add(d1);
-                deltasTotal.add(dt);
+                deltasInputTotal.add(dt);
+                if (testStateListener != null) {
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            testStateListener.onTestPartialResult(dt);
+                        }
+                    });
+                }
 
                 repetitionsDone++;
                 if (repetitionsDone % inputSyncAfterRepetitions == 0) {
@@ -324,6 +339,8 @@ class MidiTest extends BaseTest {
 
     private void setupMidiIn() throws IOException {
         repetitionsDone = 0;
+        deltasInputTotal.clear();
+        deltasOutputTotal.clear();
         midiOutputPort = midiDevice.openOutputPort(0);
         midiOutputPort.connect(new WaltReceiver());
         waltDevice.syncClock();

@@ -66,7 +66,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private LineChart brightnessChart;
     private HistogramChart latencyChart;
     private View brightnessChartLayout;
-    private View latencyChartLayout;
     private int timesToBlink;
     private boolean isTestRunning = false;
     int initiatedBlinks = 0;
@@ -115,9 +114,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         stopButton.setEnabled(false);
         blackBox.setMovementMethod(new ScrollingMovementMethod());
         brightnessChartLayout = view.findViewById(R.id.brightness_chart_layout);
-        latencyChartLayout = view.findViewById(R.id.latency_chart_layout);
         view.findViewById(R.id.button_close_chart).setOnClickListener(this);
-        view.findViewById(R.id.button_close_latency_chart).setOnClickListener(this);
         brightnessChart = (LineChart) view.findViewById(R.id.chart);
         latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
         latencyChart.setLabel(W2B_INDEX, "White-to-black");
@@ -149,7 +146,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         deltas_b2w.clear();
         deltas_w2b.clear();
         latencyChart.clearData();
-        latencyChartLayout.setVisibility(View.VISIBLE);
+        latencyChart.setVisibility(View.VISIBLE);
         initiatedBlinks = 0;
         detectedBlinks = 0;
 
@@ -317,8 +314,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         blackBox.setBackgroundColor(color_gray);
         stopButton.setEnabled(false);
         startButton.setEnabled(true);
-        latencyChart.setLabel(W2B_INDEX, String.format(Locale.US, "White-to-black m=%.1f", median_w2b));
-        latencyChart.setLabel(B2W_INDEX, String.format(Locale.US, "Black-to-white m=%.1f", median_b2w));
+        latencyChart.setLabel(W2B_INDEX, String.format(Locale.US, "White-to-black m=%.1f ms", median_w2b));
+        latencyChart.setLabel(B2W_INDEX, String.format(Locale.US, "Black-to-white m=%.1f ms", median_b2w));
     }
 
     @Override
@@ -333,7 +330,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
         if (v.getId() == R.id.button_start_screen_response) {
             brightnessChartLayout.setVisibility(View.GONE);
-            latencyChartLayout.setVisibility(View.GONE);
+            latencyChart.setVisibility(View.GONE);
             if (!waltDevice.isConnected()) {
                 logger.log("Error starting test: WALT is not connected");
                 return;
@@ -356,11 +353,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
         if (v.getId() == R.id.button_close_chart) {
             brightnessChartLayout.setVisibility(View.GONE);
-            return;
-        }
-
-        if (v.getId() == R.id.button_close_latency_chart) {
-            latencyChartLayout.setVisibility(View.GONE);
             return;
         }
     }

@@ -18,6 +18,7 @@ package org.chromium.latency.walt;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.method.ScrollingMovementMethod;
 import android.widget.TextView;
 
 
@@ -36,6 +37,7 @@ public class CrashLogActivity extends AppCompatActivity {
         setContentView(R.layout.activity_crash_log);
         txtCrashLog = (TextView) findViewById(R.id.txt_crash_log);
         txtCrashLog.setText(getIntent().getStringExtra("crash_log"));
+        txtCrashLog.setMovementMethod(new ScrollingMovementMethod());
     }
 
 }

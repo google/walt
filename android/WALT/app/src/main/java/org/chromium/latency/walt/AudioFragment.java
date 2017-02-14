@@ -43,6 +43,7 @@ import com.github.mikephil.charting.data.LineDataSet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static org.chromium.latency.walt.Utils.getIntPreference;
 
@@ -67,6 +68,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
     private View stopButton;
     private Spinner modeSpinner;
     private LineChart chart;
+    private HistogramChart latencyChart;
     private View chartLayout;
 
     private static final int PERMISSION_REQUEST_RECORD_AUDIO = 1;
@@ -93,6 +95,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         stopButton = view.findViewById(R.id.button_stop_audio);
         chartLayout = view.findViewById(R.id.chart_layout);
         chart = (LineChart) view.findViewById(R.id.chart);
+        latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
 
         view.findViewById(R.id.button_close_chart).setOnClickListener(this);
         enableButtons();
@@ -118,7 +121,6 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         // textView.setMovementMethod(new ScrollingMovementMethod());
         textView.setText(logger.getLogText());
         logger.registerReceiver(logReceiver);
-
     }
 
     @Override
@@ -159,6 +161,18 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
                 } else {
                     audioTest.setRecordingRepetitions(
                             getIntPreference(getContext(), R.string.preference_audio_in_reps, 5));
+                }
+                if (testType == AudioTestType.CONTINUOUS_PLAYBACK ||
+                        testType == AudioTestType.COLD_PLAYBACK ||
+                        testType == AudioTestType.CONTINUOUS_RECORDING ||
+                        testType == AudioTestType.COLD_RECORDING) {
+                    latencyChart.setVisibility(View.VISIBLE);
+                    latencyChart.clearData();
+                    latencyChart.setLegendEnabled(false);
+                    final String description =
+                            getResources().getStringArray(R.array.audio_mode_array)[
+                                    modeSpinner.getSelectedItemPosition()] + " [ms]";
+                    latencyChart.setDescription(description);
                 }
                 switch (testType) {
                     case CONTINUOUS_RECORDING:
@@ -227,6 +241,14 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
     public void onTestStopped() {
         if (getSelectedTestType() == AudioTestType.DISPLAY_WAVEFORM) {
             drawWaveformChart();
+        } else {
+            if (!audioTest.deltas_mic.isEmpty()) {
+                latencyChart.setLegendEnabled(true);
+                latencyChart.setLabel(String.format(Locale.US, "Median=%.1f ms", Utils.median(audioTest.deltas_mic)));
+            } else if (!audioTest.deltas_queue2wire.isEmpty()) {
+                latencyChart.setLegendEnabled(true);
+                latencyChart.setLabel(String.format(Locale.US, "Median=%.1f ms", Utils.median(audioTest.deltas_queue2wire)));
+            }
         }
         enableButtons();
     }
@@ -234,6 +256,12 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
     @Override
     public void onTestStoppedWithError() {
         enableButtons();
+        latencyChart.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onTestPartialResult(double value) {
+        latencyChart.addEntry(value);
     }
 
     private void drawWaveformChart() {

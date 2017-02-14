@@ -26,6 +26,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.Locale;
+
 public class MidiFragment extends Fragment
         implements View.OnClickListener, BaseTest.TestStateListener {
 
@@ -33,6 +35,7 @@ public class MidiFragment extends Fragment
     private TextView textView;
     private View startMidiInButton;
     private View startMidiOutButton;
+    private HistogramChart latencyChart;
     private MidiTest midiTest;
 
     public MidiFragment() {
@@ -50,6 +53,7 @@ public class MidiFragment extends Fragment
         textView = (TextView) view.findViewById(R.id.txt_box_midi);
         startMidiInButton = view.findViewById(R.id.button_start_midi_in);
         startMidiOutButton = view.findViewById(R.id.button_start_midi_out);
+        latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
         return view;
     }
 
@@ -77,10 +81,18 @@ public class MidiFragment extends Fragment
         switch (v.getId()) {
             case R.id.button_start_midi_in:
                 disableButtons();
+                latencyChart.setVisibility(View.VISIBLE);
+                latencyChart.clearData();
+                latencyChart.setLegendEnabled(false);
+                latencyChart.getBarChart().getDescription().setText("MIDI Input Latency [ms]");
                 midiTest.testMidiIn();
                 break;
             case R.id.button_start_midi_out:
                 disableButtons();
+                latencyChart.setVisibility(View.VISIBLE);
+                latencyChart.clearData();
+                latencyChart.setLegendEnabled(false);
+                latencyChart.getBarChart().getDescription().setText("MIDI Output Latency [ms]");
                 midiTest.testMidiOut();
                 break;
         }
@@ -101,6 +113,15 @@ public class MidiFragment extends Fragment
 
     @Override
     public void onTestStopped() {
+        if (!midiTest.deltasOutputTotal.isEmpty()) {
+            latencyChart.setLegendEnabled(true);
+            latencyChart.setLabel(String.format(
+                    Locale.US, "Median=%.1f ms", Utils.median(midiTest.deltasOutputTotal)));
+        } else if (!midiTest.deltasInputTotal.isEmpty()) {
+            latencyChart.setLegendEnabled(true);
+            latencyChart.setLabel(String.format(
+                    Locale.US, "Median=%.1f ms", Utils.median(midiTest.deltasInputTotal)));
+        }
         startMidiInButton.setEnabled(true);
         startMidiOutButton.setEnabled(true);
     }
@@ -108,5 +129,11 @@ public class MidiFragment extends Fragment
     @Override
     public void onTestStoppedWithError() {
         onTestStopped();
+        latencyChart.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onTestPartialResult(double value) {
+        latencyChart.addEntry(value);
     }
 }

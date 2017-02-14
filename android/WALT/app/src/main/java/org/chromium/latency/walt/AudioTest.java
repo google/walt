@@ -66,9 +66,9 @@ class AudioTest extends BaseTest {
     private static int recorderSyncAfterRepetitions = 10;
     private final int threshold;
 
-    private ArrayList<Double> deltas_mic = new ArrayList<>();
+    ArrayList<Double> deltas_mic = new ArrayList<>();
     private ArrayList<Double> deltas_play2queue = new ArrayList<>();
-    private ArrayList<Double> deltas_queue2wire = new ArrayList<>();
+    ArrayList<Double> deltas_queue2wire = new ArrayList<>();
     private ArrayList<Double> deltasJ2N = new ArrayList<>();
 
     long lastBeepTime;
@@ -155,6 +155,9 @@ class AudioTest extends BaseTest {
     void beginRecordingMeasurement() {
         userStoppedTest = false;
         deltas_mic.clear();
+        deltas_play2queue.clear();
+        deltas_queue2wire.clear();
+        deltasJ2N.clear();
 
         int framesToRecord = (int) (0.001 * msToRecord * frameRate);
         createAudioRecorder(frameRate, framesToRecord);
@@ -206,6 +209,7 @@ class AudioTest extends BaseTest {
             if (testStateListener != null) testStateListener.onTestStoppedWithError();
             return;
         }
+        deltas_mic.clear();
         deltas_play2queue.clear();
         deltas_queue2wire.clear();
         deltasJ2N.clear();
@@ -242,6 +246,8 @@ class AudioTest extends BaseTest {
                     dt_play2queue,
                     dt_queue2wire
             ));
+
+            if (testStateListener != null) testStateListener.onTestPartialResult(dt_queue2wire);
 
             // Schedule another beep soon-ish
             handler.postDelayed(playBeepRunnable, period); // TODO: randomize the delay
@@ -367,6 +373,8 @@ class AudioTest extends BaseTest {
                     latencyEnqueue_ms,
                     noisyAtFrame
             ));
+
+            if (testStateListener != null) testStateListener.onTestPartialResult(latencyCb_ms);
 
             deltas_mic.add(latencyCb_ms);
             doRecordingTestRepetition();
