@@ -2,7 +2,7 @@
 
 WALT can detect when screen changes color between white and black using a photodiode.
 
-TODO: photo of WALT's bottom side
+![Photo of bottom side of WALT](WALT_bottom_view.png)
 
 Because the screen refreshes at predefined intervals (typically 60 Hz), most drawing commands do not take effect immediately but are processes during the next frame render event. See [Choreographer.FrameCallback](https://developer.android.com/reference/android/view/Choreographer.FrameCallback.html). An in-depth explanation about Android graphics can be found in [this video](https://www.youtube.com/watch?v=Q8m9sHdyXnE).
 
