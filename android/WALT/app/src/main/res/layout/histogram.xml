@@ -3,6 +3,7 @@
     android:id="@+id/latency_chart_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_margin="5dp"
     android:background="@drawable/border">
     <com.github.mikephil.charting.charts.BarChart
         android:id="@+id/bar_chart"
