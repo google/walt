@@ -19,6 +19,7 @@ package org.chromium.latency.walt;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -27,8 +28,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.github.mikephil.charting.charts.ScatterChart;
+import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.ScatterData;
+import com.github.mikephil.charting.data.ScatterDataSet;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class DragLatencyFragment extends Fragment implements View.OnClickListener {
 
@@ -41,6 +49,8 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
     private View startButton;
     private View restartButton;
     private View finishButton;
+    private ScatterChart latencyChart;
+    private View latencyChartLayout;
     int moveCount = 0;
 
     ArrayList<UsMotionEvent> touchEventList = new ArrayList<>();
@@ -91,6 +101,9 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         touchCatcher = (TouchCatcherView) view.findViewById(R.id.tap_catcher);
         crossCountsView = (TextView) view.findViewById(R.id.txt_cross_counts);
         dragCountsView = (TextView) view.findViewById(R.id.txt_drag_counts);
+        latencyChart = (ScatterChart) view.findViewById(R.id.latency_chart);
+        latencyChartLayout = view.findViewById(R.id.latency_chart_layout);
+        view.findViewById(R.id.button_close_chart).setOnClickListener(this);
         restartButton.setEnabled(false);
         finishButton.setEnabled(false);
         return view;
@@ -147,6 +160,10 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         }
         touchCatcher.setOnTouchListener(touchListener);
         touchCatcher.startAnimation();
+        touchEventList.clear();
+        laserEventList.clear();
+        moveCount = 0;
+        updateCountsDisplay();
         return true;
     }
 
@@ -160,6 +177,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
 
         touchCatcher.startAnimation();
         touchEventList.clear();
+        laserEventList.clear();
         moveCount = 0;
         updateCountsDisplay();
     }
@@ -272,6 +290,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.button_restart_drag) {
+            latencyChartLayout.setVisibility(View.GONE);
             restartButton.setEnabled(false);
             restartMeasurement();
             restartButton.setEnabled(true);
@@ -279,6 +298,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         }
 
         if (v.getId() == R.id.button_start_drag) {
+            latencyChartLayout.setVisibility(View.GONE);
             startButton.setEnabled(false);
             boolean startSuccess = startMeasurement();
             if (startSuccess) {
@@ -296,6 +316,10 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
             finishAndShowStats();
             startButton.setEnabled(true);
             return;
+        }
+
+        if (v.getId() == R.id.button_close_chart) {
+            latencyChartLayout.setVisibility(View.GONE);
         }
     }
 
@@ -342,8 +366,41 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
             averageBestShift += bestShift / 2;
         }
 
+        drawLatencyGraph(ft, fy, lt, averageBestShift);
         logger.log(String.format("Drag latency is %.1f [ms]", averageBestShift));
     }
 
+    private void drawLatencyGraph(double[] ft, double[] fy, double[] lt, double averageBestShift) {
+        final ArrayList<Entry> touchEntries = new ArrayList<>();
+        final ArrayList<Entry> laserEntries = new ArrayList<>();
+        final double[] laserT = new double[lt.length];
+        for (int i = 0; i < ft.length; i++) {
+            touchEntries.add(new Entry((float) ft[i], (float) fy[i]));
+        }
+        for (int i = 0; i < lt.length; i++) {
+            laserT[i] = lt[i] + averageBestShift;
+        }
+        final double[] laserY = Utils.interp(laserT, ft, fy);
+        for (int i = 0; i < laserY.length; i++) {
+            laserEntries.add(new Entry((float) laserT[i], (float) laserY[i]));
+        }
 
+        final ScatterDataSet dataSetTouch = new ScatterDataSet(touchEntries, "Touch Events");
+        dataSetTouch.setScatterShape(ScatterChart.ScatterShape.CIRCLE);
+        dataSetTouch.setScatterShapeSize(8f);
+
+        final ScatterDataSet dataSetLaser = new ScatterDataSet(laserEntries,
+                String.format(Locale.US, "Laser Events  Latency=%.1f ms", averageBestShift));
+        dataSetLaser.setColor(Color.RED);
+        dataSetLaser.setScatterShapeSize(10f);
+        dataSetLaser.setScatterShape(ScatterChart.ScatterShape.X);
+
+        final ScatterData scatterData = new ScatterData(dataSetTouch, dataSetLaser);
+        final Description desc = new Description();
+        desc.setText("Y-Position [pixels] vs. Time [ms]");
+        desc.setTextSize(12f);
+        latencyChart.setDescription(desc);
+        latencyChart.setData(scatterData);
+        latencyChartLayout.setVisibility(View.VISIBLE);
+    }
 }
