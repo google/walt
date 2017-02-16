@@ -1,5 +1,6 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:walt="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="org.chromium.latency.walt.TapLatencyFragment">
@@ -67,10 +68,21 @@
                         android:textColor="#ff0000" />
                 </LinearLayout>
 
+                <org.chromium.latency.walt.HistogramChart
+                    android:id="@+id/latency_chart"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:visibility="gone"
+                    walt:description="Tap Latency [ms]"
+                    walt:binWidth="5"
+                    walt:numDataSets="2" />
+
                 <TextView
                     android:id="@+id/txt_log_tap_latency"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
                     android:background="#000000"
                     android:gravity="bottom"
                     android:textColor="#ffffff" />
@@ -82,7 +94,7 @@
                 android:id="@+id/tap_catcher"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#99000000" />
+                android:background="#01000000" />
 
         </FrameLayout>
     </LinearLayout>

@@ -117,8 +117,6 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         view.findViewById(R.id.button_close_chart).setOnClickListener(this);
         brightnessChart = (LineChart) view.findViewById(R.id.chart);
         latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
-        latencyChart.setLabel(W2B_INDEX, "White-to-black");
-        latencyChart.setLabel(B2W_INDEX, "Black-to-white");
 
         if (getBooleanPreference(getContext(), R.string.preference_auto_increase_brightness, true)) {
             increaseScreenBrightness();
@@ -147,6 +145,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         deltas_w2b.clear();
         latencyChart.clearData();
         latencyChart.setVisibility(View.VISIBLE);
+        latencyChart.setLabel(W2B_INDEX, "White-to-black");
+        latencyChart.setLabel(B2W_INDEX, "Black-to-white");
         initiatedBlinks = 0;
         detectedBlinks = 0;
 

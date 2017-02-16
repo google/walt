@@ -35,6 +35,8 @@ import java.util.Locale;
 public class TapLatencyFragment extends Fragment
     implements View.OnClickListener {
 
+    private static final int ACTION_DOWN_INDEX = 0;
+    private static final int ACTION_UP_INDEX = 1;
     private SimpleLogger logger;
     private WaltDevice waltDevice;
     private TextView logTextView;
@@ -43,6 +45,7 @@ public class TapLatencyFragment extends Fragment
     private TextView moveCountsView;
     private ImageButton finishButton;
     private ImageButton restartButton;
+    private HistogramChart latencyChart;
     private int moveCount = 0;
     private int allDownCount = 0;
     private int allUpCount = 0;
@@ -50,6 +53,10 @@ public class TapLatencyFragment extends Fragment
     private int okUpCount = 0;
 
     ArrayList<UsMotionEvent> eventList = new ArrayList<>();
+    ArrayList<Double> p2kDown = new ArrayList<>();
+    ArrayList<Double> p2kUp = new ArrayList<>();
+    ArrayList<Double> k2cDown = new ArrayList<>();
+    ArrayList<Double> k2cUp = new ArrayList<>();
 
     private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
@@ -63,7 +70,6 @@ public class TapLatencyFragment extends Fragment
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             UsMotionEvent tapEvent = new UsMotionEvent(event, waltDevice.clock.baseTime);
-            String action = tapEvent.getActionString();
 
             if(tapEvent.action != MotionEvent.ACTION_UP && tapEvent.action != MotionEvent.ACTION_DOWN) {
                 moveCount++;
@@ -78,15 +84,29 @@ public class TapLatencyFragment extends Fragment
             // Save it in any case so we can do stats on bad events later
             eventList.add(tapEvent);
 
+            final double physicalToKernelTime = (tapEvent.kernelTime - tapEvent.physicalTime) / 1000.;
+            final double kernelToCallbackTime = (tapEvent.createTime - tapEvent.kernelTime) / 1000.;
             if (tapEvent.action == MotionEvent.ACTION_DOWN) {
                 allDownCount++;
                 if (tapEvent.isOk) {
                     okDownCount++;
+                    p2kDown.add(physicalToKernelTime);
+                    k2cDown.add(kernelToCallbackTime);
+                    latencyChart.addEntry(ACTION_DOWN_INDEX, physicalToKernelTime);
+                    logger.log(String.format(Locale.US,
+                            "ACTION_DOWN:\ntouch2kernel: %.1f ms\nkernel2java: %.1f ms",
+                            physicalToKernelTime, kernelToCallbackTime));
                 }
             } else if (tapEvent.action == MotionEvent.ACTION_UP) {
                 allUpCount++;
                 if (tapEvent.isOk) {
                     okUpCount++;
+                    p2kUp.add(physicalToKernelTime);
+                    k2cUp.add(kernelToCallbackTime);
+                    latencyChart.addEntry(ACTION_UP_INDEX, physicalToKernelTime);
+                    logger.log(String.format(Locale.US,
+                            "ACTION_UP:\ntouch2kernel: %.1f ms\nkernel2java: %.1f ms",
+                            physicalToKernelTime, kernelToCallbackTime));
                 }
             }
 
@@ -112,6 +132,7 @@ public class TapLatencyFragment extends Fragment
         logTextView = (TextView) view.findViewById(R.id.txt_log_tap_latency);
         tapCountsView = (TextView) view.findViewById(R.id.txt_tap_counts);
         moveCountsView = (TextView) view.findViewById(R.id.txt_move_count);
+        latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
         finishButton.setEnabled(false);
         return view;
     }
@@ -141,7 +162,6 @@ public class TapLatencyFragment extends Fragment
     public boolean checkTapSanity(UsMotionEvent e) {
         String action = e.getActionString();
         double dt = (e.kernelTime - e.physicalTime) / 1000.0;
-        double dt_k2c = (e.createTime - e.kernelTime) / 1000.0;
 
         if (e.physicalTime == 0) {
             logger.log(action + " no shock found");
@@ -152,11 +172,6 @@ public class TapLatencyFragment extends Fragment
             logger.log(action + " bogus kernelTime, ignored, dt=" + dt);
             return  false;
         }
-
-        logger.log(String.format(Locale.US,
-                "%s:\ntouch2kernel: %.1f ms\nkernel2java: %.1f ms",
-                action, dt, dt_k2c
-        ));
         return true;
     }
 
@@ -182,10 +197,15 @@ public class TapLatencyFragment extends Fragment
             logger.log("Error syncing clocks: " + e.getMessage());
             restartButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
             finishButton.setEnabled(false);
+            latencyChart.setVisibility(View.GONE);
             return;
         }
 
         eventList.clear();
+        p2kDown.clear();
+        p2kUp.clear();
+        k2cDown.clear();
+        k2cUp.clear();
 
         moveCount = 0;
         allDownCount = 0;
@@ -214,36 +234,22 @@ public class TapLatencyFragment extends Fragment
                 moveCount
         ));
 
-        // TODO: Here we should fire up a new fragment with histogram(s)
-        // For now do the stats here and save them to log
-
         logger.log("ACTION_DOWN median times:");
-        printStats(MotionEvent.ACTION_DOWN);
-        logger.log("ACTION_UP median times:");
-        printStats(MotionEvent.ACTION_UP);
-        logger.log("-------------------------------");
-    }
-
-    private void printStats(int action) {
-        ArrayList<Double> p2k = new ArrayList<>();
-        ArrayList<Double> k2c = new ArrayList<>();
-
-        for (UsMotionEvent event : eventList) {
-            if (event == null || event.action != action || !event.isOk) continue;
-
-            // physical to kernel
-            p2k.add((event.kernelTime - event.physicalTime) / 1000.);
-
-            // kernel to callback
-            k2c.add((event.createTime - event.kernelTime) / 1000.);
-        }
-
         logger.log(String.format(Locale.US,
-                "   Touch to kernel: %.1f ms\n" +
-                "   Kernel to Java: %.1f ms",
-                Utils.median(p2k),
-                Utils.median(k2c)
+                "   Touch to kernel: %.1f ms\n   Kernel to Java: %.1f ms",
+                Utils.median(p2kDown),
+                Utils.median(k2cDown)
         ));
+        logger.log("ACTION_UP median times:");
+        logger.log(String.format(Locale.US,
+                "   Touch to kernel: %.1f ms\n   Kernel to Java: %.1f ms",
+                Utils.median(p2kUp),
+                Utils.median(k2cUp)
+        ));
+        logger.log("-------------------------------");
+
+        latencyChart.setLabel(ACTION_DOWN_INDEX, String.format(Locale.US, "ACTION_DOWN median=%.1f ms", Utils.median(p2kDown)));
+        latencyChart.setLabel(ACTION_UP_INDEX, String.format(Locale.US, "ACTION_UP median=%.1f ms", Utils.median(p2kUp)));
     }
 
     @Override
@@ -251,6 +257,10 @@ public class TapLatencyFragment extends Fragment
         if (v.getId() == R.id.button_restart_tap) {
             restartButton.setImageResource(R.drawable.ic_refresh_black_24dp);
             finishButton.setEnabled(true);
+            latencyChart.setVisibility(View.VISIBLE);
+            latencyChart.clearData();
+            latencyChart.setLabel(ACTION_DOWN_INDEX, "ACTION_DOWN");
+            latencyChart.setLabel(ACTION_UP_INDEX, "ACTION_UP");
             restartMeasurement();
             return;
         }
