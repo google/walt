@@ -133,8 +133,8 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
     }
 
     void updateCountsDisplay() {
-        crossCountsView.setText(String.format("↕ %d", laserEventList.size()));
-        dragCountsView.setText(String.format("⇄ %d", moveCount));
+        crossCountsView.setText(String.format(Locale.US, "↕ %d", laserEventList.size()));
+        dragCountsView.setText(String.format(Locale.US, "⇄ %d", moveCount));
     }
 
     /**
@@ -195,7 +195,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
 
         waltDevice.checkDrift();
 
-        logger.log(String.format(
+        logger.log(String.format(Locale.US,
                 "Recorded %d laser events and %d touch events. ",
                 laserEventList.size(),
                 touchEventList.size()
@@ -226,7 +226,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
 
         logger.log("=====> TOUCH EVENTS =====");
         for (UsMotionEvent e: touchEventList) {
-            logger.log(String.format(
+            logger.log(String.format(Locale.US,
                     "%d %.3f %.3f",
                     e.kernelTime,
                     e.x, e.y
@@ -362,12 +362,12 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
             double[] lts = Utils.extract(sideIdx, side, lt);
             // TODO: time this call
             double bestShift = Utils.findBestShift(lts, ft, fy);
-            logger.log("bestShift = " + bestShift);
+            logger.log(String.format(Locale.US, "bestShift = %.2f", bestShift));
             averageBestShift += bestShift / 2;
         }
 
         drawLatencyGraph(ft, fy, lt, averageBestShift);
-        logger.log(String.format("Drag latency is %.1f [ms]", averageBestShift));
+        logger.log(String.format(Locale.US, "Drag latency is %.1f [ms]", averageBestShift));
     }
 
     private void drawLatencyGraph(double[] ft, double[] fy, double[] lt, double averageBestShift) {
