@@ -485,7 +485,7 @@ def run_tap_latency_test(args):
             shock_time_us = walt.read_shock_time()
             dt_tap_us = 1e6 * (t_tap_epoch - t_zero) - shock_time_us
 
-            print ev_line
+            print(ev_line.strip())
             print("shock t %d, tap t %f, tap val %d. dt=%0.1f" % (shock_time_us, t_tap_epoch, direction, dt_tap_us))
 
             if shock_time_us == 0:
