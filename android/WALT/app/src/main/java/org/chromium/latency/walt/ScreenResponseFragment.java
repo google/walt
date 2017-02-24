@@ -57,6 +57,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private static final int W2B_INDEX = 0;
     private static final int B2W_INDEX = 1;
     private SimpleLogger logger;
+    private TraceLogger traceLogger = null;
     private WaltDevice waltDevice;
     private Handler handler = new Handler();
     private TextView blackBox;
@@ -100,6 +101,9 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                              Bundle savedInstanceState) {
         timesToBlink = getIntPreference(getContext(), R.string.preference_screen_blinks, 20);
         shouldShowLatencyChart = getBooleanPreference(getContext(), R.string.preference_show_blink_histogram, true);
+        if (getBooleanPreference(getContext(), R.string.preference_systrace, true)) {
+            traceLogger = TraceLogger.getInstance();
+        }
         waltDevice = WaltDevice.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
 
@@ -212,6 +216,11 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             isBoxWhite = !isBoxWhite;
             int nextColor = isBoxWhite ? Color.WHITE : Color.BLACK;
             initiatedBlinks++;
+            if (traceLogger != null) {
+                traceLogger.log(RemoteClockInfo.microTime(), RemoteClockInfo.microTime() + 1000,
+                        "Request-to-" + (isBoxWhite ? "white" : "black"),
+                        "Application has called setBackgroundColor at start of bar");
+            }
             blackBox.setBackgroundColor(nextColor);
             lastSetBackgroundTime = waltDevice.clock.micros(); // TODO: is this the right time to save?
 
@@ -229,7 +238,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
             // Repost doBlink to some far away time to blink again even if nothing arrives from
             // Teensy. This callback will almost always get cancelled by onIncomingTimestamp()
-            handler.postDelayed(doBlinkRunnable, 600); // TODO: config and or randomiz the delay,
+            handler.postDelayed(doBlinkRunnable, 550 + (long) (Math.random()*100));
         }
     };
 
@@ -253,6 +262,13 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 }
             }
 
+            final long startTimeMicros = lastFrameStartTime + waltDevice.clock.baseTime;
+            final long finishTimeMicros = tmsg.t + waltDevice.clock.baseTime;
+            if (traceLogger != null) {
+                traceLogger.log(startTimeMicros, finishTimeMicros,
+                        isBoxWhite ? "Black-to-white" : "White-to-black",
+                        "Bar starts at beginning of frame and ends when photosensor detects blink");
+            }
 
             double dt = (tmsg.t - lastFrameStartTime) / 1000.;
             deltas.add(dt);
@@ -271,10 +287,14 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                     dt,
                     isBoxWhite ? 1 : 0
             ));
-
+            if (traceLogger != null) {
+                traceLogger.log(lastFrameCallbackTime + waltDevice.clock.baseTime,
+                        lastFrameCallbackTime + waltDevice.clock.baseTime + 1000,
+                        isBoxWhite ? "FrameCallback Black-to-white" : "FrameCallback White-to-black",
+                        "FrameCallback was called at start of bar");
+            }
             // Schedule another blink soon-ish
-            handler.postDelayed(doBlinkRunnable, 50); // TODO: randomize the delay and allow config
-
+            handler.postDelayed(doBlinkRunnable, 40 + (long) (Math.random()*20));
         }
     };
 
@@ -312,6 +332,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 (median_b2w + median_w2b) / 2
         ));
 
+        if (traceLogger != null) traceLogger.flush(getContext());
         blackBox.setText(logger.getLogText());
         blackBox.setMovementMethod(new ScrollingMovementMethod());
         blackBox.setBackgroundColor(color_gray);

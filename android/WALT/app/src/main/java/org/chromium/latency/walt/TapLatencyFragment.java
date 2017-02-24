@@ -40,6 +40,7 @@ public class TapLatencyFragment extends Fragment
     private static final int ACTION_DOWN_INDEX = 0;
     private static final int ACTION_UP_INDEX = 1;
     private SimpleLogger logger;
+    private TraceLogger traceLogger;
     private WaltDevice waltDevice;
     private TextView logTextView;
     private TextView tapCatcherView;
@@ -112,11 +113,22 @@ public class TapLatencyFragment extends Fragment
                             physicalToKernelTime, kernelToCallbackTime));
                 }
             }
+            traceLogEvent(tapEvent);
 
             updateCountsDisplay();
             return true;
         }
     };
+
+    private void traceLogEvent(UsMotionEvent tapEvent) {
+        if (!tapEvent.isOk) return;
+        if (traceLogger == null) return;
+        if (tapEvent.action != MotionEvent.ACTION_DOWN && tapEvent.action != MotionEvent.ACTION_UP) return;
+        traceLogger.log(tapEvent.physicalTime + waltDevice.clock.baseTime,
+                tapEvent.kernelTime + waltDevice.clock.baseTime,
+                tapEvent.action == MotionEvent.ACTION_UP ? "Tap Up" : "Tap Down",
+                "Bar starts at accelerometer shock and ends at kernel time of tap event");
+    }
 
     public TapLatencyFragment() {
         // Required empty public constructor
@@ -126,6 +138,9 @@ public class TapLatencyFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         shouldShowLatencyChart = getBooleanPreference(getContext(), R.string.preference_show_tap_histogram, true);
+        if (getBooleanPreference(getContext(), R.string.preference_systrace, true)) {
+            traceLogger = TraceLogger.getInstance();
+        }
         waltDevice = WaltDevice.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
@@ -251,6 +266,7 @@ public class TapLatencyFragment extends Fragment
                 Utils.median(k2cUp)
         ));
         logger.log("-------------------------------");
+        if (traceLogger != null) traceLogger.flush(getContext());
 
         if (shouldShowLatencyChart) {
             latencyChart.setLabel(ACTION_DOWN_INDEX, String.format(Locale.US, "ACTION_DOWN median=%.1f ms", Utils.median(p2kDown)));

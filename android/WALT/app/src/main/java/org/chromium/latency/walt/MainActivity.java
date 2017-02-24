@@ -52,9 +52,12 @@ import java.io.StringWriter;
 import java.util.Date;
 import java.util.Locale;
 
+import static org.chromium.latency.walt.Utils.getBooleanPreference;
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "WALT";
-    private static final int PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE = 2;
+    private static final int PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE_SHARE_LOG = 2;
+    private static final int PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE_SYSTRACE = 3;
 
     private Toolbar toolbar;
     LocalBroadcastManager broadcastManager;
@@ -174,6 +177,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Set volume buttons to control media volume
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        requestSystraceWritePermission();
     }
 
     @Override
@@ -237,11 +241,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClickTapLatency(View view) {
         TapLatencyFragment newFragment = new TapLatencyFragment();
+        requestSystraceWritePermission();
         switchScreen(newFragment, "Tap Latency");
     }
 
     public void onClickScreenResponse(View view) {
         ScreenResponseFragment newFragment = new ScreenResponseFragment();
+        requestSystraceWritePermission();
         switchScreen(newFragment, "Screen Response");
     }
 
@@ -333,21 +339,22 @@ public class MainActivity extends AppCompatActivity {
         } else {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE);
+                    PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE_SHARE_LOG);
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        final boolean isPermissionGranted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+        if (!isPermissionGranted) {
+            logger.log("Could not get permission to write file to storage");
+            return;
+        }
         switch (requestCode) {
-            case PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    attemptSaveAndShareLog();
-                } else {
-                    logger.log("Could not get permission to write log file");
-                }
-                return;
+            case PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE_SHARE_LOG:
+                attemptSaveAndShareLog();
+                break;
         }
     }
 
@@ -405,6 +412,18 @@ public class MainActivity extends AppCompatActivity {
             startActivity(Intent.createChooser(i, "Send mail..."));
         } catch (android.content.ActivityNotFoundException ex) {
             Toast.makeText(MainActivity.this, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void requestSystraceWritePermission() {
+        if (getBooleanPreference(this, R.string.preference_systrace, true)) {
+            int currentPermission = ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            if (currentPermission != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE_SYSTRACE);
+            }
         }
     }
 

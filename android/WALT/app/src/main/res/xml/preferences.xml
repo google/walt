@@ -2,6 +2,18 @@
     xmlns:walt="http://schemas.android.com/apk/res/org.chromium.latency.walt">
 
     <android.support.v7.preference.PreferenceScreen
+        android:key="pref_general_screen"
+        android:persistent="false"
+        android:title="General">
+
+        <SwitchPreference
+            android:key="@string/preference_systrace"
+            android:title="Enable systrace logging"
+            android:defaultValue="true" />
+
+    </android.support.v7.preference.PreferenceScreen>
+
+    <android.support.v7.preference.PreferenceScreen
         android:key="pref_tap_screen"
         android:persistent="false"
         android:title="Tap latency">
