@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import static org.chromium.latency.walt.Utils.getBooleanPreference;
+
 public class TapLatencyFragment extends Fragment
     implements View.OnClickListener {
 
@@ -51,6 +53,7 @@ public class TapLatencyFragment extends Fragment
     private int allUpCount = 0;
     private int okDownCount = 0;
     private int okUpCount = 0;
+    private boolean shouldShowLatencyChart = false;
 
     ArrayList<UsMotionEvent> eventList = new ArrayList<>();
     ArrayList<Double> p2kDown = new ArrayList<>();
@@ -92,7 +95,7 @@ public class TapLatencyFragment extends Fragment
                     okDownCount++;
                     p2kDown.add(physicalToKernelTime);
                     k2cDown.add(kernelToCallbackTime);
-                    latencyChart.addEntry(ACTION_DOWN_INDEX, physicalToKernelTime);
+                    if (shouldShowLatencyChart) latencyChart.addEntry(ACTION_DOWN_INDEX, physicalToKernelTime);
                     logger.log(String.format(Locale.US,
                             "ACTION_DOWN:\ntouch2kernel: %.1f ms\nkernel2java: %.1f ms",
                             physicalToKernelTime, kernelToCallbackTime));
@@ -103,7 +106,7 @@ public class TapLatencyFragment extends Fragment
                     okUpCount++;
                     p2kUp.add(physicalToKernelTime);
                     k2cUp.add(kernelToCallbackTime);
-                    latencyChart.addEntry(ACTION_UP_INDEX, physicalToKernelTime);
+                    if (shouldShowLatencyChart) latencyChart.addEntry(ACTION_UP_INDEX, physicalToKernelTime);
                     logger.log(String.format(Locale.US,
                             "ACTION_UP:\ntouch2kernel: %.1f ms\nkernel2java: %.1f ms",
                             physicalToKernelTime, kernelToCallbackTime));
@@ -122,6 +125,7 @@ public class TapLatencyFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        shouldShowLatencyChart = getBooleanPreference(getContext(), R.string.preference_show_tap_histogram, true);
         waltDevice = WaltDevice.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
         // Inflate the layout for this fragment
@@ -248,8 +252,10 @@ public class TapLatencyFragment extends Fragment
         ));
         logger.log("-------------------------------");
 
-        latencyChart.setLabel(ACTION_DOWN_INDEX, String.format(Locale.US, "ACTION_DOWN median=%.1f ms", Utils.median(p2kDown)));
-        latencyChart.setLabel(ACTION_UP_INDEX, String.format(Locale.US, "ACTION_UP median=%.1f ms", Utils.median(p2kUp)));
+        if (shouldShowLatencyChart) {
+            latencyChart.setLabel(ACTION_DOWN_INDEX, String.format(Locale.US, "ACTION_DOWN median=%.1f ms", Utils.median(p2kDown)));
+            latencyChart.setLabel(ACTION_UP_INDEX, String.format(Locale.US, "ACTION_UP median=%.1f ms", Utils.median(p2kUp)));
+        }
     }
 
     @Override
@@ -257,10 +263,12 @@ public class TapLatencyFragment extends Fragment
         if (v.getId() == R.id.button_restart_tap) {
             restartButton.setImageResource(R.drawable.ic_refresh_black_24dp);
             finishButton.setEnabled(true);
-            latencyChart.setVisibility(View.VISIBLE);
-            latencyChart.clearData();
-            latencyChart.setLabel(ACTION_DOWN_INDEX, "ACTION_DOWN");
-            latencyChart.setLabel(ACTION_UP_INDEX, "ACTION_UP");
+            if (shouldShowLatencyChart) {
+                latencyChart.setVisibility(View.VISIBLE);
+                latencyChart.clearData();
+                latencyChart.setLabel(ACTION_DOWN_INDEX, "ACTION_DOWN");
+                latencyChart.setLabel(ACTION_UP_INDEX, "ACTION_UP");
+            }
             restartMeasurement();
             return;
         }

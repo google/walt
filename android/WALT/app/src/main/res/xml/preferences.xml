@@ -2,22 +2,39 @@
     xmlns:walt="http://schemas.android.com/apk/res/org.chromium.latency.walt">
 
     <android.support.v7.preference.PreferenceScreen
+        android:key="pref_tap_screen"
+        android:persistent="false"
+        android:title="Tap latency">
+
+        <SwitchPreference
+            android:key="@string/preference_show_tap_histogram"
+            android:title="Show live histogram for tap test"
+            android:defaultValue="true" />
+
+    </android.support.v7.preference.PreferenceScreen>
+
+    <android.support.v7.preference.PreferenceScreen
         android:key="pref_screen_response_screen"
         android:persistent="false"
-        android:title="Screen Response">
+        android:title="Screen response">
 
         <org.chromium.latency.walt.NumberPickerPreference
             android:defaultValue="20"
             android:dialogTitle="Number of blinks for screen latency measurement"
             android:key="@string/preference_screen_blinks"
             android:summary="%s blinks per test"
-            android:title="Screen latency test length"
+            android:title="Blink latency test length"
             walt:maxValue="1000"
             walt:minValue="1" />
 
         <SwitchPreference
             android:key="@string/preference_auto_increase_brightness"
             android:title="Automatically increase brightness for test"
+            android:defaultValue="true" />
+
+        <SwitchPreference
+            android:key="@string/preference_show_blink_histogram"
+            android:title="Show live histogram for blink latency test"
             android:defaultValue="true" />
 
     </android.support.v7.preference.PreferenceScreen>

@@ -67,6 +67,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private HistogramChart latencyChart;
     private View brightnessChartLayout;
     private int timesToBlink;
+    private boolean shouldShowLatencyChart = false;
     private boolean isTestRunning = false;
     int initiatedBlinks = 0;
     int detectedBlinks = 0;
@@ -98,6 +99,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         timesToBlink = getIntPreference(getContext(), R.string.preference_screen_blinks, 20);
+        shouldShowLatencyChart = getBooleanPreference(getContext(), R.string.preference_show_blink_histogram, true);
         waltDevice = WaltDevice.getInstance(getContext());
         logger = SimpleLogger.getInstance(getContext());
 
@@ -143,10 +145,12 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         deltas.clear();
         deltas_b2w.clear();
         deltas_w2b.clear();
-        latencyChart.clearData();
-        latencyChart.setVisibility(View.VISIBLE);
-        latencyChart.setLabel(W2B_INDEX, "White-to-black");
-        latencyChart.setLabel(B2W_INDEX, "Black-to-white");
+        if (shouldShowLatencyChart) {
+            latencyChart.clearData();
+            latencyChart.setVisibility(View.VISIBLE);
+            latencyChart.setLabel(W2B_INDEX, "White-to-black");
+            latencyChart.setLabel(B2W_INDEX, "Black-to-white");
+        }
         initiatedBlinks = 0;
         detectedBlinks = 0;
 
@@ -254,11 +258,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             deltas.add(dt);
             if (isBoxWhite) {  // Current color is the color we transitioned to
                 deltas_b2w.add(dt);
-                latencyChart.addEntry(B2W_INDEX, dt);
             } else {
                 deltas_w2b.add(dt);
-                latencyChart.addEntry(W2B_INDEX, dt);
             }
+            if (shouldShowLatencyChart) latencyChart.addEntry(isBoxWhite ? B2W_INDEX : W2B_INDEX, dt);
 
             // Other times can be important, logging them to allow more detailed analysis
             logger.log(String.format(Locale.US,
@@ -314,8 +317,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         blackBox.setBackgroundColor(color_gray);
         stopButton.setEnabled(false);
         startButton.setEnabled(true);
-        latencyChart.setLabel(W2B_INDEX, String.format(Locale.US, "White-to-black m=%.1f ms", median_w2b));
-        latencyChart.setLabel(B2W_INDEX, String.format(Locale.US, "Black-to-white m=%.1f ms", median_b2w));
+        if (shouldShowLatencyChart) {
+            latencyChart.setLabel(W2B_INDEX, String.format(Locale.US, "White-to-black m=%.1f ms", median_w2b));
+            latencyChart.setLabel(B2W_INDEX, String.format(Locale.US, "Black-to-white m=%.1f ms", median_b2w));
+        }
     }
 
     @Override
