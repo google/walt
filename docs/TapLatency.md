@@ -20,3 +20,11 @@ and include the kernel timestamp. For tap, the relevant MotionEvent types are
 ACTION_DOWN and ACTION_UP.
 
 ![Tap measurement](usage/images/tap.png)
+
+Sample measurements
+
+| Device       | OS version     | ACTION_DOWN [ms]| ACTION_UP [ms]| Kernel to Java [ms] |
+| :---         | :---           |           ---: |           ---: |                 ---: |
+| Nexus 5      | M4B30Z (6.0.1) |           26.9 |           15.9 |                  3.3 |
+| Nexus 5X     | NRD91P (7.0)   |           25.0 |           22.5 |                  2.4 |
+| Nexus 9      | MMB29K (6.0.1) |           18.7 |           19.9 |                  1.3 |
