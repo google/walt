@@ -14,4 +14,13 @@ performed using a robotic stylus.
 
 ![Drag/scroll latency measurement](usage/images/drag.png)
 
+Sample measurements
+
+| Device       | OS version     | Drag latency [ms]|
+| :---         | :---           |             ---: | 
+| Nexus 5      | M4B30Z (6.0.1) |             18.4 | 
+| Nexus 5X     | NRD91P (7.0)   |             18.9 | 
+| Nexus 9      | MMB29K (6.0.1) |             10.2 |
+
+
 
