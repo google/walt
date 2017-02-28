@@ -20,6 +20,7 @@ Sample measurements
 | :---         | :---           |             ---: | 
 | Nexus 5      | M4B30Z (6.0.1) |             18.4 | 
 | Nexus 5X     | NRD91P (7.0)   |             18.9 | 
+| Nexus 7      | LMY47Q (5.1)   |             35.8 |
 | Nexus 9      | MMB29K (6.0.1) |             10.2 |
 
 
