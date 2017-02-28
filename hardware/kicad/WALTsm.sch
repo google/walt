@@ -305,7 +305,6 @@ F 3 "" H 5600 3950 50  0000 C CNN
 	1    5600 3950
 	0    1    1    0   
 $EndComp
-NoConn ~ 9500 1600
 $Comp
 L JACK_TRRS J1
 U 1 1 5764949B
@@ -760,4 +759,24 @@ NoConn ~ 1900 2200
 NoConn ~ 1900 2800
 NoConn ~ 3400 3400
 NoConn ~ 4250 5400
+$Comp
+L R R8
+U 1 1 58B4C350
+P 9400 2250
+F 0 "R8" V 9480 2250 50  0000 C CNN
+F 1 "100" V 9400 2250 50  0000 C CNN
+F 2 "walt_footprints:R_0603_pad07mm_long" V 9330 2250 50  0001 C CNN
+F 3 "" H 9400 2250 50  0000 C CNN
+	1    9400 2250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9500 1600 9400 1600
+Wire Wire Line
+	9400 1600 9400 2100
+Wire Wire Line
+	9400 2400 9400 2500
+Wire Wire Line
+	9400 2500 9200 2500
+Connection ~ 9200 2500
 $EndSCHEMATC
