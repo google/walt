@@ -17,7 +17,7 @@ def screen_stats(blinker_file_name, sensor_file_name):
     skip_sensor = sum(t_sensor < t_enqueue[0])
     if(skip_sensor):
         t_sensor = t_sensor[skip_sensor:]
-        print "Skipped first %d readings from the sensor" % skip_sensor
+        print('Skipped first %d readings from the sensor' % skip_sensor)
 
     # Get only the common size
     length = min(len(t_sensor), len(t_enqueue))
@@ -36,9 +36,8 @@ def screen_stats(blinker_file_name, sensor_file_name):
     print('dte = array([' + ', '.join(map(str, dte)) + '])')
     print('dt = array([' + ', '.join(map(str, dt)) + '])')
 
-
-    print("Screen response [ms] median: %0.1f, stdev: %0.2f" %
-            (numpy.median(dt), numpy.std(dt)))
+    print('Screen response [ms] median: %0.1f, stdev: %0.2f' %
+          (numpy.median(dt), numpy.std(dt)))
 
 
 # Debug & test

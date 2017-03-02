@@ -94,7 +94,8 @@ class Walt(object):
     CMD_BRIGHTNESS_CURVE = 'U'
 
 
-    def __init__(self, serial_dev, timeout=None):
+    def __init__(self, serial_dev, timeout=None, encoding='utf-8'):
+        self.encoding = encoding
         self.serial_dev = serial_dev
         self.ser = serial.Serial(serial_dev, baudrate=115200, timeout=timeout)
         self.base_time = None
@@ -115,7 +116,7 @@ class Walt(object):
         self.ser.close()
 
     def readline(self):
-        return self.ser.readline()
+        return self.ser.readline().decode(self.encoding)
 
     def sndrcv(self, data):
         """ Send a 1-char command.
@@ -123,8 +124,9 @@ class Walt(object):
 
         """
         t0 = time.time()
-        self.ser.write(data)
+        self.ser.write(data.encode(self.encoding))
         reply = self.ser.readline()
+        reply = reply.decode(self.encoding)
         t1 = time.time()
         dt = (t1 - t0)
         log('sndrcv(): round trip %.3fms, reply=%s' % (dt / MS, reply.strip()))
@@ -368,7 +370,7 @@ def run_drag_latency_test(args):
     # Send SIGTERM to evtest process
     evtest.terminate()
 
-    print "\nProcessing data, may take a minute or two..."
+    print("\nProcessing data, may take a minute or two...")
     # lm.main(evtest_file_name, laser_file_name)
     minimization.minimize(evtest_file_name, laser_file_name)
 
@@ -489,7 +491,7 @@ def run_tap_latency_test(args):
             print("shock t %d, tap t %f, tap val %d. dt=%0.1f" % (shock_time_us, t_tap_epoch, direction, dt_tap_us))
 
             if shock_time_us == 0:
-                print "No shock detected, skipping this event"
+                print("No shock detected, skipping this event")
                 continue
 
             taps.append((dt_tap_us, direction))
@@ -559,7 +561,7 @@ class TcpServer:
             return None
 
         # Get a string version of the data for checking longer commands
-        s = data.decode('utf-8')
+        s = data.decode(self.walt.encoding)
         if s.startswith('bridge'):
             log('bridge command: %s, pausing ser2net thread...' % s)
             self.pause()
@@ -624,6 +626,7 @@ class TcpServer:
             data = self.walt.readline()
             if self.net and self.running.is_set():
                 data = self.ser2net(data)
+                data = data.encode(self.walt.encoding)
                 self.net.sendall(data)
             if not self.running.is_set():
                 self.paused.set()
