@@ -344,6 +344,7 @@ void process_command(char cmd) {
     screen.count = 0;
   } else if (cmd == CMD_AUTO_LASER_ON) {
     laser.autosend = true;
+    laser.count = 0;
     send_ack(CMD_AUTO_LASER_ON);
   } else if (cmd == CMD_AUTO_LASER_OFF) {
     laser.autosend = false;
