@@ -54,6 +54,11 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
     private static final int CURVE_TIMEOUT = 1000;  // milliseconds
     private static final int CURVE_BLINK_TIME = 250;  // milliseconds
+    private static final int CURVE_BACKLIGHT_STEP_TIMEOUT = 2000;  // milliseconds
+    private static final int CURVE_BACKLIGHT_STEP_TIME = 350;  // milliseconds
+    private static final int MAX_BACKLIGHT = 255;
+    private static final int BACKLIGHT_STEP_LEVEL = 5;
+
     private static final int W2B_INDEX = 0;
     private static final int B2W_INDEX = 1;
     private SimpleLogger logger;
@@ -64,6 +69,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private View stopButton;
     private Spinner spinner;
     private LineChart brightnessChart;
+    private LineChart backlightChart;
     private HistogramChart latencyChart;
     private View brightnessChartLayout;
     private int timesToBlink;
@@ -80,6 +86,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     ArrayList<Double> deltas = new ArrayList<>();
     private static final int color_gray = Color.argb(0xFF, 0xBB, 0xBB, 0xBB);
     private StringBuilder brightnessCurveData;
+    private StringBuilder backlightCurveData;
+    private float currentbacklight = 0;
+    private float savebacklight;
+    private List<Entry> B_entries;
 
     private BroadcastReceiver logReceiver = new BroadcastReceiver() {
         @Override
@@ -118,6 +128,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         brightnessChartLayout = view.findViewById(R.id.brightness_chart_layout);
         view.findViewById(R.id.button_close_chart).setOnClickListener(this);
         brightnessChart = (LineChart) view.findViewById(R.id.chart);
+        backlightChart = (LineChart) view.findViewById(R.id.chart);
         latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
 
         if (getBooleanPreference(getContext(), R.string.preference_auto_increase_brightness, true)) {
@@ -329,6 +340,12 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             isTestRunning = false;
             handler.removeCallbacks(doBlinkRunnable);
             handler.removeCallbacks(startBlinking);
+            handler.removeCallbacks(stepBacklight);
+            handler.removeCallbacks(runBacklight);
+            if (spinner.getSelectedItemPosition() == 2) {
+		if (getBooleanPreference(getContext(), R.string.preference_auto_increase_brightness, true))
+			increaseScreenBrightness();
+	    }
             finishAndShowStats();
             return;
         }
@@ -349,9 +366,13 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                 logger.log("Starting screen response measurement");
                 stopButton.setEnabled(true);
                 startBlinkLatency();
-            } else {
+            } else if (spinner.getSelectedItemPosition() == 1) {
                 logger.log("Starting screen brightness curve measurement");
                 startBrightnessCurve();
+            } else {
+                logger.log("Starting screen backlight measurement");
+                stopButton.setEnabled(true);
+                startBacklightCurve();
             }
             return;
         }
@@ -489,4 +510,171 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         layoutParams.screenBrightness = 1f;
         getActivity().getWindow().setAttributes(layoutParams);
     }
+
+/**
+ * Measurement of full range screen brightness variation linearity
+ */
+    private void setScreenBrightness(float value) {
+        final WindowManager.LayoutParams layoutParams = getActivity().getWindow().getAttributes();
+        layoutParams.screenBrightness = value;
+        getActivity().getWindow().setAttributes(layoutParams);
+    }
+
+    private float getScreenBrightness() {
+        final WindowManager.LayoutParams layoutParams = getActivity().getWindow().getAttributes();
+        return (layoutParams.screenBrightness);
+    }
+
+    private WaltDevice.TriggerHandler BacklightTriggerHandler = new WaltDevice.TriggerHandler() {
+        @Override
+        public void onReceive(WaltDevice.TriggerMessage tmsg) {
+            logger.log("ERROR: Backlight curve trigger got a trigger message, " +
+                    "this should never happen."
+            );
+        }
+
+        @Override
+        public void onReceiveRaw(String s) {
+
+            backlightCurveData.append(s);
+
+            if (s.trim().equals("end")) {
+                // Remove the delayed callback and run it now
+                handler.removeCallbacks(runBacklight);
+                handler.post(runBacklight);
+            }
+        }
+    };
+
+    void startBacklightCurve() {
+        logger.log("=== Screen startBacklightCurve: === ");
+
+        try {
+            backlightCurveData = new StringBuilder();
+            waltDevice.syncClock();
+            waltDevice.startListener();
+        } catch (IOException e) {
+            logger.log("Error starting test: " + e.getMessage());
+            isTestRunning = false;
+            startButton.setEnabled(true);
+            return;
+        }
+        blackBox.setText("");
+        blackBox.setBackgroundColor(Color.WHITE);
+	// TODO: restore initial brightness value
+	// savebacklight = getScreenBrightness();
+        // logger.log("== Backlight saved value: " + savebacklight);
+
+	B_entries = new ArrayList<>();
+	currentbacklight = 0;
+	setScreenBrightness(currentbacklight);
+
+	// wait long time before first measure for stable low backlight initial state
+        handler.postDelayed(stepBacklight, CURVE_BACKLIGHT_STEP_TIME*10);
+    }
+
+    Runnable stepBacklight = new Runnable() {
+        @Override
+        public void run() {
+            waltDevice.setTriggerHandler(BacklightTriggerHandler);
+            long tStart = waltDevice.clock.micros();
+
+            try {
+                waltDevice.command(WaltDevice.CMD_BRIGHTNESS_CURVE);
+            } catch (IOException e) {
+                logger.log("Error sending command CMD_BRIGHTNESS_CURVE: " + e.getMessage());
+                isTestRunning = false;
+                startButton.setEnabled(true);
+                return;
+            }
+
+            logger.log("=== Backlight step: ===\nt_start: " + tStart);
+
+            handler.postDelayed(runBacklight, CURVE_BACKLIGHT_STEP_TIMEOUT);
+        }
+    };
+
+    Runnable runBacklight = new Runnable() {
+        @Override
+        public void run() {
+
+            waltDevice.clearTriggerHandler();
+	    getBacklightLevel();
+            backlightCurveData.setLength(0);
+
+	    currentbacklight += BACKLIGHT_STEP_LEVEL;
+	    if (currentbacklight > MAX_BACKLIGHT){
+		handler.post(finishBacklightCurve);
+
+	    } else {
+		setScreenBrightness(currentbacklight/255);
+		handler.postDelayed(stepBacklight, CURVE_BACKLIGHT_STEP_TIME);
+	    }
+        }
+    };
+
+
+    Runnable finishBacklightCurve = new Runnable() {
+        @Override
+        public void run() {
+            waltDevice.stopListener();
+
+            // TODO: Add option to save this data into a separate file rather than the main log.
+            logger.log(backlightCurveData.toString());
+            logger.log("=== End of screen backlight data ===");
+
+            blackBox.setText(logger.getLogText());
+            blackBox.setMovementMethod(new ScrollingMovementMethod());
+            blackBox.setBackgroundColor(color_gray);
+            isTestRunning = false;
+            startButton.setEnabled(true);
+            drawBacklightChart();
+	    // TODO: restore initial brightness value
+	    // setScreenBrightness(savebacklight);
+
+        }
+    };
+
+    private void getBacklightLevel() {
+        final String backlightCurveString = backlightCurveData.toString();
+
+        float backlight_max = 0;
+        // "u" marks the start of the brightness curve data
+        int startIndex = backlightCurveString.indexOf("u") + 1;
+        int endIndex = backlightCurveString.indexOf("end");
+        if (endIndex == -1) endIndex = backlightCurveString.length();
+
+        String[] backlightStrings =
+                backlightCurveString.substring(startIndex, endIndex).trim().split("\n");
+
+        for (String str : backlightStrings) {
+            String[] arr = str.split(" ");
+            final float backlight = Integer.parseInt(arr[1]);
+	    if (backlight > backlight_max)
+		backlight_max = backlight;
+        }
+        B_entries.add(new Entry(currentbacklight, backlight_max));
+        logger.log("=== Set entries backlight data "+ currentbacklight+" => " + backlight_max);
+
+    }
+
+    private void drawBacklightChart() {
+
+        LineDataSet dataSet = new LineDataSet(B_entries, "Backlight");
+        dataSet.setColor(Color.BLACK);
+        dataSet.setValueTextColor(Color.BLACK);
+        dataSet.setCircleColor(Color.BLACK);
+        dataSet.setCircleRadius(1.5f);
+        dataSet.setCircleColorHole(Color.DKGRAY);
+        LineData lineData = new LineData(dataSet);
+        backlightChart.setData(lineData);
+        final Description desc = new Description();
+        desc.setText("Screen Backlight [level 0-255]");
+        desc.setTextSize(12f);
+        backlightChart.setDescription(desc);
+        backlightChart.getLegend().setEnabled(false);
+        backlightChart.invalidate();
+        brightnessChartLayout.setVisibility(View.VISIBLE);
+    }
+
 }
