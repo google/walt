@@ -8,7 +8,16 @@ WALT can be used on ChromeOS in two different modes:
 For either mode you will need to use a ChromeOS test image -
 [some pointers on how to get it installed](https://www.chromium.org/chromium-os/testing/autotest-developer-faq/ssh-test-keys-setup)
 
-Copy the [pywalt/](/pywalt) directory from WALT repo to the Chromebook.
+Copy the [pywalt/](/pywalt) directory from WALT repo to the Chromebook. One option is to download a repo tarball directly from GitHub:
+
+```
+wget https://github.com/google/walt/archive/master.tar.gz
+tar -xzf master.tar.gz
+cd walt-master/pywalt
+./walt.py --help
+```
+
+
 
 Connect WALT to Chromebook's USB port and test the setup by running: `$ ./walt.py -t sanity` on the Chromebook.
 This continuously displays readings from WALT's sensors (press Ctrl-C to stop):
