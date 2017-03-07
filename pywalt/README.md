@@ -61,3 +61,27 @@ dt_up = [47.54, 47.03, 41.52...
 
 Median latency, down: 23.9, up: 47.1
 ```
+
+## Drag / Scroll Latency ##
+See the [drag latency section](../docs/usage/WALT_usage.md#dragscroll-latency) in Android app usage doc.
+
+Below is a drag latency measurement of the trackpad on Asus Flip. The trackpad input device is `/dev/input/event4` which was selected using the `-i 4` argument.
+
+The `-n 20` option tells the script to record 20 laser events. Any change in laser sensor reading counts as one event, therefore one crossing of the beam counts as two events (laser goes off and back on), and a full cycle of the finger going up and down counts as 4 events. This measurement recorded 20/4 = 5 full cycles of the finger moving up and down.
+
+In addition to moving your finger up and down please also move it slowly along the beam. The calculation used by pywalt needs some spread of the x coordinates for better precision.
+
+Drag latency uses evtest and must therefore be run as root.
+
+```
+#./walt.py -t drag -i 4 -n 20
+Starting drag latency test
+Input device   : /dev/input/event4
+Serial device  : /dev/ttyACM1
+Laser log file : /tmp/WALT_2017_03_07__1532_12_laser.log
+evtest log file: /tmp/WALT_2017_03_07__1532_12_evtest.log
+Clock zeroed at 1488918733 (rt 0.306 ms)
+....................
+Processing data, may take a minute or two...
+Drag latency (min method) = 21.07 ms
+```
