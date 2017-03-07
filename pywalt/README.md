@@ -3,6 +3,8 @@ Python scripts for [WALT Latency Timer](https://github.com/google/walt) on Linux
 
  * Based on [ChromeOS scroll test implementation](https://chromium.googlesource.com/chromiumos/platform/touchbot/+/master/quickstep/)
  * Currently supprots tap and drag (scroll) latency measurements
+ * For tests using evetest or drm (all touch and screen tests) pywalt needs to run as root
+ * In order to find the name/number of your touch device run `evtest`. It will list available input devices and once you enter a device number it will show incoming events when you touch that touchpad / touchscreen.
 
 
 Synopsis:
@@ -35,6 +37,8 @@ See the [tap latency section](../docs/usage/WALT_usage.md#tap-latency) in Androi
 Below is output from an example run of a tap latency test that reads touch events from `/dev/input/event4` (in this case a touchpad). After 40 events (20 down and 20 up) are detected, the script prints median delays and exits.
 
 The input device option is mandatory since several touch devices might be preset (e.g. touchpad and touch screen). You can use a shorthand notation `-i 4` which is expanded to `-i /dev/input/event4`.
+
+The following must be run as root.
 
 ```
 $ ./walt.py -t tap -n 40 -i /dev/input/event4
