@@ -38,15 +38,8 @@ import java.util.ArrayList;
 
 public class HistogramChart extends RelativeLayout implements View.OnClickListener {
 
-    private float binWidth;
-    private static final float GROUP_SPACE = 0.1f;
-    private final ArrayList<ArrayList<Double>> rawData;
-
-    private double minBin = 0;
-    private double maxBin = 100;
-    private double min = 0;
-    private double max = 100;
-
+    static final float GROUP_SPACE = 0.1f;
+    private HistogramData histogramData;
     private BarChart barChart;
 
     public HistogramChart(Context context, AttributeSet attrs) {
@@ -59,6 +52,7 @@ public class HistogramChart extends RelativeLayout implements View.OnClickListen
         final TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.HistogramChart);
         final String descString;
         final int numDataSets;
+        final float binWidth;
         try {
             descString = a.getString(R.styleable.HistogramChart_description);
             numDataSets = a.getInteger(R.styleable.HistogramChart_numDataSets, 1);
@@ -67,11 +61,8 @@ public class HistogramChart extends RelativeLayout implements View.OnClickListen
             a.recycle();
         }
 
-
-        rawData = new ArrayList<>(numDataSets);
         ArrayList<IBarDataSet> dataSets = new ArrayList<>(numDataSets);
         for (int i = 0; i < numDataSets; i++) {
-            rawData.add(new ArrayList<Double>());
             final BarDataSet dataSet = new BarDataSet(new ArrayList<BarEntry>(), "");
             dataSet.setColor(ColorTemplate.MATERIAL_COLORS[i]);
             dataSets.add(dataSet);
@@ -80,7 +71,8 @@ public class HistogramChart extends RelativeLayout implements View.OnClickListen
         BarData barData = new BarData(dataSets);
         barData.setBarWidth((1f - GROUP_SPACE)/numDataSets);
         barChart.setData(barData);
-        groupBars();
+        histogramData = new HistogramData(numDataSets, binWidth);
+        groupBars(barData);
         final Description desc = new Description();
         desc.setText(descString);
         desc.setTextSize(12f);
@@ -95,7 +87,7 @@ public class HistogramChart extends RelativeLayout implements View.OnClickListen
 
             @Override
             public String getFormattedValue(float value, AxisBase axis) {
-                return df.format(value * binWidth + minBin);
+                return df.format(histogramData.getDisplayValue(value));
             }
         });
 
@@ -111,8 +103,7 @@ public class HistogramChart extends RelativeLayout implements View.OnClickListen
      * Re-implementation of BarData.groupBars(), but allows grouping with only 1 BarDataSet
      * This adjusts the x-coordinates of entries, which centers the bars between axis labels
      */
-    private void groupBars() {
-        final BarData barData = barChart.getBarData();
+    static void groupBars(final BarData barData) {
         IBarDataSet max = barData.getMaxEntryCountSet();
         int maxEntryCount = max.getEntryCount();
         float groupSpaceWidthHalf = GROUP_SPACE / 2f;
@@ -145,71 +136,33 @@ public class HistogramChart extends RelativeLayout implements View.OnClickListen
                 fromX += diff;
             }
         }
-
         barData.notifyDataChanged();
     }
 
     public void clearData() {
-        for (int i = 0; i < rawData.size(); i++) {
-            rawData.get(i).clear();
-            barChart.getBarData().getDataSetByIndex(i).clear();
+        histogramData.clear();
+        for (IBarDataSet dataSet : barChart.getBarData().getDataSets()) {
+            dataSet.clear();
         }
         barChart.getBarData().notifyDataChanged();
         barChart.invalidate();
     }
 
     public void addEntry(int dataSetIndex, double value) {
-        if (isRawDataEmpty()) {
-            min = value;
-            max = value;
-        } else {
-            if (value < min) min = value;
-            if (value > max) max = value;
-        }
-
-        rawData.get(dataSetIndex).add(value);
-        recalculateDataSet();
+        histogramData.addEntry(barChart.getBarData(), dataSetIndex, value);
+        recalculateXAxis();
     }
 
     public void addEntry(double value) {
         addEntry(0, value);
     }
 
-    private void recalculateDataSet() {
-        minBin = Math.floor(min / binWidth) * binWidth;
-        maxBin = Math.floor(max / binWidth) * binWidth;
-
-        final int numBins = (int) ((maxBin - minBin) / binWidth) + 1;
-        int[][] bins = new int[rawData.size()][numBins];
-
-        for (int setNum = 0; setNum < rawData.size(); setNum++) {
-            for (Double d : rawData.get(setNum)) {
-                ++bins[setNum][(int) (Math.floor((d - minBin) / binWidth))];
-            }
-        }
-
-        for (int setNum = 0; setNum < barChart.getBarData().getDataSetCount(); setNum++) {
-            final IBarDataSet dataSet = barChart.getBarData().getDataSetByIndex(setNum);
-            dataSet.clear();
-            for (int i = 0; i < bins[setNum].length; i++) {
-                dataSet.addEntry(new BarEntry(i, bins[setNum][i]));
-            }
-        }
-
+    private void recalculateXAxis() {
         final XAxis xAxis = barChart.getXAxis();
         xAxis.setAxisMinimum(0);
-        xAxis.setAxisMaximum(numBins);
-        groupBars();
-        barChart.getBarData().notifyDataChanged();
+        xAxis.setAxisMaximum(histogramData.getNumBins());
         barChart.notifyDataSetChanged();
         barChart.invalidate();
-    }
-
-    private boolean isRawDataEmpty() {
-        for (ArrayList<Double> data : rawData) {
-            if (!data.isEmpty()) return false;
-        }
-        return true;
     }
 
     public void setLabel(int dataSetIndex, String label) {
@@ -237,6 +190,88 @@ public class HistogramChart extends RelativeLayout implements View.OnClickListen
         switch (v.getId()) {
             case R.id.button_close_bar_chart:
                 this.setVisibility(GONE);
+        }
+    }
+
+    static class HistogramData {
+        private float binWidth;
+        private final ArrayList<ArrayList<Double>> rawData;
+        private double minBin = 0;
+        private double maxBin = 100;
+        private double min = 0;
+        private double max = 100;
+
+        HistogramData(int numDataSets, float binWidth) {
+            this.binWidth = binWidth;
+            rawData = new ArrayList<>(numDataSets);
+            for (int i = 0; i < numDataSets; i++) {
+                rawData.add(new ArrayList<Double>());
+            }
+        }
+
+        float getBinWidth() {
+            return binWidth;
+        }
+
+        double getMinBin() {
+            return minBin;
+        }
+
+        void clear() {
+            for (int i = 0; i < rawData.size(); i++) {
+                rawData.get(i).clear();
+            }
+        }
+
+        private boolean isEmpty() {
+            for (ArrayList<Double> data : rawData) {
+                if (!data.isEmpty()) return false;
+            }
+            return true;
+        }
+
+        void addEntry(BarData barData, int dataSetIndex, double value) {
+            if (isEmpty()) {
+                min = value;
+                max = value;
+            } else {
+                if (value < min) min = value;
+                if (value > max) max = value;
+            }
+
+            rawData.get(dataSetIndex).add(value);
+            recalculateDataSet(barData);
+        }
+
+        void recalculateDataSet(final BarData barData) {
+            minBin = Math.floor(min / binWidth) * binWidth;
+            maxBin = Math.floor(max / binWidth) * binWidth;
+
+            int[][] bins = new int[rawData.size()][getNumBins()];
+
+            for (int setNum = 0; setNum < rawData.size(); setNum++) {
+                for (Double d : rawData.get(setNum)) {
+                    ++bins[setNum][(int) (Math.floor((d - minBin) / binWidth))];
+                }
+            }
+
+            for (int setNum = 0; setNum < barData.getDataSetCount(); setNum++) {
+                final IBarDataSet dataSet = barData.getDataSetByIndex(setNum);
+                dataSet.clear();
+                for (int i = 0; i < bins[setNum].length; i++) {
+                    dataSet.addEntry(new BarEntry(i, bins[setNum][i]));
+                }
+            }
+            groupBars(barData);
+            barData.notifyDataChanged();
+        }
+
+        int getNumBins() {
+            return (int) (((maxBin - minBin) / binWidth) + 1);
+        }
+
+        double getDisplayValue(float value) {
+            return value * getBinWidth() + getMinBin();
         }
     }
 }
