@@ -25,6 +25,7 @@
     <string name="preference_auto_increase_brightness">auto_increase_brightness</string>
     <string name="preference_show_tap_histogram">pref_show_tap_histogram</string>
     <string name="preference_show_blink_histogram">pref_show_blink_histogram</string>
+    <string name="preference_systrace">pref_systrace</string>
     <string-array name="audio_mode_array">
         <item>Continuous Playback Latency</item>
         <item>Continuous Recording Latency</item>
