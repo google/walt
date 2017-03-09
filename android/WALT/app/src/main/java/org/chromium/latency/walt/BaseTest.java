@@ -18,6 +18,8 @@ package org.chromium.latency.walt;
 
 import android.content.Context;
 
+import static org.chromium.latency.walt.Utils.getBooleanPreference;
+
 abstract class BaseTest {
 
     interface TestStateListener {
@@ -26,14 +28,20 @@ abstract class BaseTest {
         void onTestPartialResult(double value);
     }
 
+    Context context;
     SimpleLogger logger;
+    TraceLogger traceLogger = null;
     WaltDevice waltDevice;
     TestStateListener testStateListener = null;
     AutoRunFragment.ResultHandler resultHandler = null;
 
     BaseTest(Context context) {
+        this.context = context;
         waltDevice = WaltDevice.getInstance(context);
         logger = SimpleLogger.getInstance(context);
+        if (getBooleanPreference(context, R.string.preference_systrace, true)) {
+            traceLogger = TraceLogger.getInstance();
+        }
     }
 
     void setTestStateListener(TestStateListener listener) {

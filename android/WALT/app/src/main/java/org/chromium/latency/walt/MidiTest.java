@@ -183,6 +183,10 @@ class MidiTest extends BaseTest {
             deltasOutputTotal.add(dt);
             logger.log(String.format(Locale.US, "Note detected: latency of %.3f ms", dt));
             if (testStateListener != null) testStateListener.onTestPartialResult(dt);
+            if (traceLogger != null) {
+                traceLogger.log(last_tSys, last_tWalt, "MIDI Output",
+                        "Bar starts when system sends audio and ends when WALT receives note");
+            }
 
             last_tSys += noteDelay * 1000;
             repetitionsDone++;
@@ -228,6 +232,7 @@ class MidiTest extends BaseTest {
             resultHandler.onResult(deltasOutputTotal);
         }
         if (testStateListener != null) testStateListener.onTestStopped();
+        if (traceLogger != null) traceLogger.flush(context);
         teardownMidiOut();
     }
 
@@ -285,6 +290,7 @@ class MidiTest extends BaseTest {
                 resultHandler.onResult(deltasToSys, deltasInputTotal);
             }
             if (testStateListener != null) testStateListener.onTestStopped();
+            if (traceLogger != null) traceLogger.flush(context);
             teardownMidiIn();
         }
     };
@@ -313,6 +319,14 @@ class MidiTest extends BaseTest {
                             testStateListener.onTestPartialResult(dt);
                         }
                     });
+                }
+                if (traceLogger != null) {
+                    traceLogger.log(last_tWalt + waltDevice.clock.baseTime,
+                            last_tSys + waltDevice.clock.baseTime, "MIDI Input Subsystem",
+                            "Bar starts when WALT sends note and ends when received by MIDI subsystem");
+                    traceLogger.log(last_tSys + waltDevice.clock.baseTime,
+                            last_tJava + waltDevice.clock.baseTime, "MIDI Input Java",
+                            "Bar starts when note received by MIDI subsystem and ends when received by app");
                 }
 
                 repetitionsDone++;
