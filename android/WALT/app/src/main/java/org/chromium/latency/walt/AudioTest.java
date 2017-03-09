@@ -247,6 +247,16 @@ class AudioTest extends BaseTest {
                     dt_queue2wire
             ));
 
+            if (traceLogger != null) {
+                traceLogger.log(lastBeepTime + waltDevice.clock.baseTime,
+                        enqueueTime + waltDevice.clock.baseTime,
+                        "Play-to-queue",
+                        "Bar starts at play time, ends when enqueued");
+                traceLogger.log(enqueueTime + waltDevice.clock.baseTime,
+                        tmsg.t + waltDevice.clock.baseTime,
+                        "Enqueue-to-wire",
+                        "Bar starts at enqueue time, ends when beep is detected");
+            }
             if (testStateListener != null) testStateListener.onTestPartialResult(dt_queue2wire);
 
             // Schedule another beep soon-ish
@@ -294,6 +304,11 @@ class AudioTest extends BaseTest {
             lastBeepTime = playTone() - waltDevice.clock.baseTime;
             double dtJ2N = (lastBeepTime - javaBeepTime)/1000.;
             deltasJ2N.add(dtJ2N);
+            if (traceLogger != null) {
+                traceLogger.log(javaBeepTime + waltDevice.clock.baseTime,
+                        lastBeepTime + waltDevice.clock.baseTime, "Java-to-native",
+                        "Bar starts when Java tells native to beep and ends when buffer written in native");
+            }
             logger.log(String.format(Locale.US,
                     "Called playTone(), dt Java to native = %.3f ms",
                     dtJ2N
@@ -375,6 +390,15 @@ class AudioTest extends BaseTest {
             ));
 
             if (testStateListener != null) testStateListener.onTestPartialResult(latencyCb_ms);
+            if (traceLogger != null) {
+                traceLogger.log(tb + waltDevice.clock.baseTime,
+                        (long) (tc + waltDevice.clock.baseTime - remaining_us),
+                        "Beep-to-callback",
+                        "Bar starts when beep is played and ends when callback received");
+                traceLogger.log(te + waltDevice.clock.baseTime,
+                        (long) (tb + waltDevice.clock.baseTime - silent_us),
+                        "Enqueue-to-beep", "Bar starts at enqueue and ends when beep is played");
+            }
 
             deltas_mic.add(latencyCb_ms);
             doRecordingTestRepetition();
@@ -409,6 +433,7 @@ class AudioTest extends BaseTest {
             resultHandler.onResult(deltas_play2queue, deltas_queue2wire);
         }
         if (testStateListener != null) testStateListener.onTestStopped();
+        if (traceLogger != null) traceLogger.flush(context);
     }
 
     private void finishRecordingMeasurement() {
@@ -431,5 +456,6 @@ class AudioTest extends BaseTest {
             resultHandler.onResult(deltas_mic);
         }
         if (testStateListener != null) testStateListener.onTestStopped();
+        if (traceLogger != null) traceLogger.flush(context);
     }
 }
