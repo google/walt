@@ -75,18 +75,19 @@ class TraceLogger {
             return;
         }
         writeSystraceLogs(context);
-        logger.log(String.format("TraceLogger wrote %d events", traceEvents.size()));
         traceEvents.clear();
     }
 
     private void writeSystraceLogs(Context context) {
         File file = new File(context.getExternalFilesDir(null), "trace.txt");
+        SimpleLogger logger = SimpleLogger.getInstance(context);
         try {
             OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file, true));
             writer.write(getLogText());
             writer.close();
+            logger.log(String.format("TraceLogger wrote %d events to %s",
+                    traceEvents.size(), file.getAbsolutePath()));
         } catch (IOException e) {
-            SimpleLogger logger = SimpleLogger.getInstance(context);
             logger.log("ERROR: IOException writing to trace.txt");
             e.printStackTrace();
         }

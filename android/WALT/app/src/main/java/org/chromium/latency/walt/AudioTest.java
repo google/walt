@@ -391,13 +391,10 @@ class AudioTest extends BaseTest {
 
             if (testStateListener != null) testStateListener.onTestPartialResult(latencyCb_ms);
             if (traceLogger != null) {
-                traceLogger.log(tb + waltDevice.clock.baseTime,
-                        (long) (tc + waltDevice.clock.baseTime - remaining_us),
-                        "Beep-to-callback",
-                        "Bar starts when beep is played and ends when callback received");
-                traceLogger.log(te + waltDevice.clock.baseTime,
-                        (long) (tb + waltDevice.clock.baseTime - silent_us),
-                        "Enqueue-to-beep", "Bar starts at enqueue and ends when beep is played");
+                traceLogger.log((long) (tb + waltDevice.clock.baseTime + remaining_us),
+                        tc + waltDevice.clock.baseTime,
+                        "Beep-to-rec-callback",
+                        "Bar starts when WALT plays beep and ends when recording callback received");
             }
 
             deltas_mic.add(latencyCb_ms);
