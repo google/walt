@@ -48,9 +48,9 @@ import time
 import serial
 import numpy
 
-import evparser
-import minimization
-import screen_stats
+from . import evparser
+from . import minimization
+from . import screen_stats
 
 
 # Time units
@@ -279,7 +279,7 @@ def array2str(a):
     return '[' + s + ']'
 
 
-def parse_args():
+def parse_args(argv):
     temp_dir = tempfile.gettempdir()
     serial = '/dev/ttyACM0'
 
@@ -307,7 +307,7 @@ def parse_args():
                         help='Port to listen on for the TCP bridge')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='talk more')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     global debug_mode
     debug_mode = args.debug
@@ -696,8 +696,8 @@ def run_tcp_bridge(args):
         print(' KeyboardInterrupt, exiting...')
 
 
-if __name__ == '__main__':
-    args = parse_args()
+def main(argv=sys.argv[1:]):
+    args = parse_args(argv)
     if args.type == 'tap':
         run_tap_latency_test(args)
     elif args.type == 'screen':
@@ -710,3 +710,7 @@ if __name__ == '__main__':
         run_tcp_bridge(args)
     else:
         run_drag_latency_test(args)
+
+
+if __name__ == '__main__':
+    main()
