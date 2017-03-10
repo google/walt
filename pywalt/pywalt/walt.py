@@ -288,31 +288,35 @@ def parse_args(argv):
     if len(ls_ttyACM) > 0:
         serial = ls_ttyACM[0]
 
-    description = "Run the touchpad drag latency test using WALT Latency Timer"
+    description = "Run a latency test using WALT Latency Timer"
     parser = argparse.ArgumentParser(
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-i', '--input', default='',
+    parser.add_argument('-i', '--input',
                         help='input device, e.g: 6 or /dev/input/event6')
     parser.add_argument('-s', '--serial', default=serial,
                         help='WALT serial port')
-    parser.add_argument('-t', '--type', default='drag',
+    parser.add_argument('-t', '--type',
                         help='Test type: drag|tap|screen|sanity|curve|bridge')
     parser.add_argument('-l', '--logdir', default=temp_dir,
                         help='where to store logs')
     parser.add_argument('-n', default=40, type=int,
                         help='Number of laser toggles to read')
     parser.add_argument('-p', '--port', default=50007, type=int,
-                        help='Port to listen on for the TCP bridge')
+                        help='port to listen on for the TCP bridge')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='talk more')
     args = parser.parse_args(argv)
 
+    if not args.type:
+        parser.print_usage()
+        sys.exit(0)
+
     global debug_mode
     debug_mode = args.debug
 
-    if args.input.isalnum():
+    if args.input and args.input.isalnum():
         args.input = '/dev/input/event' + args.input
 
     return args
@@ -698,6 +702,8 @@ def run_tcp_bridge(args):
 
 def main(argv=sys.argv[1:]):
     args = parse_args(argv)
+    if args.type == 'drag':
+        run_drag_latency_test(args)
     if args.type == 'tap':
         run_tap_latency_test(args)
     elif args.type == 'screen':
@@ -709,7 +715,7 @@ def main(argv=sys.argv[1:]):
     elif args.type == 'bridge':
         run_tcp_bridge(args)
     else:
-        run_drag_latency_test(args)
+        print('Unknown test type: "%s"' % args.type)
 
 
 if __name__ == '__main__':
