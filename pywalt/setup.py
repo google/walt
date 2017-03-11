@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from setuptools import setup, find_packages
 
 setup(
@@ -7,8 +9,9 @@ setup(
             'walt = pywalt.walt:main',
         ),
     },
+    install_requires=['pyserial'],
     packages=find_packages(),
     description='WALT Latency Timer',
     license='Apache 2.0',
-    url='http://github.com/google/walt',
+    url='https://github.com/google/walt',
 )
