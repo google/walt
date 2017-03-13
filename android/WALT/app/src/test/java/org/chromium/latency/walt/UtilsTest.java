@@ -18,6 +18,9 @@ package org.chromium.latency.walt;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Random;
+
 import static java.lang.Double.NaN;
 import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.core.Is.is;
@@ -27,22 +30,28 @@ public class UtilsTest {
 
     @Test
     public void testMedian_singleNumber() {
-        assertThat(Utils.mean(new double[]{0}), is(0d));
+        ArrayList<Double> arr = new ArrayList<>();
+        arr.add(0d);
+        assertThat(Utils.median(arr), is(0d));
     }
 
     @Test
     public void testMedian_evenSize() {
-        assertThat(Utils.mean(new double[]{1,2,3,4}), is(2.5d));
+        ArrayList<Double> arr = new ArrayList<>();
+        arr.add(1d); arr.add(2d); arr.add(3d); arr.add(4d);
+        assertThat(Utils.median(arr), is(2.5d));
+    }
+
+    @Test
+    public void testMedian_oddSize() {
+        ArrayList<Double> arr = new ArrayList<>();
+        arr.add(1d); arr.add(2d); arr.add(3d); arr.add(4d); arr.add(5d);
+        assertThat(Utils.median(arr), is(3d));
     }
 
     @Test
     public void testMean() {
         assertThat(Utils.mean(new double[]{-1,1,2,3}), is(1.25d));
-    }
-
-    @Test
-    public void testMedian_oddSize() {
-        assertThat(Utils.mean(new double[]{1,2,3,4,5}), is(3d));
     }
 
     @Test
@@ -128,23 +137,26 @@ public class UtilsTest {
 
     @Test
     public void testFindBestShift() {
-        double[] touchTimes = new double[1000];
+        Random rand = new Random(42);
+        double latency = 12.34;
+        double[] touchTimes = new double[4000];
         for (int i = 0; i < touchTimes.length; i++) {
-            touchTimes[i] = i;
+            // touch events every millisecond with some jitter
+            touchTimes[i] = i + rand.nextDouble()*0.2 - 0.1;
         }
         double[] touchY = new double[touchTimes.length];
         for (int i = 0; i < touchY.length; i++) {
-            // sine wave will oscillate 1000/200 times
-            touchY[i] = 100*Math.sin(i * Math.PI/100);
+            // sine wave will oscillate 1 time
+            touchY[i] = 1000*Math.cos((touchTimes[i] - latency) * Math.PI/500) + rand.nextDouble()*0.02 - 0.01;
         }
-        double[] laserTimes = new double[4*5];
+        double[] laserTimes = new double[4];
         int i = 0;
-        for (int root = 0; root < 1000; root+=200) {
-            laserTimes[i++] = root + 100 - 10;
-            laserTimes[i++] = root + 100 + 10;
-            laserTimes[i++] = root + 200 - 10;
-            laserTimes[i++] = root + 200 + 10;
+        for (int root = 0; root < 1000; root+=1000) {
+            laserTimes[i++] = root + 250 - 10;
+            laserTimes[i++] = root + 250 + 10;
+            laserTimes[i++] = root + 750 - 10;
+            laserTimes[i++] = root + 750 + 10;
         }
-        assertEquals(100, Utils.findBestShift(laserTimes, touchTimes, touchY), 0.7);
+        assertEquals(latency, Utils.findBestShift(laserTimes, touchTimes, touchY), 1e-6);
     }
 }

@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
@@ -36,10 +36,11 @@ public class TraceLoggerTest {
         traceLogger.log(40012345, 40045678, "AnotherTitle", "Another description here");
         mockStatic(android.os.Process.class);
         when(android.os.Process.myPid()).thenReturn(42);
-        String expected = "WALTThread-1234 (42) [000] ...1 30.012345: tracing_mark_write: B|42|SomeTitle|description=Some description here|WALT\n" +
-                "WALTThread-1234 (42) [000] ...1 30.045678: tracing_mark_write: E|42|SomeTitle||WALT\n" +
-                "WALTThread-1234 (42) [000] ...1 40.012345: tracing_mark_write: B|42|AnotherTitle|description=Another description here|WALT\n" +
-                "WALTThread-1234 (42) [000] ...1 40.045678: tracing_mark_write: E|42|AnotherTitle||WALT\n";
-        assertEquals(expected, traceLogger.getLogText());
+        String expected =
+                "WALTThread-[0-9]+ \\(42\\) \\[[0-9]+] .{4} 30\\.012345: tracing_mark_write: B\\|42\\|SomeTitle\\|description=Some description here\\|WALT\n" +
+                "WALTThread-[0-9]+ \\(42\\) \\[[0-9]+] .{4} 30\\.045678: tracing_mark_write: E\\|42\\|SomeTitle\\|\\|WALT\n" +
+                "WALTThread-[0-9]+ \\(42\\) \\[[0-9]+] .{4} 40\\.012345: tracing_mark_write: B\\|42\\|AnotherTitle\\|description=Another description here\\|WALT\n" +
+                "WALTThread-[0-9]+ \\(42\\) \\[[0-9]+] .{4} 40\\.045678: tracing_mark_write: E\\|42\\|AnotherTitle\\|\\|WALT\n";
+        assertTrue(traceLogger.getLogText().matches(expected));
     }
 }
