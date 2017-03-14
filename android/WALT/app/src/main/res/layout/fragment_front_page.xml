@@ -138,20 +138,17 @@
         </LinearLayout>
         <!-- End of Audio  -->
 
-        <View
-            android:id="@+id/midi_divider"
-            style="@style/MenuDivider"
-            android:visibility="gone" />
+        <View style="@style/MenuDivider" />
 
         <!-- MIDI -->
         <LinearLayout
-            android:id="@+id/action_midi"
             style="@style/MenuItemStyle"
-            android:onClick="onClickMIDI"
-            android:visibility="gone">
+            android:onClick="onClickMIDI" >
 
             <ImageView
+                android:id="@+id/midi_image"
                 style="@style/MenuIconStyle"
+                android:tint="@color/ColorDisabled"
                 android:src="@drawable/ic_music_note_black_24dp" />
 
             <LinearLayout
@@ -161,7 +158,9 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/midi_text"
                     style="@style/MenuTextTop"
+                    android:textColor="@color/ColorDisabled"
                     android:text="MIDI latency" />
 
             </LinearLayout>

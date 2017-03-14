@@ -257,8 +257,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClickMIDI(View view) {
-        MidiFragment newFragment = new MidiFragment();
-        switchScreen(newFragment, "MIDI Latency");
+        if (MidiFragment.hasMidi(this)) {
+            MidiFragment newFragment = new MidiFragment();
+            switchScreen(newFragment, "MIDI Latency");
+        } else {
+            toast("This device does not support MIDI");
+        }
     }
 
     public void onClickDragLatency(View view) {
@@ -411,7 +415,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             startActivity(Intent.createChooser(i, "Send mail..."));
         } catch (android.content.ActivityNotFoundException ex) {
-            Toast.makeText(MainActivity.this, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
+            toast("There are no email clients installed.");
         }
     }
 

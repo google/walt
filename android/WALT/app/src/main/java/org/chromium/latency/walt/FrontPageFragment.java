@@ -16,11 +16,14 @@
 
 package org.chromium.latency.walt;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 
 /**
@@ -38,10 +41,11 @@ public class FrontPageFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_front_page, container, false);
 
-        if (container.getContext().getPackageManager().
-                hasSystemFeature("android.software.midi")) {
-            view.findViewById(R.id.action_midi).setVisibility(View.VISIBLE);
-            view.findViewById(R.id.midi_divider).setVisibility(View.VISIBLE);
+        if (MidiFragment.hasMidi(container.getContext())) {
+            final ImageView midiImage = (ImageView) view.findViewById(R.id.midi_image);
+            final TextView midiText = (TextView) view.findViewById(R.id.midi_text);
+            midiImage.setColorFilter(Color.TRANSPARENT);
+            midiText.setTextColor(Color.BLACK);
         }
         return view;
     }
