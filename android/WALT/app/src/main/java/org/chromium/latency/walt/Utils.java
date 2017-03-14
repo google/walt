@@ -23,7 +23,6 @@ import android.support.annotation.StringRes;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.InputMismatchException;
 
 /**
  * Kitchen sink for small utility functions
@@ -65,22 +64,24 @@ public class Utils {
         // skip x points that are outside the data
         while (i < x.length && x[i] < xp[0]) i++;
 
-        while (ip < xp.length && i < x.length) { // TODO: x
-            // skip until we see an xp larger than current x
-            while (ip < xp.length && xp[ip] <= x[i]) ip++;
+        while (ip < xp.length && i < x.length) {
+            // skip until we see an xp >= current x
+            while (ip < xp.length && xp[ip] < x[i]) ip++;
             if (ip >= xp.length) break;
-            double dy = yp[ip] - yp[ip-1];
-            double dx = xp[ip] - xp[ip-1];
-            y[i] = yp[ip-1] + dy/dx * (x[i] - xp[ip-1]);
+            if (xp[ip] == x[i]) {
+                y[i] = yp[ip];
+            } else {
+                double dy = yp[ip] - yp[ip-1];
+                double dx = xp[ip] - xp[ip-1];
+                y[i] = yp[ip-1] + dy/dx * (x[i] - xp[ip-1]);
+            }
             i++;
         }
         return y;
     }
 
     public static double stdev(double[] a) {
-        double sum = 0;
-        for (double v : a) sum += v;
-        double m = sum/a.length;
+        double m = mean(a);
         double sumsq = 0;
         for (double v : a) sumsq += (v-m)*(v-m);
         return Math.sqrt(sumsq / a.length);
@@ -92,7 +93,7 @@ public class Utils {
      */
     public static double[] extract(int[] indicator, int value, double[] arr) {
         if (arr.length != indicator.length) {
-            throw new InputMismatchException("Length of x and indicator must be the same.");
+            throw new IllegalArgumentException("Length of arr and indicator must be the same.");
         }
         int newLen = 0;
         for (int v: indicator) if (v == value) newLen++;
@@ -126,6 +127,15 @@ public class Utils {
         return imin;
     }
 
+    private static double getShiftError(double[] laserT, double[] touchT, double[] touchY, double shift) {
+        double[] T = new double[laserT.length];
+        for (int j=0; j<T.length; j++) {
+            T[j] = laserT[j] + shift;
+        }
+        double [] laserY = Utils.interp(T, touchT, touchY);
+        // TODO: Think about throwing away a percentile of most distanced points for noise reduction
+        return Utils.stdev(laserY);
+    }
 
     /**
      * Simplified Java re-implementation or py/qslog/minimization.py.
@@ -135,31 +145,21 @@ public class Utils {
      * Delta that results in the best looking straight line is the latency.
      */
     public static double findBestShift(double[] laserT, double[] touchT, double[] touchY) {
-        // TODO: reimplement as multiple passes with decreasing steps
         int steps = 1500;
-        double shiftStep = 0.1;  // milliseconds
-
-        double[] T = new double[laserT.length];
-        double[] devs = new double[steps];
-
-        for (int i=0; i < steps; i++) {
-            for (int j=0; j<T.length; j++) {
-                T[j] = laserT[j] + shiftStep * i;
+        double[] shiftSteps = new double[]{0.1, 0.01};  // milliseconds
+        double[] stddevs = new double[steps];
+        double bestShift = shiftSteps[0]*steps/2;
+        for (final double shiftStep : shiftSteps) {
+            for (int i = 0; i < steps; i++) {
+                stddevs[i] = getShiftError(laserT, touchT, touchY, bestShift + shiftStep * i - shiftStep * steps / 2);
             }
-
-            double [] laserY = Utils.interp(T, touchT, touchY);
-            // TODO: Think about throwing away a percentile of most distanced points for noise reduction
-            devs[i] = Utils.stdev(laserY);
+            bestShift = argmin(stddevs) * shiftStep + bestShift - shiftStep * steps / 2;
         }
-
-        double bestShift = argmin(devs) * shiftStep;
         return bestShift;
     }
 
     static byte[] char2byte(char c) {
-        byte[] buff = new byte[1];
-        buff[0] = (byte) c;
-        return buff;
+        return new byte[]{(byte) c};
     }
 
     static int getIntPreference(Context context, @StringRes int keyId, int defaultValue) {
