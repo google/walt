@@ -36,6 +36,7 @@
     <string-array name="screen_response_mode_array">
         <item>Blink Latency</item>
         <item>Brightness Curve</item>
+        <item>Backlight Linearity</item>
     </string-array>
 
 </resources>
