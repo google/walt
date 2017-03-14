@@ -23,7 +23,9 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
 import android.view.Choreographer;
 import android.view.LayoutInflater;
@@ -68,9 +70,11 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private LineChart brightnessChart;
     private HistogramChart latencyChart;
     private View brightnessChartLayout;
+    private View buttonBarView;
     private int timesToBlink;
     private boolean shouldShowLatencyChart = false;
     private boolean isTestRunning = false;
+    private boolean enableFullScreen = false;
     int initiatedBlinks = 0;
     int detectedBlinks = 0;
     boolean isBoxWhite = false;
@@ -102,6 +106,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                              Bundle savedInstanceState) {
         timesToBlink = getIntPreference(getContext(), R.string.preference_screen_blinks, 20);
         shouldShowLatencyChart = getBooleanPreference(getContext(), R.string.preference_show_blink_histogram, true);
+        enableFullScreen = getBooleanPreference(getContext(), R.string.preference_screen_fullscreen, true);
         if (getBooleanPreference(getContext(), R.string.preference_systrace, true)) {
             traceLogger = TraceLogger.getInstance();
         }
@@ -114,6 +119,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         startButton = view.findViewById(R.id.button_start_screen_response);
         blackBox = (TextView) view.findViewById(R.id.txt_black_box_screen);
         spinner = (Spinner) view.findViewById(R.id.spinner_screen_response);
+        buttonBarView = view.findViewById(R.id.button_bar);
         ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(getContext(),
                 R.array.screen_response_mode_array, android.R.layout.simple_spinner_item);
         modeAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
@@ -147,6 +153,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     }
 
     void startBlinkLatency() {
+        setFullScreen(enableFullScreen);
         deltas.clear();
         deltas_b2w.clear();
         deltas_w2b.clear();
@@ -163,7 +170,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         blackBox.setBackgroundColor(Color.WHITE);
         isBoxWhite = true;
 
-        handler.postDelayed(startBlinking, 300);
+        handler.postDelayed(startBlinking, enableFullScreen ? 800 : 300);
     }
 
     Runnable startBlinking = new Runnable() {
@@ -309,6 +316,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
 
 
     void finishAndShowStats() {
+        setFullScreen(false);
         // Stop the USB listener
         waltDevice.stopListener();
 
@@ -422,9 +430,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             startButton.setEnabled(true);
             return;
         }
+        setFullScreen(enableFullScreen);
         blackBox.setText("");
         blackBox.setBackgroundColor(Color.BLACK);
-        handler.postDelayed(startBrightness, CURVE_BLINK_TIME);
+        handler.postDelayed(startBrightness, enableFullScreen ? 1000 : CURVE_BLINK_TIME);
     }
 
     Runnable startBrightness = new Runnable() {
@@ -476,6 +485,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             blackBox.setBackgroundColor(color_gray);
             isTestRunning = false;
             startButton.setEnabled(true);
+            setFullScreen(false);
             drawBrightnessChart();
         }
     };
@@ -518,5 +528,22 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         final WindowManager.LayoutParams layoutParams = getActivity().getWindow().getAttributes();
         layoutParams.screenBrightness = 1f;
         getActivity().getWindow().setAttributes(layoutParams);
+    }
+
+    private void setFullScreen(boolean enable) {
+        final AppCompatActivity activity = (AppCompatActivity) getActivity();
+        final ActionBar actionBar = activity != null ? activity.getSupportActionBar() : null;
+        int newVisibility = 0;
+        if (enable) {
+            if (actionBar != null) actionBar.hide();
+            buttonBarView.setVisibility(View.GONE);
+            newVisibility |= View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        } else {
+            if (actionBar != null) actionBar.show();
+            buttonBarView.setVisibility(View.VISIBLE);
+        }
+        if (activity != null) activity.getWindow().getDecorView().setSystemUiVisibility(newVisibility);
     }
 }

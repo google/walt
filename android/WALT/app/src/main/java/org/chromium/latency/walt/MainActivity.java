@@ -151,6 +151,9 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     toolbar.setTitle(R.string.app_name);
                     getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+                    // Disable fullscreen mode
+                    getSupportActionBar().show();
+                    getWindow().getDecorView().setSystemUiVisibility(0);
                 }
             }
         });

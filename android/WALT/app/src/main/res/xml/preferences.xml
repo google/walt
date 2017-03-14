@@ -49,6 +49,11 @@
             android:title="Show live histogram for blink latency test"
             android:defaultValue="true" />
 
+        <SwitchPreference
+            android:key="@string/preference_screen_fullscreen"
+            android:title="Test in fullscreen mode"
+            android:defaultValue="true" />
+
     </android.support.v7.preference.PreferenceScreen>
 
     <android.support.v7.preference.PreferenceScreen
