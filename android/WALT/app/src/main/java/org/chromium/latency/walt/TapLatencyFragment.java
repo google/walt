@@ -124,10 +124,13 @@ public class TapLatencyFragment extends Fragment
         if (!tapEvent.isOk) return;
         if (traceLogger == null) return;
         if (tapEvent.action != MotionEvent.ACTION_DOWN && tapEvent.action != MotionEvent.ACTION_UP) return;
+        final String title = tapEvent.action == MotionEvent.ACTION_UP ? "Tap-Up" : "Tap-Down";
         traceLogger.log(tapEvent.physicalTime + waltDevice.clock.baseTime,
-                tapEvent.kernelTime + waltDevice.clock.baseTime,
-                tapEvent.action == MotionEvent.ACTION_UP ? "Tap Up" : "Tap Down",
+                tapEvent.kernelTime + waltDevice.clock.baseTime, title + " Physical",
                 "Bar starts at accelerometer shock and ends at kernel time of tap event");
+        traceLogger.log(tapEvent.kernelTime + waltDevice.clock.baseTime,
+                tapEvent.createTime + waltDevice.clock.baseTime, title + " App Callback",
+                "Bar starts at kernel time of tap event and ends at app callback time");
     }
 
     public TapLatencyFragment() {
