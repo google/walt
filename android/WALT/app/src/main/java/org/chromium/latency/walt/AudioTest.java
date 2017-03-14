@@ -260,7 +260,7 @@ class AudioTest extends BaseTest {
             if (testStateListener != null) testStateListener.onTestPartialResult(dt_queue2wire);
 
             // Schedule another beep soon-ish
-            handler.postDelayed(playBeepRunnable, period); // TODO: randomize the delay
+            handler.postDelayed(playBeepRunnable, (long) (period + Math.random() * 50 - 25));
         }
     };
 
@@ -317,7 +317,7 @@ class AudioTest extends BaseTest {
 
             // Repost doBeep to some far away time to blink again even if nothing arrives from
             // Teensy. This callback will almost always get cancelled by onIncomingTimestamp()
-            handler.postDelayed(playBeepRunnable, period * 3); // TODO: config and or randomize the delay,
+            handler.postDelayed(playBeepRunnable, (long) (period * 3 + Math.random() * 100 - 50));
 
         }
     };
@@ -336,7 +336,7 @@ class AudioTest extends BaseTest {
             }
             last_tb = Integer.parseInt(s);
             logger.log("Beeped, reply: " + s);
-            handler.postDelayed(processRecordingRunnable, msToRecord * 2); // TODO: config and or randomize the delay,
+            handler.postDelayed(processRecordingRunnable, (long) (msToRecord * 2 + Math.random() * 100 - 50));
         }
     };
 

@@ -136,4 +136,9 @@ public class MidiFragment extends Fragment
     public void onTestPartialResult(double value) {
         latencyChart.addEntry(value);
     }
+
+    public static boolean hasMidi(Context context) {
+        return context.getPackageManager().
+                hasSystemFeature("android.software.midi");
+    }
 }

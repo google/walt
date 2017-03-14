@@ -5,4 +5,5 @@
     <color name="ColorAccent">#757575</color>
     <color name="ColorBackground">#FFFFFF</color>
     <color name="DarkGreen">#026402</color>
+    <color name="ColorDisabled">#aaaaaa</color>
 </resources>

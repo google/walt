@@ -23,6 +23,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.text.method.ScrollingMovementMethod;
 import android.view.Choreographer;
 import android.view.LayoutInflater;
@@ -198,10 +199,10 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             // the screen has PWM enabled, warn and ask the user to turn it off.
             if (initiatedBlinks == 0 && detectedBlinks > 1) {
                 logger.log("Unexpected blinks detected, probably PWM, turn it off");
-                // TODO: show a dialog here instructing to turn off PWM and finish this properly
                 isTestRunning = false;
                 stopButton.setEnabled(false);
                 startButton.setEnabled(true);
+                showPwmDialog();
                 return;
             }
 
@@ -222,7 +223,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                         "Application has called setBackgroundColor at start of bar");
             }
             blackBox.setBackgroundColor(nextColor);
-            lastSetBackgroundTime = waltDevice.clock.micros(); // TODO: is this the right time to save?
+            lastSetBackgroundTime = waltDevice.clock.micros();
 
             // Set up a callback to run on next frame render to collect the timestamp
             Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
@@ -242,6 +243,15 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
     };
 
+    private void showPwmDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setMessage("Detected extra blinks, please set your brightness to max")
+                .setTitle("Unexpected Blinks")
+                .setPositiveButton("OK", null);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
     private WaltDevice.TriggerHandler triggerHandler = new WaltDevice.TriggerHandler() {
         @Override
         public void onReceive(WaltDevice.TriggerMessage tmsg) {
@@ -256,8 +266,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                     return;
                 } else {
                     logger.log("Looks like PWM is used for this screen, turn auto brightness off and set it to max brightness");
-                    // TODO: show a modal dialog here saying the same as the log msg above
-
+                    showPwmDialog();
                     return;
                 }
             }
