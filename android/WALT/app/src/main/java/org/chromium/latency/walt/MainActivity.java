@@ -17,6 +17,7 @@
 package org.chromium.latency.walt;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.usb.UsbDevice;
@@ -34,6 +35,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -334,7 +336,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClickProgram(View view) {
-        new Programmer(this).program();
+        if (waltDevice.isConnected()) {
+            // show dialog telling user to first press white button
+            final AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Press white button")
+                .setMessage("Please press the white button on the WALT device.")
+                .setCancelable(false)
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                }).show();
+
+            waltDevice.setConnectionStateListener(new WaltConnection.ConnectionStateListener() {
+                @Override
+                public void onConnect() {}
+
+                @Override
+                public void onDisconnect() {
+                    dialog.cancel();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            new Programmer(MainActivity.this).program();
+                        }
+                    }, 1000);
+                }
+            });
+        } else {
+            new Programmer(this).program();
+        }
     }
 
     private void attemptSaveAndShareLog() {
