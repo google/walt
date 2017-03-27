@@ -22,6 +22,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -103,6 +104,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         dragCountsView = (TextView) view.findViewById(R.id.txt_drag_counts);
         latencyChart = (ScatterChart) view.findViewById(R.id.latency_chart);
         latencyChartLayout = view.findViewById(R.id.latency_chart_layout);
+        logTextView.setMovementMethod(new ScrollingMovementMethod());
         view.findViewById(R.id.button_close_chart).setOnClickListener(this);
         restartButton.setEnabled(false);
         finishButton.setEnabled(false);
