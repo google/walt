@@ -118,7 +118,6 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         startButton.setOnClickListener(this);
         stopButton.setOnClickListener(this);
 
-        // textView.setMovementMethod(new ScrollingMovementMethod());
         textView.setText(logger.getLogText());
         logger.registerReceiver(logReceiver);
     }

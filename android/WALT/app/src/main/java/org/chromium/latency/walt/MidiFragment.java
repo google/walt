@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -54,6 +55,7 @@ public class MidiFragment extends Fragment
         startMidiInButton = view.findViewById(R.id.button_start_midi_in);
         startMidiOutButton = view.findViewById(R.id.button_start_midi_out);
         latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
+        textView.setMovementMethod(new ScrollingMovementMethod());
         return view;
     }
 
@@ -65,7 +67,6 @@ public class MidiFragment extends Fragment
         startMidiInButton.setOnClickListener(this);
         startMidiOutButton.setOnClickListener(this);
 
-        // textView.setMovementMethod(new ScrollingMovementMethod());
         textView.setText(logger.getLogText());
         logger.registerReceiver(logReceiver);
     }

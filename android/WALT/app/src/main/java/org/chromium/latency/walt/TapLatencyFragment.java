@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -155,6 +156,7 @@ public class TapLatencyFragment extends Fragment
         tapCountsView = (TextView) view.findViewById(R.id.txt_tap_counts);
         moveCountsView = (TextView) view.findViewById(R.id.txt_move_count);
         latencyChart = (HistogramChart) view.findViewById(R.id.latency_chart);
+        logTextView.setMovementMethod(new ScrollingMovementMethod());
         finishButton.setEnabled(false);
         return view;
     }

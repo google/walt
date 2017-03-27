@@ -54,7 +54,6 @@
                         android:background="#000000"
                         android:padding="4dp"
                         android:text=""
-
                         android:textColor="#00ff00" />
 
                     <TextView
@@ -64,7 +63,6 @@
                         android:background="#000000"
                         android:padding="4dp"
                         android:text=""
-
                         android:textColor="#ff0000" />
                 </LinearLayout>
 
@@ -85,8 +83,8 @@
                     android:layout_weight="1"
                     android:background="#000000"
                     android:gravity="bottom"
-                    android:textColor="#ffffff" />
-
+                    android:textColor="#ffffff"
+                    android:scrollbars="vertical" />
             </LinearLayout>
 
             <!-- Overlay semi-transparent view that catches the touch events -->
