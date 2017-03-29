@@ -19,6 +19,7 @@ package org.chromium.latency.walt;
 import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -28,12 +29,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.Loader;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -42,6 +45,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import org.chromium.latency.walt.programmer.Programmer;
@@ -220,6 +224,7 @@ public class MainActivity extends AppCompatActivity {
                 attemptSaveAndShareLog();
                 return true;
             case R.id.action_upload:
+                showUploadLogDialog();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -344,9 +349,7 @@ public class MainActivity extends AppCompatActivity {
                 .setCancelable(false)
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                    }
+                    public void onClick(DialogInterface dialog, int which) {}
                 }).show();
 
             waltDevice.setConnectionStateListener(new WaltConnection.ConnectionStateListener() {
@@ -452,6 +455,66 @@ public class MainActivity extends AppCompatActivity {
         } catch (android.content.ActivityNotFoundException ex) {
             toast("There are no email clients installed.");
         }
+    }
+
+    private static boolean startsWithHttp(String url) {
+        return url.toLowerCase().startsWith("http://") || url.toLowerCase().startsWith("https://");
+    }
+
+    private void showUploadLogDialog() {
+        final AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Upload log to URL")
+                .setView(R.layout.dialog_upload)
+                .setPositiveButton("Upload", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {}
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {}
+                })
+                .show();
+        final EditText editText = (EditText) dialog.findViewById(R.id.edit_text);
+        editText.setText(Utils.getStringPreference(
+                MainActivity.this, R.string.preference_log_url, ""));
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).
+                setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                View progress = dialog.findViewById(R.id.progress_bar);
+                String urlString = editText.getText().toString();
+                if (!startsWithHttp(urlString)) {
+                    urlString = "http://" + urlString;
+                }
+                editText.setVisibility(View.GONE);
+                progress.setVisibility(View.VISIBLE);
+                LogUploader uploader = new LogUploader(MainActivity.this, urlString);
+                final String finalUrlString = urlString;
+                uploader.registerListener(1, new Loader.OnLoadCompleteListener<Integer>() {
+                    @Override
+                    public void onLoadComplete(Loader<Integer> loader, Integer data) {
+                        dialog.cancel();
+                        if (data == -1) {
+                            Toast.makeText(MainActivity.this,
+                                    "Failed to upload log", Toast.LENGTH_SHORT).show();
+                            return;
+                        } else if (data / 100 == 2) {
+                            Toast.makeText(MainActivity.this,
+                                    "Log successfully uploaded", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainActivity.this,
+                                    "Failed to upload log. Server returned status code " + data,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                        SharedPreferences preferences = PreferenceManager
+                                .getDefaultSharedPreferences(MainActivity.this);
+                        preferences.edit().putString(
+                                getString(R.string.preference_log_url), finalUrlString).apply();
+                    }
+                });
+                uploader.startUpload();
+            }
+        });
     }
 
     private void requestSystraceWritePermission() {

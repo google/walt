@@ -123,6 +123,7 @@ public class MidiFragment extends Fragment
             latencyChart.setLabel(String.format(
                     Locale.US, "Median=%.1f ms", Utils.median(midiTest.deltasInputTotal)));
         }
+        LogUploader.uploadIfAutoEnabled(getContext());
         startMidiInButton.setEnabled(true);
         startMidiOutButton.setEnabled(true);
     }

@@ -11,6 +11,23 @@
             android:title="Enable systrace logging"
             android:defaultValue="true" />
 
+        <PreferenceCategory android:title="Log Uploading">
+
+            <EditTextPreference
+                android:key="@string/preference_log_url"
+                android:title="URL to upload logs"
+                android:dialogTitle="Enter URL to upload logs"
+                android:defaultValue=""
+                android:inputType="textUri" />
+
+            <SwitchPreference
+                android:key="@string/preference_auto_upload_log"
+                android:title="Auto-upload logs"
+                android:summary="Will upload logs to URL after each test"
+                android:defaultValue="false" />
+
+        </PreferenceCategory>
+
     </android.support.v7.preference.PreferenceScreen>
 
     <android.support.v7.preference.PreferenceScreen

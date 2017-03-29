@@ -359,6 +359,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             latencyChart.setLabel(W2B_INDEX, String.format(Locale.US, "White-to-black m=%.1f ms", median_w2b));
             latencyChart.setLabel(B2W_INDEX, String.format(Locale.US, "Black-to-white m=%.1f ms", median_b2w));
         }
+        LogUploader.uploadIfAutoEnabled(getContext());
     }
 
     @Override
@@ -487,6 +488,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             startButton.setEnabled(true);
             setFullScreen(false);
             drawBrightnessChart();
+            LogUploader.uploadIfAutoEnabled(getContext());
         }
     };
 

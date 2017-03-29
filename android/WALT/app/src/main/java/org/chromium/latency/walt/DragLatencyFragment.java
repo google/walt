@@ -216,6 +216,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         // TODO: Log raw data if enabled in settings, touch events add lots of text to the log.
         // logRawData();
         reshapeAndCalculate();
+        LogUploader.uploadIfAutoEnabled(getContext());
     }
 
     // Data formatted for processing with python script, y.py

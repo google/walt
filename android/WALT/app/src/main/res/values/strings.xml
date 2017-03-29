@@ -27,6 +27,8 @@
     <string name="preference_show_blink_histogram">pref_show_blink_histogram</string>
     <string name="preference_systrace">pref_systrace</string>
     <string name="preference_screen_fullscreen">pref_screen_fullscreen</string>
+    <string name="preference_log_url">pref_log_url</string>
+    <string name="preference_auto_upload_log">pref_auto_upload_log</string>
     <string-array name="audio_mode_array">
         <item>Continuous Playback Latency</item>
         <item>Continuous Recording Latency</item>

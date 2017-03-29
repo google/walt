@@ -277,6 +277,7 @@ public class TapLatencyFragment extends Fragment
             latencyChart.setLabel(ACTION_DOWN_INDEX, String.format(Locale.US, "ACTION_DOWN median=%.1f ms", Utils.median(p2kDown)));
             latencyChart.setLabel(ACTION_UP_INDEX, String.format(Locale.US, "ACTION_UP median=%.1f ms", Utils.median(p2kUp)));
         }
+        LogUploader.uploadIfAutoEnabled(getContext());
     }
 
     @Override
