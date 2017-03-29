@@ -172,6 +172,11 @@ public class Utils {
         return preferences.getBoolean(context.getString(keyId), defaultValue);
     }
 
+    static String getStringPreference(Context context, @StringRes int keyId, String defaultValue) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return preferences.getString(context.getString(keyId), defaultValue);
+    }
+
     public enum ListenerState {
         RUNNING,
         STARTING,

@@ -28,16 +28,24 @@ import java.net.URL;
 class LogUploader extends AsyncTaskLoader<Integer> {
 
     private String urlString;
-    private String logText;
+    private SimpleLogger logger;
 
-    LogUploader(Context context, String urlString, String logText) {
+    LogUploader(Context context) {
+        super(context);
+        urlString = Utils.getStringPreference(context, R.string.preference_log_url, "");
+        logger = SimpleLogger.getInstance(context);
+
+    }
+
+    LogUploader(Context context, String urlString) {
         super(context);
         this.urlString = urlString;
-        this.logText = logText;
+        logger = SimpleLogger.getInstance(context);
     }
 
     @Override
     public Integer loadInBackground() {
+        if (urlString.isEmpty()) return -1;
         try {
             URL url = new URL(urlString);
             HttpURLConnection urlConnection =
@@ -48,13 +56,28 @@ class LogUploader extends AsyncTaskLoader<Integer> {
             BufferedOutputStream out =
                     new BufferedOutputStream(urlConnection.getOutputStream());
             PrintWriter writer = new PrintWriter(out);
-            writer.write(logText);
+            writer.write(logger.getLogText());
             writer.flush();
-
-            return urlConnection.getResponseCode();
+            final int responseCode = urlConnection.getResponseCode();
+            if (responseCode / 100 == 2) {
+                logger.log("Log successfully uploaded");
+            } else {
+                logger.log("Log upload may have failed. Server return status code " + responseCode);
+            }
+            return responseCode;
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log("Failed to upload log");
             return -1;
+        }
+    }
+
+    void startUpload() {
+        super.forceLoad();
+    }
+
+    static void uploadIfAutoEnabled(Context context) {
+        if (Utils.getBooleanPreference(context, R.string.preference_auto_upload_log, false)) {
+            new LogUploader(context).startUpload();
         }
     }
 }

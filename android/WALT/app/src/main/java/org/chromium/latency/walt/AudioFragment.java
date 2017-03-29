@@ -249,6 +249,7 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
                 latencyChart.setLabel(String.format(Locale.US, "Median=%.1f ms", Utils.median(audioTest.deltas_queue2wire)));
             }
         }
+        LogUploader.uploadIfAutoEnabled(getContext());
         enableButtons();
     }
 
