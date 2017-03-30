@@ -23,38 +23,43 @@ Usage example:
 
 import time
 import os
-from bottle import route, template, run, request, static_file
+
+try:
+    from bottle import route, template, run, request, static_file
+except:
+    print('Could not import bottle! Please install bottle, e.g. pip install bottle')
+    raise
 
 @route('/')
 def index():
-    if not os.path.isdir("logs/"):
+    if not os.path.isdir('logs/'):
         return 'No files uploaded yet'
     filenames = []
-    for file in os.listdir("logs/"):
-        if file.endswith(".txt"):
+    for file in os.listdir('logs/'):
+        if file.endswith('.txt'):
             filenames.append(file)
     return template('make_table', filenames=filenames)
 
 
-@route("/logs/<filename>")
+@route('/logs/<filename>')
 def static(filename):
-    return static_file(filename, root="logs")
+    return static_file(filename, root='logs')
 
 
 @route('/upload', method='POST')
 def upload():
     body = request.body.getvalue()
     request.body.close()
-    filename = "logs/" + str(int(time.time()*1000)) + ".txt"
+    filename = 'logs/' + str(int(time.time()*1000)) + '.txt'
     if not os.path.exists(os.path.dirname(filename)):
         try:
             os.makedirs(os.path.dirname(filename))
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-    with open(filename, "w") as file:
+    with open(filename, 'w') as file:
         file.write(body)
-    return "success"
+    return 'success'
 
 
 run(host='localhost', port=8080)
