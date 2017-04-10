@@ -26,7 +26,7 @@ Sample measurements
 
 ## Drag latency calculation
 
-The app collects all the motion events reported by Android with their coordinates and timestamps. The plot on the scrennshot below show the vertical coordinate as a function of time as seen by the app _y_(_t_).
+The app collects all the motion events reported by Android with their coordinates and timestamps. The plot on the screenshot below show the vertical coordinate as a function of time as seen by the app _y_(_t_).
 
 The red 'x' marks are points where the finger was at times _t<sub>i</sub>_ when the finger went into or out of the laser beam. The y distance between the two lines of x marks is roughly the thickness of the finger. For now consider only one of the lines, e.g. the upper one.
 
