@@ -42,6 +42,9 @@ TODO: Is the round trip latency expected to be Recording latency + Playback late
 | Nexus 5X     | NRD91P (7.0)   | 192 frames @ 48 kHz = 4 ms   |          14.9 |             3.5 |
 | Nexus 7      | LMY47Q (5.1)   | 240 frames @ 48 kHz = 5 ms   |          32.1 |            16.3 |
 | Nexus 9      | MMB29K (6.0.1) | 128 frames @ 48 kHz = 2.6 ms |           9.8 |             1.0 |
+| Nexus 6P     | MHC19I (6.0.1) | 192 frames @ 48 kHz = 4 ms   |          15.3 |             1.6 |
+| Pixel        | NDE63P (7.1)   | 192 frames @ 48 kHz = 4 ms   |           8.9 |             1.7 |
+| Pixel XL     | NDE63H (7.1)   | 192 frames @ 48 kHz = 4 ms   |           9.1 |             1.6 |
 
 \* WALT clock synchronization accuracy is about 1 ms hence the relative error for recording latency can be fairly high.
 
