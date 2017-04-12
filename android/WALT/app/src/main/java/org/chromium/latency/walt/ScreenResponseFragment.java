@@ -71,10 +71,12 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
     private HistogramChart latencyChart;
     private View brightnessChartLayout;
     private View buttonBarView;
+    private FastPathSurfaceView fastSurfaceView;
     private int timesToBlink;
     private boolean shouldShowLatencyChart = false;
     private boolean isTestRunning = false;
     private boolean enableFullScreen = false;
+    private boolean isFastPathGraphics = false;
     int initiatedBlinks = 0;
     int detectedBlinks = 0;
     boolean isBoxWhite = false;
@@ -118,6 +120,7 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         stopButton = view.findViewById(R.id.button_stop_screen_response);
         startButton = view.findViewById(R.id.button_start_screen_response);
         blackBox = (TextView) view.findViewById(R.id.txt_black_box_screen);
+        fastSurfaceView = (FastPathSurfaceView) view.findViewById(R.id.fast_path_surface);
         spinner = (Spinner) view.findViewById(R.id.spinner_screen_response);
         buttonBarView = view.findViewById(R.id.button_bar);
         ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(getContext(),
@@ -165,9 +168,14 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         }
         initiatedBlinks = 0;
         detectedBlinks = 0;
-
-        blackBox.setText("");
-        blackBox.setBackgroundColor(Color.WHITE);
+        if (isFastPathGraphics) {
+            blackBox.setVisibility(View.GONE);
+            fastSurfaceView.setVisibility(View.VISIBLE);
+            fastSurfaceView.setRectColor(Color.WHITE);
+        } else {
+            blackBox.setText("");
+            blackBox.setBackgroundColor(Color.WHITE);
+        }
         isBoxWhite = true;
 
         handler.postDelayed(startBlinking, enableFullScreen ? 800 : 300);
@@ -229,7 +237,11 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
                         "Request-to-" + (isBoxWhite ? "white" : "black"),
                         "Application has called setBackgroundColor at start of bar");
             }
-            blackBox.setBackgroundColor(nextColor);
+            if (isFastPathGraphics) {
+                fastSurfaceView.setRectColor(nextColor);
+            } else {
+                blackBox.setBackgroundColor(nextColor);
+            }
             lastSetBackgroundTime = waltDevice.clock.micros();
 
             // Set up a callback to run on next frame render to collect the timestamp
@@ -350,6 +362,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         ));
 
         if (traceLogger != null) traceLogger.flush(getContext());
+        fastSurfaceView.setVisibility(View.GONE);
+        blackBox.setVisibility(View.VISIBLE);
         blackBox.setText(logger.getLogText());
         blackBox.setMovementMethod(new ScrollingMovementMethod());
         blackBox.setBackgroundColor(color_gray);
@@ -384,13 +398,21 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
             startButton.setEnabled(false);
             blackBox.setBackgroundColor(Color.BLACK);
             blackBox.setText("");
-            if (spinner.getSelectedItemPosition() == 0) {
+            isFastPathGraphics = false;
+            final int spinnerPosition = spinner.getSelectedItemPosition();
+            if (spinnerPosition == 0) {
                 logger.log("Starting screen response measurement");
                 stopButton.setEnabled(true);
                 startBlinkLatency();
-            } else {
+            } else if (spinnerPosition == 1) {
                 logger.log("Starting screen brightness curve measurement");
                 startBrightnessCurve();
+            } else if (spinnerPosition == 2) {
+                logger.log("Starting fast-path screen response measurement");
+                isFastPathGraphics = true;
+                startBlinkLatency();
+            } else {
+                logger.log("ERROR: Spinner position is out of range");
             }
             return;
         }
