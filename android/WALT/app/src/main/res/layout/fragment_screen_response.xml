@@ -65,7 +65,7 @@
             android:gravity="bottom"
             android:scrollbars="vertical" />
 
-        <org.chromium.latency.walt.BasicJavaInkSurfaceView
+        <org.chromium.latency.walt.FastPathSurfaceView
             android:id="@+id/fast_path_surface"
             android:layout_width="match_parent"
             android:layout_height="0dp"
