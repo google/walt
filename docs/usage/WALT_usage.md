@@ -248,8 +248,8 @@ Drag latency is measured by dragging a finger up and down along the screen. The 
 WALT is able to log physical events as well as system events into systrace. This allows us to look at the system-level calls that occur between the application triggering a change and the WALT device receiving a physical response.
 
   * In the WALT app go to Settings->General and check `Enable systrace logging`.
-  * On your workstation, follow the instructions for systrace on the command line: https://developer.android.com/studio/profile/systrace-commandline.html.
-  * From the `android-sdk/platform-tools/systrace` directory, run `python systrace.py --walt`. If `--walt` is not recognized as an option, clone the latest version of systrace (https://github.com/catapult-project/catapult) and from the `catapult/systrace/systrace` directory run `python run_systrace.py --walt`.
+  * On your workstation, follow the [instructions for systrace](https://developer.android.com/studio/profile/systrace-commandline.html) on the command line
+  * From the `android-sdk/platform-tools/systrace` directory, run `python systrace.py --walt`. If `--walt` is not recognized as an option, clone the latest version of [systrace repo](https://github.com/catapult-project/catapult) and from the `catapult/systrace/systrace` directory run `python run_systrace.py --walt`.
   * Conduct a test through the WALT app. When the test is complete, you should see that TraceLogger wrote some events to a file.
   * Press enter on your workstation to end the trace and pull the logs from the phone, and the traceview will be generated as HTML.
   
