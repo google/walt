@@ -21,8 +21,11 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.annotation.StringRes;
 
+import com.github.mikephil.charting.data.Entry;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Kitchen sink for small utility functions
@@ -120,6 +123,11 @@ public class Utils {
         return sb.toString();
     }
 
+    public static int argmax(double[] a) {
+        int imax = 0;
+        for (int i=1; i<a.length; i++) if (a[i] > a[imax]) imax = i;
+        return imax;
+    }
 
     public static int argmin(double[] a) {
         int imin = 0;
@@ -175,6 +183,30 @@ public class Utils {
     static String getStringPreference(Context context, @StringRes int keyId, String defaultValue) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         return preferences.getString(context.getString(keyId), defaultValue);
+    }
+
+    static float min(List<Entry> entries) {
+        float min = Float.MAX_VALUE;
+        for (Entry e : entries) {
+            min = Math.min(min, e.getY());
+        }
+        return min;
+    }
+
+    static float max(List<Entry> entries) {
+        float max = Float.MIN_VALUE;
+        for (Entry e : entries) {
+            max = Math.max(max, e.getY());
+        }
+        return max;
+    }
+
+    static float mean(List<Entry> entries) {
+        float mean = 0;
+        for (Entry e : entries) {
+            mean += e.getY()/entries.size();
+        }
+        return mean;
     }
 
     public enum ListenerState {
