@@ -392,10 +392,10 @@ def run_screen_curve(args):
             sys.exit(1)
 
         # Fire up the walt_blinker process
-        cmd = 'walt_blink 1'
+        cmd = 'blink_test 1'
         blinker = subprocess.Popen(cmd, shell=True)
 
-        # Turn on laser trigger auto-sending
+        # Request screen brightness data
         walt.sndrcv(Walt.CMD_BRIGHTNESS_CURVE)
         s = 'dummy'
         while s:
@@ -410,11 +410,10 @@ def run_screen_latency_test(args):
     sensor_file_name = os.path.join(args.logdir,  prefix + '_screen_sensor.log')
     blinker_file_name = os.path.join(args.logdir,  prefix + '_blinker.log')
 
-    print('Starting drag latency test')
-    print('Input device   : ' + args.input)
+    print('Starting screen latency test')
     print('Serial device  : ' + args.serial)
-    print('Laser log file : ' + sensor_file_name)
-    print('evtest log file: ' + blinker_file_name)
+    print('Sensor log file : ' + sensor_file_name)
+    print('Blinker log file: ' + blinker_file_name)
 
     with Walt(args.serial, timeout=1) as walt:
         walt.sndrcv(Walt.CMD_RESET)
@@ -425,10 +424,10 @@ def run_screen_latency_test(args):
             sys.exit(1)
 
         # Fire up the walt_blinker process
-        cmd = 'walt_blink %d > %s' % (args.n, blinker_file_name, )
+        cmd = 'blink_test %d > %s' % (args.n, blinker_file_name, )
         blinker = subprocess.Popen(cmd, shell=True)
 
-        # Turn on laser trigger auto-sending
+        # Turn on screen trigger auto-sending
         walt.sndrcv(Walt.CMD_AUTO_SCREEN_ON)
         trigger_count = 0
 
