@@ -452,8 +452,6 @@ def run_screen_latency_test(args):
             with open(sensor_file_name, 'at') as flaser:
                 flaser.write('%.3f %d\n' % (t, val))
         walt.sndrcv(Walt.CMD_AUTO_SCREEN_OFF)
-
-    print("\nProcessing data ...")
     screen_stats.screen_stats(blinker_file_name, sensor_file_name)
 
 

@@ -19,7 +19,7 @@ def screen_stats(blinker_file_name, sensor_file_name):
         t_sensor = t_sensor[skip_sensor:]
         print('Skipped first %d readings from the sensor' % skip_sensor)
 
-    # Get only the common size
+    # Get only the common size and skip the first blink, it's often weird.
     length = min(len(t_sensor), len(t_enqueue))
     t_sensor = t_sensor[1:length]
     t_enqueue = t_enqueue[1:length]
@@ -32,12 +32,19 @@ def screen_stats(blinker_file_name, sensor_file_name):
     t_vsync = t_vsync - t0
 
     dt = t_sensor - t_vsync
-    dte = t_vsync - t_enqueue
-    print('dte = array([' + ', '.join(map(str, dte)) + '])')
-    print('dt = array([' + ', '.join(map(str, dt)) + '])')
+    dt_enqueue = t_vsync - t_enqueue  # Not used
 
-    print('Screen response [ms] median: %0.1f, stdev: %0.2f' %
-          (numpy.median(dt), numpy.std(dt)))
+    # Look at even and odd transitions separately - black <-> white.
+    dt_even = dt[0::2]
+    dt_odd = dt[1::2]
+
+    print('dt = array([' + ', '.join('%0.2f' % x for x in dt) + '])')
+
+    print('Screen response times [ms]')
+    print('Even: median %0.1f ms, stdev %0.2f ms' %
+          (numpy.median(dt_even), numpy.std(dt_even)))
+    print('Odd:  median %0.1f ms, stdev %0.2f ms' %
+          (numpy.median(dt_odd), numpy.std(dt_odd)))
 
 
 # Debug & test
