@@ -46,6 +46,8 @@
 #define CMD_MIDI                'M'
 #define CMD_NOTE                'N'
 
+#define CMD_ACCELEROMETER_CURVE 'O'
+
 #define NOTE_DELAY 10000 // 10 ms
 
 // Message types for MIDI encapsulation
@@ -64,6 +66,7 @@
 #define PD_LASER_PIN 14
 #define PD_SCREEN_PIN 20  // Same as A6
 #define G_PIN 15          // Same as A1
+#define GZ_PIN 16         // Same as A2
 #define AUDIO_PIN 22      // Same as A8
 #define MIC_PIN 23        // Same as A9
 
@@ -208,6 +211,7 @@ void setup() {
   // Sensors
   pinMode(PD_SCREEN_PIN, INPUT);
   pinMode(G_PIN, INPUT);
+  pinMode(GZ_PIN, INPUT);
   pinMode(PD_LASER_PIN, INPUT_PULLUP);
   attachInterrupt(PD_LASER_PIN, irq_laser, CHANGE);
 
@@ -229,6 +233,25 @@ void run_brightness_curve() {
   digitalWrite(DEBUG_LED1, HIGH);
   for (i = 0; i < 1000; i++) {
     v = analogRead(PD_SCREEN_PIN);
+    t = time_us;
+    send(t);
+    send(' ');
+    send(v);
+    send_line();
+    delayMicroseconds(450);
+  }
+  digitalWrite(DEBUG_LED1, LOW);
+  send("end");
+  send_line();
+}
+
+void run_accelerometer_curve() {
+  int i;
+  long t;
+  int v;
+  digitalWrite(DEBUG_LED1, HIGH);
+  for (i = 0; i < 4000; i++) {
+    v = analogRead(GZ_PIN);
     t = time_us;
     send(t);
     send(' ');
@@ -356,6 +379,10 @@ void process_command(char cmd) {
     send_ack(CMD_BRIGHTNESS_CURVE);
     // This blocks all other execution for about 1 second
     run_brightness_curve();
+  } else if (cmd == CMD_ACCELEROMETER_CURVE) {
+    send_ack(CMD_ACCELEROMETER_CURVE);
+    // This blocks all other execution for about 2 seconds
+    run_accelerometer_curve();
   } else if (cmd == CMD_SAMPLE_ALL) {
     send(flip_case(cmd));
     send(" G:");

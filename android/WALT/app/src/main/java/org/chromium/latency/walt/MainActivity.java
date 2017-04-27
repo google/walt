@@ -284,6 +284,11 @@ public class MainActivity extends AppCompatActivity {
         switchScreen(newFragment, "Drag Latency");
     }
 
+    public void onClickAccelerometer(View view) {
+        AccelerometerFragment newFragment = new AccelerometerFragment();
+        switchScreen(newFragment, "Accelerometer Latency");
+    }
+
     public void onClickOpenLog(View view) {
         LogFragment logFragment = new LogFragment();
         // menu.findItem(R.id.action_help).setVisible(false);
