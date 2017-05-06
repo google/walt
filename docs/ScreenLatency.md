@@ -1,5 +1,9 @@
 ## Screen latency
 
+See also:
+ * [Video demonstration](https://www.youtube.com/watch?v=FePSFTxBux4&list=PLd6Fi7WgXfcB4Ma6A-5rPlr1jptNR3RxQ&index=3)
+ * [Screen latency section in the usage doc](usage/WALT_usage.md#screen-response-latency)
+
 WALT can detect when screen changes color between white and black using a photodiode.
 
 ![Photo of bottom side of WALT](WALT_bottom_view.png)
