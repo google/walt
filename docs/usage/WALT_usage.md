@@ -6,7 +6,7 @@ This document will show you how to set up and use your WALT.
 About WALT:
 
  * Source code: https://github.com/google/walt
- * [Youtube playlist](https://www.youtube.com/playlist?list=PLd6Fi7WgXfcCEJg1FDqNCoQfpWo7W3J5a)
+ * YouTube [playlist 1](https://www.youtube.com/playlist?list=PLd6Fi7WgXfcCEJg1FDqNCoQfpWo7W3J5a) and [playlist 2](https://www.youtube.com/playlist?list=PLd6Fi7WgXfcB4Ma6A-5rPlr1jptNR3RxQ)
  * [Android Developers blog post](http://android-developers.blogspot.com/2016/04/a-new-method-to-measure-touch-and-audio.html)
 
 ## Prerequisites
@@ -31,6 +31,8 @@ A test device and cables:
 
 
 ## Setup
+
+[Video demonstration](https://www.youtube.com/watch?v=qR48GPepyxU&list=PLd6Fi7WgXfcB4Ma6A-5rPlr1jptNR3RxQ&index=2)
 
  * Install and run the [WALT Android App](https://play.google.com/store/apps/details?id=org.kamrik.latency.walt&hl=en)
  * Connect WALT to the Android headset using the 3.5mm male to male TRRS cable
@@ -136,6 +138,8 @@ until the first frames of that buffer were detected by WALT device via the headp
 
 ## Screen response latency
 
+[Video demonstration](https://www.youtube.com/watch?v=FePSFTxBux4&list=PLd6Fi7WgXfcB4Ma6A-5rPlr1jptNR3RxQ&index=3)
+
  * Tap screen response
  * Set screen brightness to maximum. On phones using PWM for screen backlight brightness control, yo man need to turn adaptive brightness off (settings -> Display -> Adaptive Brightness)
  * Position WALT with the screen sensor looking at the screen (the light sensor recessed into the large plastic surface).
@@ -231,6 +235,8 @@ Medians, p2k & k2c [ms]: 19.5    1.7
 
 ## Drag/scroll latency
 
+[Video demonstration](https://www.youtube.com/watch?v=pVy5AYVzf7Q&list=PLd6Fi7WgXfcB4Ma6A-5rPlr1jptNR3RxQ&index=4)
+
 Drag latency is measured by dragging a finger up and down along the screen. The finger interrupts a laser beam positioned across the screen. By comparing the timings of those beam interruptions with Android touch events the WALT app calculates the delay.
 
 
@@ -243,7 +249,16 @@ Drag latency is measured by dragging a finger up and down along the screen. The 
 
 ![Drag/scroll latency measurement](images/drag.png)
 
+# Collecting Systrace logs
 
+WALT is able to log physical events as well as system events into systrace. This allows us to look at the system-level calls that occur between the application triggering a change and the WALT device receiving a physical response.
+
+  * In the WALT app go to Settings->General and check `Enable systrace logging`.
+  * On your workstation, follow the [instructions for systrace](https://developer.android.com/studio/profile/systrace-commandline.html) on the command line
+  * From the `android-sdk/platform-tools/systrace` directory, run `python systrace.py --walt`. If `--walt` is not recognized as an option, clone the latest version of [systrace repo](https://github.com/catapult-project/catapult) and from the `catapult/systrace/systrace` directory run `python run_systrace.py --walt`.
+  * Conduct a test through the WALT app. When the test is complete, you should see that TraceLogger wrote some events to a file.
+  * Press enter on your workstation to end the trace and pull the logs from the phone, and the traceview will be generated as HTML.
+  
 
 # Troubleshooting
 

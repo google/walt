@@ -67,7 +67,7 @@ def log(msg):
 
 
 class Walt(object):
-    """ A class for communicating with Wlat device
+    """ A class for communicating with Walt device
 
     Usage:
     with Walt('/dev/ttyUSB0') as walt:
@@ -301,7 +301,8 @@ def parse_args(argv):
     parser.add_argument('-s', '--serial', default=serial,
                         help='WALT serial port')
     parser.add_argument('-t', '--type',
-                        help='Test type: drag|tap|screen|sanity|curve|bridge|audio')
+                        help='Test type: drag|tap|screen|sanity|curve|bridge|'
+                             'tapaudio|tapblink|e2e_audio')
     parser.add_argument('-l', '--logdir', default=temp_dir,
                         help='where to store logs')
     parser.add_argument('-n', default=40, type=int,
@@ -347,7 +348,7 @@ def run_drag_latency_test(args):
         tstart = time.time()
         t_zero = walt.zero_clock()
         if t_zero < 0:
-            print('Error: Couldn\'t zero clock, exitting')
+            print('Error: Couldn\'t zero clock, exiting')
             sys.exit(1)
 
         # Fire up the evtest process
@@ -381,6 +382,7 @@ def run_drag_latency_test(args):
     # lm.main(evtest_file_name, laser_file_name)
     minimization.minimize(evtest_file_name, laser_file_name)
 
+
 def run_screen_curve(args):
 
     with Walt(args.serial, timeout=1) as walt:
@@ -388,14 +390,14 @@ def run_screen_curve(args):
 
         t_zero = walt.zero_clock()
         if t_zero < 0:
-            print('Error: Couldn\'t zero clock, exitting')
+            print('Error: Couldn\'t zero clock, exiting')
             sys.exit(1)
 
         # Fire up the walt_blinker process
-        cmd = 'walt_blink 1'
+        cmd = 'blink_test 1'
         blinker = subprocess.Popen(cmd, shell=True)
 
-        # Turn on laser trigger auto-sending
+        # Request screen brightness data
         walt.sndrcv(Walt.CMD_BRIGHTNESS_CURVE)
         s = 'dummy'
         while s:
@@ -410,25 +412,24 @@ def run_screen_latency_test(args):
     sensor_file_name = os.path.join(args.logdir,  prefix + '_screen_sensor.log')
     blinker_file_name = os.path.join(args.logdir,  prefix + '_blinker.log')
 
-    print('Starting drag latency test')
-    print('Input device   : ' + args.input)
+    print('Starting screen latency test')
     print('Serial device  : ' + args.serial)
-    print('Laser log file : ' + sensor_file_name)
-    print('evtest log file: ' + blinker_file_name)
+    print('Sensor log file : ' + sensor_file_name)
+    print('Blinker log file: ' + blinker_file_name)
 
     with Walt(args.serial, timeout=1) as walt:
         walt.sndrcv(Walt.CMD_RESET)
 
         t_zero = walt.zero_clock()
         if t_zero < 0:
-            print('Error: Couldn\'t zero clock, exitting')
+            print('Error: Couldn\'t zero clock, exiting')
             sys.exit(1)
 
         # Fire up the walt_blinker process
-        cmd = 'walt_blink %d > %s' % (args.n, blinker_file_name, )
+        cmd = 'blink_test %d > %s' % (args.n, blinker_file_name, )
         blinker = subprocess.Popen(cmd, shell=True)
 
-        # Turn on laser trigger auto-sending
+        # Turn on screen trigger auto-sending
         walt.sndrcv(Walt.CMD_AUTO_SCREEN_ON)
         trigger_count = 0
 
@@ -453,9 +454,66 @@ def run_screen_latency_test(args):
             with open(sensor_file_name, 'at') as flaser:
                 flaser.write('%.3f %d\n' % (t, val))
         walt.sndrcv(Walt.CMD_AUTO_SCREEN_OFF)
-
-    print("\nProcessing data ...")
     screen_stats.screen_stats(blinker_file_name, sensor_file_name)
+
+
+def run_tap_audio_test(args):
+    print('Starting tap-to-audio latency test')
+    with Walt(args.serial) as walt:
+        walt.sndrcv(Walt.CMD_RESET)
+        t_zero = walt.zero_clock()
+        if t_zero < 0:
+            print('Error: Couldn\'t zero clock, exiting')
+            sys.exit(1)
+
+        walt.sndrcv(Walt.CMD_GSHOCK)
+        deltas = []
+        while len(deltas) < args.n:
+            sys.stdout.write('\rWAIT   ')
+            sys.stdout.flush()
+            time.sleep(1)  # Wait for previous beep to stop playing
+            while walt.read_shock_time() != 0:
+                pass  # skip shocks during sleep
+            sys.stdout.write('\rTAP NOW')
+            sys.stdout.flush()
+            walt.sndrcv(Walt.CMD_AUDIO)
+            trigger_line = walt.readline()
+            beep_time_seconds, val = walt.parse_trigger(trigger_line)
+            beep_time_ms = beep_time_seconds * 1e3
+            shock_time_ms = walt.read_shock_time() / 1e3
+            if shock_time_ms == 0:
+                print("\rNo shock detected, skipping this event")
+                continue
+            dt = beep_time_ms - shock_time_ms
+            deltas.append(dt)
+            print("\rdt=%0.1f ms" % dt)
+        print('Median tap-to-audio latency: %0.1f ms' % numpy.median(deltas))
+
+
+def run_tap_blink_test(args):
+    print('Starting tap-to-blink latency test')
+    with Walt(args.serial) as walt:
+        walt.sndrcv(Walt.CMD_RESET)
+        t_zero = walt.zero_clock()
+        if t_zero < 0:
+            print('Error: Couldn\'t zero clock, exiting')
+            sys.exit(1)
+
+        walt.sndrcv(Walt.CMD_GSHOCK)
+        walt.sndrcv(Walt.CMD_AUTO_SCREEN_ON)
+        deltas = []
+        while len(deltas) < args.n:
+            trigger_line = walt.readline()
+            blink_time_seconds, val = walt.parse_trigger(trigger_line)
+            blink_time_ms = blink_time_seconds * 1e3
+            shock_time_ms = walt.read_shock_time() / 1e3
+            if shock_time_ms == 0:
+                print("No shock detected, skipping this event")
+                continue
+            dt = blink_time_ms - shock_time_ms
+            deltas.append(dt)
+            print("dt=%0.1f ms" % dt)
+        print('Median tap-to-blink latency: %0.1f ms' % numpy.median(deltas))
 
 
 def run_tap_latency_test(args):
@@ -468,10 +526,9 @@ def run_tap_latency_test(args):
 
     with Walt(args.serial) as walt:
         walt.sndrcv(Walt.CMD_RESET)
-        tstart = time.time()
         t_zero = walt.zero_clock()
         if t_zero < 0:
-            print('Error: Couldn\'t zero clock, exitting')
+            print('Error: Couldn\'t zero clock, exiting')
             sys.exit(1)
 
         # Fire up the evtest process
@@ -514,9 +571,9 @@ def run_tap_latency_test(args):
     print('dt_up = ' + array2str(dt_up))
 
     median_down_ms = numpy.median(dt_down)
-    meidan_up_ms = numpy.median(dt_up)
+    median_up_ms = numpy.median(dt_up)
 
-    print('Median latency, down: %0.1f, up: %0.1f' % (median_down_ms, meidan_up_ms))
+    print('Median latency, down: %0.1f, up: %0.1f' % (median_down_ms, median_up_ms))
 
 
 def run_walt_sanity_test(args):
@@ -541,7 +598,7 @@ def run_walt_sanity_test(args):
             print(s.strip() + '\tmin-max: ' + minmax)
             time.sleep(0.1)
 
-def run_audio_latency(args):
+def run_audio_e2e_latency(args):
     print('Starting end-to-end audio latency test')
     with Walt(args.serial) as walt:
         walt.sndrcv(Walt.CMD_RESET)
@@ -749,7 +806,11 @@ def main(argv=sys.argv[1:]):
     elif args.type == 'bridge':
         run_tcp_bridge(args)
     elif args.type == 'e2e_audio':
-        run_audio_latency(args)
+        run_audio_e2e_latency(args)
+    elif args.type == 'tapaudio':
+        run_tap_audio_test(args)
+    elif args.type == 'tapblink':
+        run_tap_blink_test(args)
     else:
         print('Unknown test type: "%s"' % args.type)
 

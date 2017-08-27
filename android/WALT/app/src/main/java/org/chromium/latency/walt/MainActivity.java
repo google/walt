@@ -29,6 +29,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -187,6 +188,9 @@ public class MainActivity extends AppCompatActivity {
         // Set volume buttons to control media volume
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         requestSystraceWritePermission();
+        // Allow network operations on the main thread
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
     }
 
     @Override
@@ -278,6 +282,11 @@ public class MainActivity extends AppCompatActivity {
     public void onClickDragLatency(View view) {
         DragLatencyFragment newFragment = new DragLatencyFragment();
         switchScreen(newFragment, "Drag Latency");
+    }
+
+    public void onClickAccelerometer(View view) {
+        AccelerometerFragment newFragment = new AccelerometerFragment();
+        switchScreen(newFragment, "Accelerometer Latency");
     }
 
     public void onClickOpenLog(View view) {

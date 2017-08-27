@@ -27,6 +27,10 @@ Sample measurements
 | Nexus 5X     | NRD91P (7.0)   |           25.0 |           22.5 |                  2.4 |
 | Nexus 7      | LMY47Q (5.1)   |           29.6 |           31.0 |                  1.4 |
 | Nexus 9      | MMB29K (6.0.1) |           18.7 |           19.9 |                  1.3 |
+| Pixel C      | NMF26H (7.1.1) |           23.8 |           24.3 |                  1.1 |
+| Pixel        | NHG47K (7.1.2) |            9.6 |           28.1 |                  2.0 |
+| Pixel XL     | NHG47K (7.1.2) |           14.2 |           14.4 |                  1.8 |
+
 
 
 ![Tap measurement](usage/images/tap.png)

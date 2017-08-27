@@ -1,0 +1,78 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="org.chromium.latency.walt.TapLatencyFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <View android:layout_height="match_parent"
+                android:layout_width="0dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/button_start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tint="@color/button_tint"
+                android:src="@drawable/ic_play_arrow_black_24dp" />
+
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <RelativeLayout
+                    android:id="@+id/latency_chart_layout"
+                    android:layout_width="match_parent"
+                    android:visibility="gone"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/border">
+
+                    <com.github.mikephil.charting.charts.ScatterChart
+                        android:id="@+id/latency_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_margin="5dp" />
+
+                    <Button
+                        android:id="@+id/button_close_chart"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentRight="true"
+                        android:layout_alignParentTop="true"
+                        android:tint="@color/button_tint"
+                        android:layout_margin="5dp"
+                        android:text="Close" />
+                </RelativeLayout>
+
+                <TextView
+                    android:id="@+id/txt_log"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:background="#000000"
+                    android:gravity="bottom"
+                    android:textColor="#ffffff"
+                    android:scrollbars="vertical" />
+
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+</FrameLayout>

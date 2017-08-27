@@ -194,6 +194,31 @@
 
         <View style="@style/MenuDivider" />
 
+        <!-- Accelerometer -->
+        <LinearLayout
+            style="@style/MenuItemStyle"
+            android:onClick="onClickAccelerometer">
+
+            <ImageView
+                style="@style/MenuIconStyle"
+                android:src="@drawable/ic_swap_horiz_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/MenuTextTop"
+                    android:text="Accelerometer latency" />
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End of Accelerometer -->
+
+        <View style="@style/MenuDivider" />
+
         <!-- Settings -->
         <LinearLayout
             style="@style/MenuItemStyle"
