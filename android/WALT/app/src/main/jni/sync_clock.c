@@ -72,6 +72,7 @@ int microsleep(int us) {
     us %= kMillion;
     ts.tv_nsec = us*1000;
     nanosleep(&ts, NULL);
+    return 0;
 }
 
 
