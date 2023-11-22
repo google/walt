@@ -762,7 +762,7 @@ def main(argv=sys.argv[1:]):
     args = parse_args(argv)
     if args.type == 'drag':
         run_drag_latency_test(args)
-    if args.type == 'tap':
+    elif args.type == 'tap':
         run_tap_latency_test(args)
     elif args.type == 'screen':
         run_screen_latency_test(args)
