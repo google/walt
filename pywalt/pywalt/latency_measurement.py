@@ -66,6 +66,7 @@ def get_finger_positions(filename):
     points = []
     fingers = {}
     curr_id = -1
+    fingers[curr_id] = {}
     last_x = last_y = 0
 
     for line in log:
@@ -76,11 +77,11 @@ def get_finger_positions(filename):
             curr_id = get_evtest_value(line)
             if not fingers.get(curr_id, None):
                 fingers[curr_id] = {}
-        elif 'ABS_MT_POSITION_X' in line:
+        elif 'ABS_X' in line:
             fingers[curr_id]['x'] = get_evtest_value(line)
-        elif 'ABS_MT_POSITION_Y' in line:
+        elif 'ABS_Y' in line:
             fingers[curr_id]['y'] = get_evtest_value(line)
-        elif 'SYN' in line and curr_id != -1 and curr_id in fingers:
+        elif 'SYN' in line and curr_id in fingers:
             t = get_evtest_timestamp(line)
             last_x = x = fingers[curr_id].get('x', last_x)
             last_y = y = fingers[curr_id].get('y', last_y)
