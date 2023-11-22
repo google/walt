@@ -51,6 +51,7 @@ import numpy
 from . import evparser
 from . import minimization
 from . import screen_stats
+from . import latency_measurement
 
 
 # Time units
@@ -309,6 +310,9 @@ def parse_args(argv):
                         help='port to listen on for the TCP bridge')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='talk more')
+    parser.add_argument('-m', '--minimization_method', action='store_true',
+                        help='Use minimization method to estimate latency for '
+                        'drag test. Better suited for manual testing.')
     args = parser.parse_args(argv)
 
     if not args.type:
@@ -377,8 +381,10 @@ def run_drag_latency_test(args):
     evtest.terminate()
 
     print("\nProcessing data, may take a minute or two...")
-    # lm.main(evtest_file_name, laser_file_name)
-    minimization.minimize(evtest_file_name, laser_file_name)
+    if args.minimization_method:
+        minimization.minimize(evtest_file_name, laser_file_name)
+    else:
+        latency_measurement.main(evtest_file_name, laser_file_name)
 
 
 def run_screen_curve(args):
@@ -762,7 +768,7 @@ def main(argv=sys.argv[1:]):
     args = parse_args(argv)
     if args.type == 'drag':
         run_drag_latency_test(args)
-    if args.type == 'tap':
+    elif args.type == 'tap':
         run_tap_latency_test(args)
     elif args.type == 'screen':
         run_screen_latency_test(args)
