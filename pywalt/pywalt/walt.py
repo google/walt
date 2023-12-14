@@ -93,6 +93,8 @@ class Walt(object):
     CMD_VERSION = 'V'
     CMD_SAMPLE_ALL = 'Q'
     CMD_BRIGHTNESS_CURVE = 'U'
+    CMD_BEEP = 'B'
+    CMD_STOP_BEEP = 'S'
     CMD_AUDIO = 'A'
 
 
@@ -301,7 +303,7 @@ def parse_args(argv):
                         help='WALT serial port')
     parser.add_argument('-t', '--type',
                         help='Test type: drag|tap|screen|sanity|curve|bridge|'
-                             'tapaudio|tapblink')
+                             'tapaudio|tapblink|e2e_audio')
     parser.add_argument('-l', '--logdir', default=temp_dir,
                         help='where to store logs')
     parser.add_argument('-n', default=40, type=int,
@@ -602,6 +604,37 @@ def run_walt_sanity_test(args):
             print(s.strip() + '\tmin-max: ' + minmax)
             time.sleep(0.1)
 
+def run_audio_e2e_latency(args):
+    print('Starting end-to-end audio latency test')
+    with Walt(args.serial) as walt:
+        walt.sndrcv(Walt.CMD_RESET)
+        tstart = time.time()
+        t_zero = walt.zero_clock()
+        if t_zero < 0:
+            print('Error: Couldn\'t zero clock, exitting')
+            sys.exit(1)
+
+        # Sleep to ensure no previous beeps interfere the measurement
+        walt.sndrcv(Walt.CMD_STOP_BEEP)
+        time.sleep(1)
+
+        # Trigger beep & execute latency test
+        walt.sndrcv(Walt.CMD_BEEP)
+        walt.sndrcv(Walt.CMD_AUDIO)
+
+        print('waiting for response')
+        # The following line blocks until a message from WALT arrives
+        trigger_line = walt.readline()
+        walt.sndrcv(Walt.CMD_STOP_BEEP)
+
+        parts = trigger_line.strip().split()
+        if len(parts) != 5:
+            raise Exception('Malformed trigger line: "%s"\n' % trigger_line)
+        # Convert microseconds to milliseconds
+        latency_ms = float(parts[2]) * 0.001
+
+        print('Measured end-to-end latency: %f ms' % latency_ms)
+
 
 class TcpServer:
     """
@@ -778,6 +811,8 @@ def main(argv=sys.argv[1:]):
         run_screen_curve(args)
     elif args.type == 'bridge':
         run_tcp_bridge(args)
+    elif args.type == 'e2e_audio':
+        run_audio_e2e_latency(args)
     elif args.type == 'tapaudio':
         run_tap_audio_test(args)
     elif args.type == 'tapblink':
