@@ -136,7 +136,7 @@ class Walt(object):
 
     def read_shock_time(self):
         dt, s = self.sndrcv(Walt.CMD_GSHOCK)
-        t_us = int(s.strip())
+        t_us = int(s)
         return t_us
 
 
