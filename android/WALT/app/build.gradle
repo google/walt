@@ -2,18 +2,22 @@ apply plugin: 'com.android.application'
 
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '27.0.3'
+    namespace = "org.chromium.latency.walt"
+    compileSdkVersion 36
 
     defaultConfig {
         applicationId "org.chromium.latency.walt"
-        minSdkVersion 17
-        targetSdkVersion 23
+        minSdkVersion 34
+        targetSdkVersion 36
         versionCode 9
         versionName "0.1.9"
         externalNativeBuild.ndkBuild {
             arguments "APP_PLATFORM=android-14", "APP_ALLOW_MISSING_DEPS=true"
         }
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     externalNativeBuild.ndkBuild {

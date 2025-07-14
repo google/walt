@@ -221,18 +221,17 @@ public class MainActivity extends AppCompatActivity {
 
         Log.i(TAG, "Toolbar button: " + item.getTitle());
 
-        switch (item.getItemId()) {
-            case R.id.action_help:
-                return true;
-            case R.id.action_share:
-                attemptSaveAndShareLog();
-                return true;
-            case R.id.action_upload:
-                showUploadLogDialog();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        int itemId = item.getItemId();
+        if (itemId == R.id.action_help) {
+            return true;
+        } else if (itemId == R.id.action_share) {
+            attemptSaveAndShareLog();
+            return true;
+        } else if (itemId == R.id.action_upload) {
+            showUploadLogDialog();
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -313,8 +312,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClickPing(View view) {
-        long t1 = waltDevice.clock.micros();
         try {
+            long t1 = waltDevice.clock.micros();
             waltDevice.command(WaltDevice.CMD_PING);
             long dt = waltDevice.clock.micros() - t1;
             logger.log(String.format(Locale.US,

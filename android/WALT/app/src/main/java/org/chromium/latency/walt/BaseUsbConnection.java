@@ -128,9 +128,11 @@ public abstract class BaseUsbConnection {
         // result of intent filter when the device was plugged in.
 
         PendingIntent permissionIntent = PendingIntent.getBroadcast(context, 0,
-                new Intent(getUsbPermissionResponseIntent()), 0);
+                new Intent(getUsbPermissionResponseIntent()),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         context.registerReceiver(respondToUsbPermission,
-                new IntentFilter(getUsbPermissionResponseIntent()));
+                new IntentFilter(getUsbPermissionResponseIntent()),
+                Context.RECEIVER_EXPORTED);
         logger.log("Requesting permission for USB device.");
         usbManager.requestPermission(this.usbDevice, permissionIntent);
     }
@@ -159,14 +161,12 @@ public abstract class BaseUsbConnection {
     private BroadcastReceiver respondToUsbPermission = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-
             if (usbDevice == null) {
                 logger.log("USB device was not properly opened");
                 return;
             }
 
-            if(intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) &&
-                    usbDevice.equals(intent.getParcelableExtra(UsbManager.EXTRA_DEVICE))){
+            if(usbManager.hasPermission(usbDevice)) {
                 usbConnection = usbManager.openDevice(usbDevice);
 
                 BaseUsbConnection.this.context.registerReceiver(disconnectReceiver,

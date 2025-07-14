@@ -187,9 +187,8 @@ public class HistogramChart extends RelativeLayout implements View.OnClickListen
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.button_close_bar_chart:
-                this.setVisibility(GONE);
+        if (v.getId() == R.id.button_close_bar_chart) {
+            this.setVisibility(GONE);
         }
     }
 
