@@ -79,23 +79,21 @@ public class MidiFragment extends Fragment
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.button_start_midi_in:
-                disableButtons();
-                latencyChart.setVisibility(View.VISIBLE);
-                latencyChart.clearData();
-                latencyChart.setLegendEnabled(false);
-                latencyChart.getBarChart().getDescription().setText("MIDI Input Latency [ms]");
-                midiTest.testMidiIn();
-                break;
-            case R.id.button_start_midi_out:
-                disableButtons();
-                latencyChart.setVisibility(View.VISIBLE);
-                latencyChart.clearData();
-                latencyChart.setLegendEnabled(false);
-                latencyChart.getBarChart().getDescription().setText("MIDI Output Latency [ms]");
-                midiTest.testMidiOut();
-                break;
+        int id = v.getId();
+        if (id == R.id.button_start_midi_in) {
+            disableButtons();
+            latencyChart.setVisibility(View.VISIBLE);
+            latencyChart.clearData();
+            latencyChart.setLegendEnabled(false);
+            latencyChart.getBarChart().getDescription().setText("MIDI Input Latency [ms]");
+            midiTest.testMidiIn();
+        } else if (id == R.id.button_start_midi_out) {
+            disableButtons();
+            latencyChart.setVisibility(View.VISIBLE);
+            latencyChart.clearData();
+            latencyChart.setLegendEnabled(false);
+            latencyChart.getBarChart().getDescription().setText("MIDI Output Latency [ms]");
+            midiTest.testMidiOut();
         }
     }
 

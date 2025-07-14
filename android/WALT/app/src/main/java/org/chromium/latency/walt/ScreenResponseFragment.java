@@ -125,7 +125,8 @@ public class ScreenResponseFragment extends Fragment implements View.OnClickList
         buttonBarView = view.findViewById(R.id.button_bar);
         ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(getContext(),
                 R.array.screen_response_mode_array, android.R.layout.simple_spinner_item);
-        modeAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
+        modeAdapter.setDropDownViewResource(
+                android.support.design.R.layout.support_simple_spinner_dropdown_item);
         spinner.setAdapter(modeAdapter);
         stopButton.setEnabled(false);
         blackBox.setMovementMethod(new ScrollingMovementMethod());

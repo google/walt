@@ -104,7 +104,8 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
         modeSpinner = (Spinner) view.findViewById(R.id.spinner_audio_mode);
         ArrayAdapter<CharSequence> modeAdapter = ArrayAdapter.createFromResource(getContext(),
                 R.array.audio_mode_array, android.R.layout.simple_spinner_item);
-        modeAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
+        modeAdapter.setDropDownViewResource(
+                android.support.design.R.layout.support_simple_spinner_dropdown_item);
         modeSpinner.setAdapter(modeAdapter);
 
         return view;
@@ -136,64 +137,61 @@ public class AudioFragment extends Fragment implements View.OnClickListener,
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.button_start_audio:
-                chartLayout.setVisibility(View.GONE);
-                disableButtons();
-                AudioTestType testType = getSelectedTestType();
-                switch (testType) {
-                    case CONTINUOUS_PLAYBACK:
-                    case CONTINUOUS_RECORDING:
-                    case DISPLAY_WAVEFORM:
-                        audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
-                        audioTest.setPeriod(AudioTest.CONTINUOUS_TEST_PERIOD);
-                        break;
-                    case COLD_PLAYBACK:
-                    case COLD_RECORDING:
-                        audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
-                        audioTest.setPeriod(AudioTest.COLD_TEST_PERIOD);
-                        break;
-                }
-                if (testType == AudioTestType.DISPLAY_WAVEFORM) {
-                    // Only need to record 1 beep to display wave
-                    audioTest.setRecordingRepetitions(1);
-                } else {
-                    audioTest.setRecordingRepetitions(
-                            getIntPreference(getContext(), R.string.preference_audio_in_reps, 5));
-                }
-                if (testType == AudioTestType.CONTINUOUS_PLAYBACK ||
-                        testType == AudioTestType.COLD_PLAYBACK ||
-                        testType == AudioTestType.CONTINUOUS_RECORDING ||
-                        testType == AudioTestType.COLD_RECORDING) {
-                    latencyChart.setVisibility(View.VISIBLE);
-                    latencyChart.clearData();
-                    latencyChart.setLegendEnabled(false);
-                    final String description =
-                            getResources().getStringArray(R.array.audio_mode_array)[
-                                    modeSpinner.getSelectedItemPosition()] + " [ms]";
-                    latencyChart.setDescription(description);
-                }
-                switch (testType) {
-                    case CONTINUOUS_RECORDING:
-                    case COLD_RECORDING:
-                    case DISPLAY_WAVEFORM:
-                        attemptRecordingTest();
-                        break;
-                    case CONTINUOUS_PLAYBACK:
-                    case COLD_PLAYBACK:
-                        // Set media volume to max
-                        AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
-                        am.setStreamVolume(AudioManager.STREAM_MUSIC, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
-                        audioTest.beginPlaybackMeasurement();
-                        break;
-                }
-                break;
-            case R.id.button_stop_audio:
-                audioTest.stopTest();
-                break;
-            case R.id.button_close_chart:
-                chartLayout.setVisibility(View.GONE);
-                break;
+        int id = v.getId();
+        if (id == R.id.button_start_audio) {
+            chartLayout.setVisibility(View.GONE);
+            disableButtons();
+            AudioTestType testType = getSelectedTestType();
+            switch (testType) {
+                case CONTINUOUS_PLAYBACK:
+                case CONTINUOUS_RECORDING:
+                case DISPLAY_WAVEFORM:
+                    audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
+                    audioTest.setPeriod(AudioTest.CONTINUOUS_TEST_PERIOD);
+                    break;
+                case COLD_PLAYBACK:
+                case COLD_RECORDING:
+                    audioTest.setAudioMode(AudioTest.AudioMode.CONTINUOUS);
+                    audioTest.setPeriod(AudioTest.COLD_TEST_PERIOD);
+                    break;
+            }
+            if (testType == AudioTestType.DISPLAY_WAVEFORM) {
+                // Only need to record 1 beep to display wave
+                audioTest.setRecordingRepetitions(1);
+            } else {
+                audioTest.setRecordingRepetitions(
+                        getIntPreference(getContext(), R.string.preference_audio_in_reps, 5));
+            }
+            if (testType == AudioTestType.CONTINUOUS_PLAYBACK ||
+                    testType == AudioTestType.COLD_PLAYBACK ||
+                    testType == AudioTestType.CONTINUOUS_RECORDING ||
+                    testType == AudioTestType.COLD_RECORDING) {
+                latencyChart.setVisibility(View.VISIBLE);
+                latencyChart.clearData();
+                latencyChart.setLegendEnabled(false);
+                final String description =
+                        getResources().getStringArray(R.array.audio_mode_array)[
+                                modeSpinner.getSelectedItemPosition()] + " [ms]";
+                latencyChart.setDescription(description);
+            }
+            switch (testType) {
+                case CONTINUOUS_RECORDING:
+                case COLD_RECORDING:
+                case DISPLAY_WAVEFORM:
+                    attemptRecordingTest();
+                    break;
+                case CONTINUOUS_PLAYBACK:
+                case COLD_PLAYBACK:
+                    // Set media volume to max
+                    AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+                    am.setStreamVolume(AudioManager.STREAM_MUSIC, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
+                    audioTest.beginPlaybackMeasurement();
+                    break;
+            }
+        } else if (id == R.id.button_stop_audio) {
+            audioTest.stopTest();
+        } else if (id == R.id.button_close_chart) {
+            chartLayout.setVisibility(View.GONE);
         }
     }
 

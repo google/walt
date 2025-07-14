@@ -48,7 +48,7 @@ public class UsMotionEvent {
         createTime = RemoteClockInfo.microTime() - baseTime;
         this.baseTime = baseTime;
         slot = -1;
-        kernelTime = getEventTimeMicro(event) - baseTime;
+        kernelTime = event.getEventTimeNanos() / 1000 - baseTime;
         x = event.getX();
         y = event.getY();
         action = event.getAction();
@@ -60,7 +60,7 @@ public class UsMotionEvent {
         slot = pos;
         action = MotionEvent.ACTION_MOVE; // Only MOVE events get bundled with history
 
-        kernelTime = getHistoricalEventTimeMicro(event, pos) - baseTime;
+        kernelTime = event.getHistoricalEventTimeNanos(pos) / 1000 - baseTime;
         x = event.getHistoricalX(pos);
         y = event.getHistoricalY(pos);
     }
@@ -107,40 +107,4 @@ public class UsMotionEvent {
         return "UNKNOWN_ACTION";
     }
 
-    /**
-     MotionEvent.getEventTime() function only provides millisecond resolution.
-     There is a MotionEvent.getEventTimeNano() function but for some reason it
-     is hidden by @hide which means it can't be called directly.
-     Calling is via reflection.
-
-     See:
-     http://stackoverflow.com/questions/17035271/what-does-hide-mean-in-the-android-source-code
-     */
-    private long getEventTimeMicro(MotionEvent event) {
-        long t_nanos = -1;
-        try {
-            Class cls = Class.forName("android.view.MotionEvent");
-            Method myTimeGetter = cls.getMethod("getEventTimeNano");
-            t_nanos = (long) myTimeGetter.invoke(event);
-        } catch (Exception e) {
-            Log.i("WALT.MsMotionEvent", e.getMessage());
-        }
-
-        return t_nanos / 1000;
-    }
-
-    private long getHistoricalEventTimeMicro(MotionEvent event, int pos) {
-        long t_nanos = -1;
-        try {
-            Class cls = Class.forName("android.view.MotionEvent");
-            Method myTimeGetter = cls.getMethod("getHistoricalEventTimeNano", new Class[] {int.class});
-            t_nanos = (long) myTimeGetter.invoke(event, new Object[]{pos});
-        } catch (Exception e) {
-            Log.i("WALT.MsMotionEvent", e.getMessage());
-        }
-
-        return t_nanos / 1000;
-    }
-
 }
-
