@@ -23,10 +23,14 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.method.ScrollingMovementMethod;
+import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.ScatterChart;
@@ -49,6 +53,7 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
     private TextView dragCountsView;
     private View startButton;
     private View restartButton;
+    private Spinner sourceSpinner;
     private View finishButton;
     private ScatterChart latencyChart;
     private View latencyChartLayout;
@@ -69,17 +74,38 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
     private View.OnTouchListener touchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            int histLen = event.getHistorySize();
-            for (int i = 0; i < histLen; i++){
-                UsMotionEvent eh = new UsMotionEvent(event, waltDevice.clock.baseTime, i);
-                touchEventList.add(eh);
-            }
-            UsMotionEvent e = new UsMotionEvent(event, waltDevice.clock.baseTime);
-            touchEventList.add(e);
-            moveCount += histLen + 1;
-
-            updateCountsDisplay();
+            addMeasurement(event);
             return true;
+        }
+    };
+
+    private View.OnCapturedPointerListener capturedPointerListener = new View.OnCapturedPointerListener() {
+
+        @Override
+        public boolean onCapturedPointer(View v, MotionEvent event) {
+            if (event.getSource() != InputDevice.SOURCE_TOUCHPAD) {
+                return false;
+            }
+            addMeasurement(event);
+            return true;
+
+        }
+    };
+
+    private View.OnKeyListener keyListener = new View.OnKeyListener() {
+        @Override
+        public boolean onKey(View v, int keyCode, KeyEvent event) {
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_ESCAPE:
+                case KeyEvent.KEYCODE_ENTER:
+                    finishButton.setEnabled(false);
+                    restartButton.setEnabled(false);
+                    finishAndShowStats();
+                    startButton.setEnabled(true);
+                    return true;
+                default:
+                    return false;
+            }
         }
     };
 
@@ -108,6 +134,15 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         view.findViewById(R.id.button_close_chart).setOnClickListener(this);
         restartButton.setEnabled(false);
         finishButton.setEnabled(false);
+
+        // Configure the input source spinner
+        sourceSpinner = (Spinner) view.findViewById(R.id.spinner_input_source);
+        ArrayAdapter<CharSequence> sourceAdapter = ArrayAdapter.createFromResource(getContext(),
+                R.array.input_source_array, android.R.layout.simple_spinner_item);
+        sourceAdapter.setDropDownViewResource(
+                android.support.design.R.layout.support_simple_spinner_dropdown_item);
+        sourceSpinner.setAdapter(sourceAdapter);
+
         return view;
     }
 
@@ -139,6 +174,19 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
         dragCountsView.setText(String.format(Locale.US, "⇄ %d", moveCount));
     }
 
+    void addMeasurement(MotionEvent event) {
+        int histLen = event.getHistorySize();
+        for (int i = 0; i < histLen; i++){
+            UsMotionEvent eh = new UsMotionEvent(event, waltDevice.clock.baseTime, i);
+            touchEventList.add(eh);
+        }
+        UsMotionEvent e = new UsMotionEvent(event, waltDevice.clock.baseTime);
+        touchEventList.add(e);
+        moveCount += histLen + 1;
+
+        updateCountsDisplay();
+    }
+
     /**
      * @return true if measurement was successfully started
      */
@@ -160,8 +208,17 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
             waltDevice.clearTriggerHandler();
             return false;
         }
-        touchCatcher.setOnTouchListener(touchListener);
-        touchCatcher.startAnimation();
+        final int spinnerPosition = sourceSpinner.getSelectedItemPosition();
+        if (spinnerPosition == 0) {
+            touchCatcher.setOnTouchListener(touchListener);
+            touchCatcher.startAnimation();
+        } else if (spinnerPosition == 1) {
+            touchCatcher.setOnCapturedPointerListener(capturedPointerListener);
+            touchCatcher.setOnKeyListener(keyListener);
+            touchCatcher.setFocusableInTouchMode(true);
+            touchCatcher.requestFocus();
+            touchCatcher.requestPointerCapture();
+        }
         touchEventList.clear();
         laserEventList.clear();
         moveCount = 0;
@@ -193,6 +250,9 @@ public class DragLatencyFragment extends Fragment implements View.OnClickListene
             logger.log("Error: " + e.getMessage());
         }
         touchCatcher.setOnTouchListener(null);
+        touchCatcher.setOnCapturedPointerListener(null);
+        touchCatcher.setOnKeyListener(null);
+        touchCatcher.releasePointerCapture();
         waltDevice.clearTriggerHandler();
 
         waltDevice.checkDrift();
