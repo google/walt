@@ -34,6 +34,11 @@
                 android:layout_height="wrap_content"
                 android:tint="@color/button_tint"
                 android:src="@drawable/ic_check_black_24dp" />
+            <Spinner
+                android:id="@+id/spinner_input_source"
+                android:layout_height="45dp"
+                android:layout_width="fill_parent"
+                android:prompt="@string/input_source" />
         </LinearLayout>
 
         <FrameLayout
